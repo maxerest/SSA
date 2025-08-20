@@ -8,6 +8,7 @@ public class App
 {
     public static void main( String[] args )
     {
-        System.out.println( "Hello World! This is after my 3rd test!" );
+        System.out.println( "Hello World! This is after my 4th test!" );
+        System.out.println( "here we go for the start of the project" );
     }
 }
