@@ -14,7 +14,7 @@ public class AppTest
      */
     @Test
     public void shouldAnswerWithTrue()
-    {
+    {   System.err.println("This is the maven test file");
         assertTrue( true );
     }
 }
