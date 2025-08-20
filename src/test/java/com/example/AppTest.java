@@ -4,6 +4,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import com.example.Analytics_Propagator.Type1.propagator_1;
+
 /**
  * Unit test for simple App.
  */
@@ -15,6 +17,7 @@ public class AppTest
     @Test
     public void shouldAnswerWithTrue()
     {   System.err.println("This is the maven test file");
-        assertTrue( true );
+    propagator_1 newPropagator_1 = new propagator_1();    
+        assertTrue(newPropagator_1.main().equals("Currently in propagator 1") );
     }
 }

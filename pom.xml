@@ -10,7 +10,7 @@
 
   <name>ssa</name>
   <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <url>https://github.com/maxerest/SSA</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,6 +19,12 @@
   </properties>
 
   <dependencies>
+    <!-- https://mvnrepository.com/artifact/org.orekit/orekit -->
+  <dependency>
+  <groupId>org.orekit</groupId>
+  <artifactId>orekit</artifactId>
+  <version>13.1</version>
+</dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

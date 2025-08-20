@@ -1,25 +1,18 @@
-package com.example;
-
-import com.example.Analytics_Propagator.Type1.*;
+package com.example.Analytics_Propagator.Type1;
 import java.io.File;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
 
-/**
- * Hello world!
- *
- */
-public class App 
+public class propagator_1
 {
-    public static void main( String[] args )
+    public String main(  )
     {
         final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
 
-        System.out.println( "Hello World! I am in main Java!" );
-        propagator_1 newPropagator_1 = new propagator_1();
-        newPropagator_1.main();
+        System.out.println( "Currently in propagator 1" );
+        return "Currently in propagator 1";
     }
 }
