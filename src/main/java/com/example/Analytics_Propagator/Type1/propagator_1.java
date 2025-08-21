@@ -11,8 +11,6 @@ public class propagator_1
         final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
-
-        System.out.println( "Currently in propagator 1" );
-        return "Currently in propagator 1";
+        return "done with  propagator 1";
     }
 }
