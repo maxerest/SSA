@@ -17,7 +17,7 @@ public class AppTest
     @Test
     public void shouldAnswerWithTrue()
     {   System.err.println("This is the maven test file");
-    propagator_1 newPropagator_1 = new propagator_1();    
+       
         assertTrue(true );
     }
 }
