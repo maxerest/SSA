@@ -1,3 +1,6 @@
-com\example\Analytics_Propagator\Type1\propagator_1.class
+com\example\Parametres.class
+com\example\Analytics_Propagator\Type1\Propagator_1.class
+com\example\Analytics_Propagator\Type1\Propagator_1$Altitude_limit.class
 com\example\App.class
-com\example\View\Vue_3D.class
+com\example\Analytics_Propagator\Type1\Propagator_1$Propagation_step.class
+com\example\View\Visulations.class
