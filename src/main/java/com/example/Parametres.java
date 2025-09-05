@@ -23,7 +23,7 @@ public class Parametres
 {
     //Gestion temps
     public AbsoluteDate date_orekit = new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600);
-    public double duration = Constants.JULIAN_DAY;   
+    public double duration = Constants.JULIAN_DAY;
     
     // définition de la Terre
     public Frame frame = FramesFactory.getEME2000();

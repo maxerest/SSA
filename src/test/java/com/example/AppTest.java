@@ -4,7 +4,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.example.Analytics_Propagator.Type1.propagator_1;
 
 /**
  * Unit test for simple App.

@@ -1,21 +1,14 @@
 package com.example.View;
-import com.example.Parametres;
+
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.util.Date;
-import java.util.Locale;
-
-import org.hipparchus.geometry.euclidean.threed.Vector3D;
-import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
-import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
-import org.orekit.time.TimeScalesFactory;
+
 
 public class Visulations {
      public static void export_csv(NumericalPropagator propagator, AbsoluteDate StartDate) {

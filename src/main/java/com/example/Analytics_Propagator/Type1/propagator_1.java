@@ -7,14 +7,9 @@ import java.io.PrintWriter;
 import java.util.Date;
 import java.util.Locale;
 
-import org.orekit.data.DataProvider;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
-import org.hipparchus.ode.nonstiff.AdaptiveStepsizeIntegrator;
-import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
-import org.orekit.data.DataContext;
-import org.orekit.data.DirectoryCrawler;
 import org.orekit.utils.Constants;
 import org.orekit.forces.ForceModel;
 import org.orekit.forces.drag.DragForce;
@@ -28,32 +23,19 @@ import org.orekit.forces.radiation.SolarRadiationPressure;
 import org.orekit.frames.FramesFactory;
 import org.orekit.models.earth.atmosphere.Atmosphere;
 import org.orekit.models.earth.atmosphere.HarrisPriester;
-import org.orekit.orbits.OrbitType;
 import org.orekit.propagation.SpacecraftState;
-import org.orekit.propagation.ToleranceProvider;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.time.TimeScalesFactory;
 import org.orekit.utils.IERSConventions;
 import org.orekit.utils.ExtendedPositionProvider;
-import org.orekit.propagation.events.AltitudeDetector;
 import org.orekit.propagation.events.EventDetector;
 import org.orekit.propagation.events.handlers.EventHandler;
 
 import java.io.File;
 public class Propagator_1
 {
-    public static String integrator() {
-
-        return "test";
-    }
-
-
-
-
-
-
 
 
     public static NumericalPropagator add_force_propagator(NumericalPropagator propagator, double area, double cd,double srpCrossSection, double srpCoeff) {
@@ -92,6 +74,7 @@ public class Propagator_1
             }         
         }
     }
+    
     public static class Altitude_limit implements EventHandler{
             private double Detectionaltitude;
             private AbsoluteDate date_orekit;
@@ -107,7 +90,7 @@ public class Propagator_1
                 
                 System.out.println("Altitude reached "+Detectionaltitude+"km at "+String.format("%.2f",s.getDate().durationFrom(date_orekit)/3600)+"h after the start, stopping propagation.");
                 Visulations.export_csv(propagator, date_orekit);
-                //RunPythonScript();
+                Visulations.RunPythonScript();
                 return org.hipparchus.ode.events.Action.STOP;
             }
         }
