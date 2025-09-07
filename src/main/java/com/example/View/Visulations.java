@@ -1,6 +1,6 @@
 package com.example.View;
-
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -11,15 +11,16 @@ import org.orekit.time.AbsoluteDate;
 
 
 public class Visulations {
-     public static void export_csv(NumericalPropagator propagator, AbsoluteDate StartDate) {
+     public static void export_csv(NumericalPropagator propagator, Parametres p) {
         // TODO Auto-generated method stub
-        File csvFile = new File("orbit.csv");
+        String sat= p.get_Name();
+        File csvFile = new File("src/main/java/com/example/View/"+sat+".csv");
         if (csvFile.exists()) {
             csvFile.delete();
         }
         try (PrintWriter writer = new PrintWriter(csvFile)) {
             writer.println("x,y,z,t");
-            propagator.getMultiplexer().add(60,new Propagator_1.Propagation_step());
+            propagator.getMultiplexer().add(60,new Propagator_1.Propagation_step(sat));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -27,9 +28,10 @@ public class Visulations {
 
     
 
-    public static void RunPythonScript() {
+    public static void RunPythonScript(Parametres p) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("python", "src/main/java/com/example/View/Visualisation.py");
+            String sat= p.get_Name();
+            ProcessBuilder pb = new ProcessBuilder("python", "src/main/java/com/example/View/Visualisation.py",sat);
             pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));

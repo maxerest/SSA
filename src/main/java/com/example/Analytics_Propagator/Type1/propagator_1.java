@@ -8,6 +8,8 @@ import java.util.Date;
 import java.util.Locale;
 
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
+import org.hipparchus.ode.nonstiff.AdaptiveStepsizeIntegrator;
+import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.utils.Constants;
@@ -23,7 +25,10 @@ import org.orekit.forces.radiation.SolarRadiationPressure;
 import org.orekit.frames.FramesFactory;
 import org.orekit.models.earth.atmosphere.Atmosphere;
 import org.orekit.models.earth.atmosphere.HarrisPriester;
+import org.orekit.orbits.Orbit;
+import org.orekit.orbits.OrbitType;
 import org.orekit.propagation.SpacecraftState;
+import org.orekit.propagation.ToleranceProvider;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
@@ -36,6 +41,18 @@ import org.orekit.propagation.events.handlers.EventHandler;
 import java.io.File;
 public class Propagator_1
 {
+        public AdaptiveStepsizeIntegrator integrator(Parametres p) {
+        // Define the numerical integrator
+        double dP = 0.001;
+        double minStep = 0.1;   // seconds
+        double maxStep = 100; // seconds
+        double initStep = 10.0; // seconds
+        Orbit o=p.get_Orbit();
+        final double[][] tolerance = ToleranceProvider.getDefaultToleranceProvider(dP).getTolerances(o, OrbitType.KEPLERIAN);
+        AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(minStep, maxStep, tolerance[0], tolerance[1]);
+        integrator.setInitialStepSize(initStep);
+        return integrator;
+    }
 
 
     public static NumericalPropagator add_force_propagator(NumericalPropagator propagator, double area, double cd,double srpCrossSection, double srpCoeff) {
@@ -61,10 +78,15 @@ public class Propagator_1
     }
 
     public static class Propagation_step implements OrekitFixedStepHandler {
+        private final String sat;
+
+        public Propagation_step(String sat) {
+            this.sat = sat;
+        }
         @Override
         public void handleStep(SpacecraftState currentState) {
             
-            File csvFile = new File("orbit.csv");
+            File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"+sat+".csv");
             Vector3D pos = currentState.getPVCoordinates().getPosition();
             try (FileWriter fw = new FileWriter(csvFile, true);
              PrintWriter writer = new PrintWriter(fw)) {
@@ -73,24 +95,25 @@ public class Propagator_1
                 e.printStackTrace();
             }         
         }
+       
     }
     
     public static class Altitude_limit implements EventHandler{
             private double Detectionaltitude;
-            private AbsoluteDate date_orekit;
+            private Parametres p;
             private NumericalPropagator propagator;
     
             public Altitude_limit(Parametres p, NumericalPropagator propagator) {
                 this.Detectionaltitude = p.Detectionaltitude;
-                this.date_orekit = p.date_orekit;
+                this.p = p;
                 this.propagator = propagator;
             }
         
             public org.hipparchus.ode.events.Action eventOccurred(final SpacecraftState s, final EventDetector detector, final boolean increasingdouble) {
                 
-                System.out.println("Altitude reached "+Detectionaltitude+"km at "+String.format("%.2f",s.getDate().durationFrom(date_orekit)/3600)+"h after the start, stopping propagation.");
-                Visulations.export_csv(propagator, date_orekit);
-                Visulations.RunPythonScript();
+                System.out.println("Altitude reached "+Detectionaltitude+"km at "+String.format("%.2f",s.getDate().durationFrom(p.get_Date())/3600)+"h after the start, stopping propagation.");
+                Visulations.export_csv(propagator, p);
+                Visulations.RunPythonScript(p);
                 return org.hipparchus.ode.events.Action.STOP;
             }
         }
