@@ -2,6 +2,8 @@ package com.example;
 
 import java.util.Date;
 
+import org.orekit.attitudes.Attitude;
+import org.orekit.attitudes.AttitudeProvider;
 import org.orekit.bodies.BodyShape;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.frames.Frame;
@@ -20,7 +22,7 @@ public class Parametres
     public String nom_sat ="Sat_1";
     //Gestion temps
     public static AbsoluteDate date_orekit = new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600);
-    public static double duration = Constants.JULIAN_DAY-(3600*23);
+    public static double duration = Constants.JULIAN_DAY;
     
     // définition de la Terre
     public static Frame frame = FramesFactory.getEME2000();
@@ -28,6 +30,7 @@ public class Parametres
     public static BodyShape earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,Constants.WGS84_EARTH_FLATTENING,FramesFactory.getITRF(IERSConventions.IERS_2010, true));
 
     // Definiton parametres orbitaux
+    private double mass;
     private double semi_axis = Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 700e3;
     private double eccentricity = 0.001;
     private double inclinaison = Math.toRadians(45);
@@ -44,12 +47,13 @@ public class Parametres
     public double srpCoeff        = 1.30;
         
     //Seul de detection altitude
-    public Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 699e3;
+    public Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS +100000e3;
        
     //Inital state of the satellite
     public SpacecraftState s_initialState ;
-    public Parametres(String nom_sat,double semi_axis,double eccentricity,double inclinaison,double long_noeud_ascendant,double arg_periastre,double anomalie,PositionAngleType type_anomalie){
+    public Parametres(String nom_sat,double mass,double semi_axis,double eccentricity,double inclinaison,double long_noeud_ascendant,double arg_periastre,double anomalie,PositionAngleType type_anomalie){
         this.nom_sat= nom_sat;
+        this.mass=mass;
         this.semi_axis=semi_axis;
         this.eccentricity=eccentricity;
         this.inclinaison=inclinaison;
@@ -58,7 +62,8 @@ public class Parametres
         this.anomalie=anomalie;
         this.type_anomalie=type_anomalie;
         orbit_kepl = new KeplerianOrbit(this.semi_axis, this.eccentricity, this.inclinaison,  this.long_noeud_ascendant,  this.arg_periastre, this.anomalie, this.type_anomalie, frame, date_orekit, mu);
-        this.s_initialState= new SpacecraftState(orbit_kepl);
+
+        this.s_initialState= new SpacecraftState(orbit_kepl).withMass(mass);
     }
     public Orbit get_Orbit(){
         return orbit_kepl;
@@ -69,6 +74,8 @@ public class Parametres
     public String get_Name(){
         return nom_sat;
     }
-
+    public double get_Mass(){
+        return mass;
+    }
     
 }

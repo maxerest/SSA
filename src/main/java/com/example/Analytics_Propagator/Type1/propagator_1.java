@@ -10,6 +10,7 @@ import java.util.Locale;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
+import org.orekit.attitudes.LofOffset;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.utils.Constants;
@@ -23,6 +24,7 @@ import org.orekit.forces.radiation.IsotropicRadiationSingleCoefficient;
 import org.orekit.forces.radiation.RadiationSensitive;
 import org.orekit.forces.radiation.SolarRadiationPressure;
 import org.orekit.frames.FramesFactory;
+import org.orekit.frames.LOFType;
 import org.orekit.models.earth.atmosphere.Atmosphere;
 import org.orekit.models.earth.atmosphere.HarrisPriester;
 import org.orekit.orbits.Orbit;
@@ -41,6 +43,8 @@ import org.orekit.propagation.events.handlers.EventHandler;
 import java.io.File;
 public class Propagator_1
 {
+
+
         public AdaptiveStepsizeIntegrator integrator(Parametres p) {
         // Define the numerical integrator
         double dP = 0.001;
@@ -51,6 +55,7 @@ public class Propagator_1
         final double[][] tolerance = ToleranceProvider.getDefaultToleranceProvider(dP).getTolerances(o, OrbitType.KEPLERIAN);
         AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(minStep, maxStep, tolerance[0], tolerance[1]);
         integrator.setInitialStepSize(initStep);
+        
         return integrator;
     }
 
@@ -74,6 +79,7 @@ public class Propagator_1
         ExtendedPositionProvider sun = CelestialBodyFactory.getSun();
         SolarRadiationPressure srp = new SolarRadiationPressure(sun,earth,srpSurface);
         propagator.addForceModel(srp);
+        propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
         return propagator;
     }
 
@@ -111,9 +117,8 @@ public class Propagator_1
         
             public org.hipparchus.ode.events.Action eventOccurred(final SpacecraftState s, final EventDetector detector, final boolean increasingdouble) {
                 
-                System.out.println("Altitude reached "+Detectionaltitude+"km at "+String.format("%.2f",s.getDate().durationFrom(p.get_Date())/3600)+"h after the start, stopping propagation.");
+                System.out.println("Altitude reached "+(Detectionaltitude-Constants.WGS84_EARTH_EQUATORIAL_RADIUS)+"km at "+String.format("%.2f",s.getDate().durationFrom(p.get_Date())/3600)+"h after the start, stopping propagation.");
                 Visulations.export_csv(propagator, p);
-                Visulations.RunPythonScript(p);
                 return org.hipparchus.ode.events.Action.STOP;
             }
         }
