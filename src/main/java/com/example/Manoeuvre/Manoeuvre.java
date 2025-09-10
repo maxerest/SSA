@@ -19,29 +19,62 @@ import org.orekit.forces.maneuvers.Maneuver;
 import com.example.Parametres;
 
 public class Manoeuvre {
+    private  ManeuverTriggers triggers;
+    private double thrust = 800;
+    private double isp    = 318;
+    private AbsoluteDate firingDate;
+    private double duration;
 
-    public static NumericalPropagator Moteur_1(Parametres p, NumericalPropagator propagator ){
+    public Manoeuvre(Builder builder) { 
+        this.triggers=new DateBasedManeuverTriggers(builder.firingDate,builder.duration);
+    }
+    public void lancement_manoeuvre(Parametres p, NumericalPropagator propagator){
+            double[] params_motor;
+            if (p.get_Type_moteur()==1){
+                params_motor = motor_1();
+            }
+            else if (p.get_Type_moteur()==2){
+                params_motor = motor_2();
+            }else {
+                throw new IllegalArgumentException("Unknown moteur: " + p.get_Type_moteur());
+            }
+            this.thrust = params_motor[0];
+            this.isp    = params_motor[1];
             final Vector3D direction = new Vector3D(FastMath.toRadians(-7.4978),
                                                     FastMath.toRadians(351));
             final AttitudeProvider attitudeOverride =
                             new FrameAlignedProvider(new Rotation(direction, Vector3D.PLUS_I), Parametres.frame);
 
-            // maneuver will start at a known date and stop after a known duration
-            final AbsoluteDate firingDate = new AbsoluteDate(Parametres.date_orekit.shiftedBy(300));
-            final double duration = 360;
-            final ManeuverTriggers triggers = new DateBasedManeuverTriggers(firingDate, duration);
-
-            // maneuver has constant thrust
-            final double thrust = 800;
-            final double isp    = 318;
             final PropulsionModel propulsionModel =
                             new BasicConstantThrustPropulsionModel(thrust, isp,
                                                                    Vector3D.MINUS_I,
                                                                    "apogee-engine");
-
+            //triggers.isFiring(null, null);
             // build maneuver and add it to the propagator as a new force model
             propagator.addForceModel(new Maneuver(null, triggers, propulsionModel));
-
-        return propagator;
+        
     }
+    // Builder class
+    public static class Builder {
+        AbsoluteDate firingDate;
+        private double duration;
+        public Builder() {}
+        public Builder firingDate(AbsoluteDate firingDate) {this.firingDate = firingDate; return this; }
+        public Builder duration(double duration) {this.duration = duration; return this; }
+        public Manoeuvre build() { return new Manoeuvre(this); }
+    }
+    private double[]  motor_1() {
+        this.thrust = 800;
+        this.isp    = 318;
+        return new double[] {this.thrust,this.isp};
+    }
+    private double[]  motor_2() {
+        this.thrust = 3000;
+        this.isp    = 3180;
+        return new double[] {this.thrust,this.isp};
+    }
+    public ManeuverTriggers getTriggers() {
+        return triggers;
+    }
+    
 }

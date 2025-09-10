@@ -85,18 +85,20 @@ public class Propagator_1
 
     public static class Propagation_step implements OrekitFixedStepHandler {
         private final String sat;
-
-        public Propagation_step(String sat) {
+        private final Parametres p;
+        public Propagation_step(String sat,Parametres p) {
             this.sat = sat;
+            this.p = p;
         }
-        @Override
+
+    
         public void handleStep(SpacecraftState currentState) {
-            
+            boolean triger = p.manoeuvre.getTriggers().isFiring(currentState.getDate(), null);
             File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"+sat+".csv");
             Vector3D pos = currentState.getPVCoordinates().getPosition();
             try (FileWriter fw = new FileWriter(csvFile, true);
              PrintWriter writer = new PrintWriter(fw)) {
-                writer.printf(Locale.US, "%f,%f,%f,%f%n", pos.getX(), pos.getY(), pos.getZ(),currentState.getDate().durationFrom(new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600)));
+                writer.printf(Locale.US, "%f,%f,%f,%f,%d%n", pos.getX(), pos.getY(), pos.getZ(),currentState.getDate().durationFrom(new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600)), triger ? 1 : 0);
             } catch (IOException e) {
                 e.printStackTrace();
             }         

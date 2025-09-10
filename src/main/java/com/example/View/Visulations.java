@@ -21,8 +21,8 @@ public class Visulations {
             csvFile.delete();
         }
         try (PrintWriter writer = new PrintWriter(csvFile)) {
-            writer.println("x,y,z,t");
-            propagator.getMultiplexer().add(60,new Propagator_1.Propagation_step(sat));
+            writer.println("x,y,z,t,firing");
+            propagator.getMultiplexer().add(60,new Propagator_1.Propagation_step(sat,p));
         } catch (IOException e) {
             e.printStackTrace();
         }
