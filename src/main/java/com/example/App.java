@@ -66,36 +66,19 @@ public class App
 
     public static List<Parametres> noisy_orbit(List<Parametres> liste_par_sats_real_orbit) {
     List<Parametres> liste_par_sats_noise_orbit = new ArrayList<>();
-    Random rng = new Random();
-
     int i = 0;
     for (Parametres p : liste_par_sats_real_orbit) {
-        // Define noise levels (1-sigma). Adjust as needed
-        double sigmaA = 1000.0;                 // semi-major axis [m]
-        double sigmaE = 1e-3;                   // eccentricity
-        double sigmaI = Math.toRadians(0.1);    // inclination [rad]
-        double sigmaRAAN = Math.toRadians(0.1); // RAAN [rad]
-        double sigmaArgP = Math.toRadians(0.1); // argument of perigee [rad]
-        double sigmaM = Math.toRadians(0.1);    // mean anomaly [rad]
-
-        // Add Gaussian noise (rng.nextGaussian() ~ N(0,1))
-        double noisyA = p.get_semi_axis() + sigmaA * rng.nextGaussian();
-        double noisyE = p.get_eccentricity() + sigmaE * rng.nextGaussian();
-        double noisyI = p.get_inclinaison() + sigmaI * rng.nextGaussian();
-        double noisyRAAN = p.get_long_noeud_ascendant() + sigmaRAAN * rng.nextGaussian();
-        double noisyArgP = p.get_arg_periastre() + sigmaArgP * rng.nextGaussian();
-        double noisyM = p.get_anomalie() + sigmaM * rng.nextGaussian();
 
         // Build noisy orbit parameters
         Parametres noisyP = new Parametres.Builder()
             .nom_sat("Sat_noisy" + (++i))
             .mass(p.get_mass()) // keep same
-            .semi_axis(noisyA)
-            .eccentricity(noisyE)
-            .inclinaison(noisyI)
-            .long_noeud_ascendant(noisyRAAN)
-            .arg_periastre(noisyArgP)
-            .anomalie(noisyM)
+            .semi_axis(p.get_semi_axis()-100000)
+            .eccentricity(p.get_eccentricity())
+            .inclinaison(p.get_inclinaison())
+            .long_noeud_ascendant(p.get_long_noeud_ascendant())
+            .arg_periastre(p.get_arg_periastre())
+            .anomalie(p.get_anomalie())
             .type_anomalie(p.get_type_anomalie())
             .type_moteur(p.get_Type_moteur())
             .start_manoeuvre(p.get_de())

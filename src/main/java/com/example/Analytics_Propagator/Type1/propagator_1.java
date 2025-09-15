@@ -57,6 +57,8 @@ import org.orekit.utils.IERSConventions;
 import org.orekit.utils.PVCoordinates;
 import org.orekit.propagation.StateCovarianceMatrixProvider;
 import org.orekit.estimation.measurements.PV;
+import org.orekit.estimation.sequential.KalmanEstimation;
+import org.orekit.estimation.sequential.KalmanObserver;
 
 import com.example.Parametres;
 import com.example.View.Visulations;
@@ -85,7 +87,7 @@ public class Propagator_1
             // Ajout du détecteur d'altitude
             AltitudeDetector altitudeDetector = new AltitudeDetector(p.Detectionaltitude,Parametres.earth).withHandler(new Propagator_1.Altitude_limit(p,propagator));
             propagator.addEventDetector(altitudeDetector);
-            p.manoeuvre.lancement_manoeuvre(p, propagator);
+            //p.manoeuvre.lancement_manoeuvre(p, propagator);
             Visulations.export_csv(propagator, p);
             propagator.propagate(new AbsoluteDate(Parametres.date_orekit, Parametres.duration)); 
         }
@@ -97,18 +99,23 @@ public class Propagator_1
         for (int i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
             Parametres pNoisy = liste_par_sats_noisy_orbit.get(i);
             Parametres pReal  = liste_par_sats_real_orbit.get(i);
+
             NumericalPropagatorBuilder builder =new NumericalPropagatorBuilder(pNoisy.get_Cartesian_Orbit(), integratorBuilder(),pNoisy.get_type_anomalie(), 1.0);
             RealMatrix processNoiseMatrix = MatrixUtils.createRealDiagonalMatrix(new double[]{
-                0, 0, 0,   // position variances [m²]
-                10, 10, 10    // velocity variances [(m/s)²]
+                100000, 100000, 100000,  // position [m²]
+                0.1, 0.10, 0.10   // velocity [(m/s)²]
+            });
+            RealMatrix initialStateCovariance = MatrixUtils.createRealDiagonalMatrix(new double[]{
+                100, 100, 100,   // position in m² → almost zero uncertainty
+                0.001,0.001, 0.001    // velocity in (m/s)² → almost zero uncertainty
             });
             Propagator_1.add_force_propagator(builder,pNoisy.get_area(),pNoisy.get_cd(),pNoisy.get_srpCrossSection(), pNoisy.get_srpCoeff());
-            pNoisy.manoeuvre.lancement_manoeuvre(pNoisy, builder);
-            ConstantProcessNoise processNoiseProvider = new ConstantProcessNoise(processNoiseMatrix);
-            KalmanEstimatorBuilder kalmanBuilder = new KalmanEstimatorBuilder();
             
-            kalmanBuilder.addPropagationConfiguration(builder, processNoiseProvider);
+            //pNoisy.manoeuvre.lancement_manoeuvre(pNoisy, builder);
+            KalmanEstimatorBuilder kalmanBuilder = new KalmanEstimatorBuilder();
+            kalmanBuilder.addPropagationConfiguration(builder, new ConstantProcessNoise( initialStateCovariance,processNoiseMatrix));
             KalmanEstimator kalman = kalmanBuilder.build();
+            kalman.setObserver(new MyKalmanObserver());
             // process each measuremen
             Random rng = new Random();
             double measurementInterval = 60.0;
@@ -116,22 +123,35 @@ public class Propagator_1
             for (double t = 0; t <= Parametres.duration; t += measurementInterval) {
                 // Get “true” position & velocity from real orbit
                 PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
+                
                 Vector3D noisyPos = new Vector3D(
-                    truePV.getPosition().getX() + 1000*rng.nextGaussian(),  // position noise ~1000 m
-                    truePV.getPosition().getY() + 1000*rng.nextGaussian(),
-                    truePV.getPosition().getZ() + 1000*rng.nextGaussian()
+                    truePV.getPosition().getX() + 1*rng.nextGaussian(),  // position noise ~1000 m
+                    truePV.getPosition().getY() + 1*rng.nextGaussian(),
+                    truePV.getPosition().getZ() + 1*rng.nextGaussian()
                 );
-                Vector3D noisyVel = new Vector3D(
+                boolean trigger = pReal.manoeuvre.getTriggers().isFiring(
+                Parametres.date_orekit.shiftedBy(t),
+                null
+                );
+                Vector3D noisyVel;
+                if (trigger) {
+                    noisyVel = new Vector3D(
+                    truePV.getVelocity().getX() + 50*rng.nextGaussian(), // velocity noise ~0.1 m/s
+                    truePV.getVelocity().getY() + 50*rng.nextGaussian(),
+                    truePV.getVelocity().getZ() + 50*rng.nextGaussian());
+                }else{
+                    noisyVel = new Vector3D(
                     truePV.getVelocity().getX() + 0.1*rng.nextGaussian(), // velocity noise ~0.1 m/s
                     truePV.getVelocity().getY() + 0.1*rng.nextGaussian(),
-                    truePV.getVelocity().getZ() + 0.1*rng.nextGaussian()
-                );
-                // Create the PV measurement
-                double sigmaPosition = 1000; // standard deviation in meters
-                double sigmaVelocity = 0.1;   // standard deviation in m/s
+                    truePV.getVelocity().getZ() + 0.1*rng.nextGaussian());
+                }
+
+
+            
+                double sigmaPosition = 1000;  // meters
+                double sigmaVelocity = 0.1;  // m/s
                 double baseWeight = 1.0;      // weight of measurement
                 ObservableSatellite satellite = new ObservableSatellite(i); // index 0, adjust if multiple satellites
-
                 PV meas = new PV(
                     Parametres.date_orekit.shiftedBy(t),
                     noisyPos,
@@ -150,7 +170,8 @@ public class Propagator_1
                 // Velocity
                 Vector3D pos = new Vector3D(x, y, z);
                 Visulations.export_csv_kalman_add_step(pNoisy, t, pos);
-
+                double distance = pos.subtract(truePV.getPosition()).getNorm();
+                //System.err.println(distance);
             }
             
         }
@@ -240,7 +261,14 @@ public class Propagator_1
                 return org.hipparchus.ode.events.Action.STOP;
             }
         }
-    
+        public class MyKalmanObserver implements KalmanObserver {
+
+            @Override
+            public void evaluationPerformed(KalmanEstimation estimation) {
+
+                // Add any other logging or processing as needed
+            }
+        }
 
     
         

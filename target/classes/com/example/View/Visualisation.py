@@ -71,7 +71,6 @@ for i in range(n_frames):
             # Update trail: shift older points down the trail
             for j in range(trail_length - 1, 0, -1):
                 trail_spheres[j][1].points[:] = trail_spheres[j - 1][1].points[:]
-                
             # Add newest satellite position at start of trail
             trail_spheres[0][1].points[:] = sat_mesh.points[:]
             # Optionally fade trail colors
