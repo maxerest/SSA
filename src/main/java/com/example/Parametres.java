@@ -5,9 +5,12 @@ import java.util.Date;
 import org.orekit.attitudes.Attitude;
 import org.orekit.attitudes.AttitudeProvider;
 import org.orekit.bodies.BodyShape;
+import org.orekit.bodies.GeodeticPoint;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.frames.Frame;
 import org.orekit.frames.FramesFactory;
+import org.orekit.frames.TopocentricFrame;
+import org.orekit.orbits.CartesianOrbit;
 import org.orekit.orbits.KeplerianOrbit;
 import org.orekit.orbits.Orbit;
 import org.orekit.orbits.PositionAngleType;
@@ -21,10 +24,11 @@ import com.example.Manoeuvre.Manoeuvre;
 
 public class Parametres
 {   
-    public String nom_sat ="Sat_1";
+    public String nom_sat;
     //Gestion temps
     public static AbsoluteDate date_orekit = new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600);
-    public static double duration = Constants.JULIAN_DAY;
+    public static double duration =Constants.JULIAN_DAY-(3600*15); //Constants.JULIAN_DAY;
+
     // définition de la Terre
     public static Frame frame = FramesFactory.getEME2000();
     public static double mu = Constants.EIGEN5C_EARTH_MU;
@@ -40,6 +44,7 @@ public class Parametres
     private double anomalie;
     private PositionAngleType type_anomalie;
     private Orbit orbit_kepl;
+    private Orbit orbit_cart;
     //Defintion manoeuvre
     private int type_moteur;
     private double start_manoeuvre;
@@ -56,6 +61,10 @@ public class Parametres
        
     //Inital state of the satellite
     public SpacecraftState s_initialState; 
+
+    // Ground Station
+    public GeodeticPoint paris = new GeodeticPoint(Math.toRadians(48.8566), Math.toRadians(2.3522), 62);
+    public TopocentricFrame stationFrame = new TopocentricFrame(earth, paris, "Paris_Station");
   
     private Parametres(Builder builder) {
         this.nom_sat = builder.nom_sat;
@@ -76,6 +85,7 @@ public class Parametres
         this.srpCoeff = builder.srpCoeff;
         this.Detectionaltitude = builder.Detectionaltitude;
         orbit_kepl = new KeplerianOrbit(this.semi_axis, this.eccentricity, this.inclinaison,  this.long_noeud_ascendant,  this.arg_periastre, this.anomalie, this.type_anomalie, frame, date_orekit, mu);
+        orbit_cart =new CartesianOrbit(orbit_kepl);
         s_initialState = new SpacecraftState(orbit_kepl).withMass(this.mass);
         this.manoeuvre=new Manoeuvre.Builder().firingDate(date_orekit.shiftedBy(this.start_manoeuvre)).duration(this.duration_manoeuvre).build();
     }
@@ -122,11 +132,38 @@ public class Parametres
         public Parametres build() { return new Parametres(this); }
     }
 
-    public Orbit get_Orbit(){
+    public Orbit get_keplerian_Orbit(){
         return orbit_kepl;
+    }
+    public Orbit get_Cartesian_Orbit(){
+        return orbit_cart;
     }
     public AbsoluteDate get_Date(){
         return date_orekit;
+    }
+    public double get_mass(){
+        return mass;
+    }
+    public double get_semi_axis(){
+        return semi_axis;
+    }
+    public double get_eccentricity(){
+        return eccentricity;
+    }
+    public double get_inclinaison(){
+        return inclinaison;
+    }
+    public double get_long_noeud_ascendant(){
+        return long_noeud_ascendant;
+    }
+    public double get_arg_periastre(){
+        return arg_periastre;
+    }
+    public double get_anomalie(){
+        return anomalie;
+    }
+    public PositionAngleType get_type_anomalie(){
+        return type_anomalie;
     }
     public String get_Name(){
         return nom_sat;
@@ -136,6 +173,12 @@ public class Parametres
     }
     public int get_Type_moteur(){
         return type_moteur;
+    }
+    public double get_de(){
+        return start_manoeuvre;
+    }
+    public double get_duration_manoeuvre(){
+        return duration_manoeuvre;
     }
     public double get_area(){
         return area;

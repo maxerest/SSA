@@ -9,6 +9,7 @@ import org.orekit.forces.maneuvers.propulsion.BasicConstantThrustPropulsionModel
 import org.orekit.forces.maneuvers.propulsion.PropulsionModel;
 import org.orekit.forces.maneuvers.trigger.DateBasedManeuverTriggers;
 import org.orekit.forces.maneuvers.trigger.ManeuverTriggers;
+import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
 
@@ -54,6 +55,32 @@ public class Manoeuvre {
             propagator.addForceModel(new Maneuver(null, triggers, propulsionModel));
         
     }
+    public void lancement_manoeuvre(Parametres p, NumericalPropagatorBuilder propagator){
+        double[] params_motor;
+        if (p.get_Type_moteur()==1){
+            params_motor = motor_1();
+        }
+        else if (p.get_Type_moteur()==2){
+            params_motor = motor_2();
+        }else {
+            throw new IllegalArgumentException("Unknown moteur: " + p.get_Type_moteur());
+        }
+        this.thrust = params_motor[0];
+        this.isp    = params_motor[1];
+        final Vector3D direction = new Vector3D(FastMath.toRadians(-7.4978),
+                                                FastMath.toRadians(351));
+        final AttitudeProvider attitudeOverride =
+                        new FrameAlignedProvider(new Rotation(direction, Vector3D.PLUS_I), Parametres.frame);
+
+        final PropulsionModel propulsionModel =
+                        new BasicConstantThrustPropulsionModel(thrust, isp,
+                                                               Vector3D.MINUS_I,
+                                                               "apogee-engine");
+        //triggers.isFiring(null, null);
+        // build maneuver and add it to the propagator as a new force model
+        propagator.addForceModel(new Maneuver(null, triggers, propulsionModel));
+    
+}
     // Builder class
     public static class Builder {
         AbsoluteDate firingDate;

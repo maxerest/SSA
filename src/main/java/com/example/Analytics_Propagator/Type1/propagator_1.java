@@ -1,19 +1,29 @@
 package com.example.Analytics_Propagator.Type1;
-import com.example.*;
-import com.example.View.Visulations;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
+import org.hipparchus.linear.MatrixUtils;
+import org.hipparchus.linear.RealMatrix;
+import org.hipparchus.linear.RealVector;
 import org.hipparchus.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
 import org.orekit.attitudes.LofOffset;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
-import org.orekit.utils.Constants;
+import org.orekit.estimation.measurements.ObservableSatellite;
+import org.orekit.estimation.measurements.ObservedMeasurement;
+import org.orekit.estimation.sequential.ConstantProcessNoise;
+import org.orekit.estimation.sequential.CovarianceMatrixProvider;
+import org.orekit.estimation.sequential.KalmanEstimator;
+import org.orekit.estimation.sequential.KalmanEstimatorBuilder;
 import org.orekit.forces.ForceModel;
 import org.orekit.forces.drag.DragForce;
 import org.orekit.forces.drag.IsotropicDrag;
@@ -31,28 +41,129 @@ import org.orekit.orbits.Orbit;
 import org.orekit.orbits.OrbitType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.ToleranceProvider;
+import org.orekit.propagation.conversion.DormandPrince853IntegratorBuilder;
+import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
+import org.orekit.propagation.conversion.ODEIntegratorBuilder;
+import org.orekit.propagation.events.AltitudeDetector;
+import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.time.TimeScalesFactory;
-import org.orekit.utils.IERSConventions;
+import org.orekit.utils.Constants;
 import org.orekit.utils.ExtendedPositionProvider;
-import org.orekit.propagation.events.EventDetector;
-import org.orekit.propagation.events.handlers.EventHandler;
+import org.orekit.utils.IERSConventions;
+import org.orekit.utils.PVCoordinates;
+import org.orekit.propagation.StateCovarianceMatrixProvider;
+import org.orekit.estimation.measurements.PV;
 
-import java.io.File;
+import com.example.Parametres;
+import com.example.View.Visulations;
+
 public class Propagator_1
-{
+{   
+    public static double dP = 1.0;
+    public static double minStep = 0.1;
+    public static double maxStep = 300.0; // let it go up to 5 min
+    public static double initStep = 60.0;
+    public static OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+    Constants.WGS84_EARTH_FLATTENING,
+    FramesFactory.getITRF(IERSConventions.IERS_2010, true));
+    public static ExtendedPositionProvider sun = CelestialBodyFactory.getSun();
+    public static Atmosphere atmosphere = new HarrisPriester(CelestialBodyFactory.getSun(), earth); 
+
+    public void propagator_real_orbit(List<Parametres> liste_par_sats_real_orbit){
+        Propagator_1 propa = new Propagator_1();
+    // Paramétrage du propagateur numérique
+        for  (Parametres p : liste_par_sats_real_orbit){
+            NumericalPropagator propagator = new NumericalPropagator(propa.integrator(p));
+            propagator.setOrbitType(OrbitType.CARTESIAN);
+            propagator.setInitialState(p.s_initialState); 
+            //Ajout des forces au modèles
+            Propagator_1.add_force_propagator(propagator,p.get_area(),p.get_cd(),p.get_srpCrossSection(), p.get_srpCoeff());
+            // Ajout du détecteur d'altitude
+            AltitudeDetector altitudeDetector = new AltitudeDetector(p.Detectionaltitude,Parametres.earth).withHandler(new Propagator_1.Altitude_limit(p,propagator));
+            propagator.addEventDetector(altitudeDetector);
+            p.manoeuvre.lancement_manoeuvre(p, propagator);
+            Visulations.export_csv(propagator, p);
+            propagator.propagate(new AbsoluteDate(Parametres.date_orekit, Parametres.duration)); 
+        }
+        
+    }
 
 
-        public AdaptiveStepsizeIntegrator integrator(Parametres p) {
-        // Define the numerical integrator
-        double dP = 0.001;
-        double minStep = 0.1;   // seconds
-        double maxStep = 100; // seconds
-        double initStep = 10.0; // seconds
-        Orbit o=p.get_Orbit();
-        final double[][] tolerance = ToleranceProvider.getDefaultToleranceProvider(dP).getTolerances(o, OrbitType.KEPLERIAN);
+    public void propagator_noisy_orbit(List<Parametres> liste_par_sats_noisy_orbit,List<Parametres> liste_par_sats_real_orbit){
+        for (int i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
+            Parametres pNoisy = liste_par_sats_noisy_orbit.get(i);
+            Parametres pReal  = liste_par_sats_real_orbit.get(i);
+            NumericalPropagatorBuilder builder =new NumericalPropagatorBuilder(pNoisy.get_Cartesian_Orbit(), integratorBuilder(),pNoisy.get_type_anomalie(), 1.0);
+            RealMatrix processNoiseMatrix = MatrixUtils.createRealDiagonalMatrix(new double[]{
+                0, 0, 0,   // position variances [m²]
+                10, 10, 10    // velocity variances [(m/s)²]
+            });
+            Propagator_1.add_force_propagator(builder,pNoisy.get_area(),pNoisy.get_cd(),pNoisy.get_srpCrossSection(), pNoisy.get_srpCoeff());
+            pNoisy.manoeuvre.lancement_manoeuvre(pNoisy, builder);
+            ConstantProcessNoise processNoiseProvider = new ConstantProcessNoise(processNoiseMatrix);
+            KalmanEstimatorBuilder kalmanBuilder = new KalmanEstimatorBuilder();
+            
+            kalmanBuilder.addPropagationConfiguration(builder, processNoiseProvider);
+            KalmanEstimator kalman = kalmanBuilder.build();
+            // process each measuremen
+            Random rng = new Random();
+            double measurementInterval = 60.0;
+            Visulations.export_csv_kalman_init(pNoisy);
+            for (double t = 0; t <= Parametres.duration; t += measurementInterval) {
+                // Get “true” position & velocity from real orbit
+                PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
+                Vector3D noisyPos = new Vector3D(
+                    truePV.getPosition().getX() + 1000*rng.nextGaussian(),  // position noise ~1000 m
+                    truePV.getPosition().getY() + 1000*rng.nextGaussian(),
+                    truePV.getPosition().getZ() + 1000*rng.nextGaussian()
+                );
+                Vector3D noisyVel = new Vector3D(
+                    truePV.getVelocity().getX() + 0.1*rng.nextGaussian(), // velocity noise ~0.1 m/s
+                    truePV.getVelocity().getY() + 0.1*rng.nextGaussian(),
+                    truePV.getVelocity().getZ() + 0.1*rng.nextGaussian()
+                );
+                // Create the PV measurement
+                double sigmaPosition = 1000; // standard deviation in meters
+                double sigmaVelocity = 0.1;   // standard deviation in m/s
+                double baseWeight = 1.0;      // weight of measurement
+                ObservableSatellite satellite = new ObservableSatellite(i); // index 0, adjust if multiple satellites
+
+                PV meas = new PV(
+                    Parametres.date_orekit.shiftedBy(t),
+                    noisyPos,
+                    noisyVel,
+                    sigmaPosition,
+                    sigmaVelocity,
+                    baseWeight,
+                    satellite
+                );
+                kalman.estimationStep(meas);
+                RealVector temp_s= kalman.getPhysicalEstimatedState();
+                // Position
+                double x = temp_s.getEntry(0);
+                double y = temp_s.getEntry(1);
+                double z = temp_s.getEntry(2);
+                // Velocity
+                Vector3D pos = new Vector3D(x, y, z);
+                Visulations.export_csv_kalman_add_step(pNoisy, t, pos);
+
+            }
+            
+        }
+        
+    }
+
+    public ODEIntegratorBuilder integratorBuilder() {
+        return new DormandPrince853IntegratorBuilder(minStep, maxStep, dP);
+    }
+
+    public AdaptiveStepsizeIntegrator integrator(Parametres p) {
+        Orbit o=p.get_Cartesian_Orbit();
+        final double[][] tolerance = ToleranceProvider.getDefaultToleranceProvider(dP).getTolerances(o, OrbitType.CARTESIAN);
         AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(minStep, maxStep, tolerance[0], tolerance[1]);
         integrator.setInitialStepSize(initStep);
         
@@ -60,28 +171,33 @@ public class Propagator_1
     }
 
 
+
     public static NumericalPropagator add_force_propagator(NumericalPropagator propagator, double area, double cd,double srpCrossSection, double srpCoeff) {
         NormalizedSphericalHarmonicsProvider provider =GravityFieldFactory.getNormalizedProvider(10, 10);
         ForceModel holmesFeatherstone =new HolmesFeatherstoneAttractionModel(FramesFactory.getITRF(IERSConventions.IERS_2010,true),provider);
-
-        propagator.addForceModel(holmesFeatherstone);
-        OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
-                                       Constants.WGS84_EARTH_FLATTENING,
-                                       FramesFactory.getITRF(IERSConventions.IERS_2010, true));
-        
-        Atmosphere atmosphere = new HarrisPriester(CelestialBodyFactory.getSun(), earth);    
-        
+        propagator.addForceModel(holmesFeatherstone);   
         DragForce drag = new DragForce(atmosphere, new IsotropicDrag(area, cd));
         propagator.addForceModel(drag);   
-
         RadiationSensitive srpSurface = new IsotropicRadiationSingleCoefficient(srpCrossSection, srpCoeff);
-
-        ExtendedPositionProvider sun = CelestialBodyFactory.getSun();
         SolarRadiationPressure srp = new SolarRadiationPressure(sun,earth,srpSurface);
         propagator.addForceModel(srp);
         propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
         return propagator;
     }
+
+    public static NumericalPropagatorBuilder add_force_propagator(NumericalPropagatorBuilder propagator, double area, double cd,double srpCrossSection, double srpCoeff) {
+        NormalizedSphericalHarmonicsProvider provider =GravityFieldFactory.getNormalizedProvider(10, 10);
+        ForceModel holmesFeatherstone =new HolmesFeatherstoneAttractionModel(FramesFactory.getITRF(IERSConventions.IERS_2010,true),provider);
+        propagator.addForceModel(holmesFeatherstone);
+        DragForce drag = new DragForce(atmosphere, new IsotropicDrag(area, cd));
+        propagator.addForceModel(drag);   
+        RadiationSensitive srpSurface = new IsotropicRadiationSingleCoefficient(srpCrossSection, srpCoeff);
+        SolarRadiationPressure srp = new SolarRadiationPressure(sun,earth,srpSurface);
+        propagator.addForceModel(srp);
+        propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
+        return propagator;
+    }
+
 
     public static class Propagation_step implements OrekitFixedStepHandler {
         private final String sat;
