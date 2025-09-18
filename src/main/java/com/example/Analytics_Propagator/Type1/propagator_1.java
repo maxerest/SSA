@@ -1,9 +1,9 @@
 package com.example.Analytics_Propagator.Type1;
+import com.example.Ground_stations.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -19,9 +19,7 @@ import org.orekit.attitudes.LofOffset;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.estimation.measurements.ObservableSatellite;
-import org.orekit.estimation.measurements.ObservedMeasurement;
 import org.orekit.estimation.sequential.ConstantProcessNoise;
-import org.orekit.estimation.sequential.CovarianceMatrixProvider;
 import org.orekit.estimation.sequential.KalmanEstimator;
 import org.orekit.estimation.sequential.KalmanEstimatorBuilder;
 import org.orekit.forces.ForceModel;
@@ -46,6 +44,7 @@ import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
 import org.orekit.propagation.conversion.ODEIntegratorBuilder;
 import org.orekit.propagation.events.AltitudeDetector;
 import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.events.VisibilityTrigger;
 import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
@@ -55,7 +54,6 @@ import org.orekit.utils.Constants;
 import org.orekit.utils.ExtendedPositionProvider;
 import org.orekit.utils.IERSConventions;
 import org.orekit.utils.PVCoordinates;
-import org.orekit.propagation.StateCovarianceMatrixProvider;
 import org.orekit.estimation.measurements.PV;
 import org.orekit.estimation.sequential.KalmanEstimation;
 import org.orekit.estimation.sequential.KalmanObserver;
@@ -69,17 +67,15 @@ public class Propagator_1
     public static double minStep = 0.1;
     public static double maxStep = 300.0; // let it go up to 5 min
     public static double initStep = 60.0;
-    public static OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
-    Constants.WGS84_EARTH_FLATTENING,
-    FramesFactory.getITRF(IERSConventions.IERS_2010, true));
+    public static OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,Constants.WGS84_EARTH_FLATTENING,FramesFactory.getITRF(IERSConventions.IERS_2010, true));
     public static ExtendedPositionProvider sun = CelestialBodyFactory.getSun();
     public static Atmosphere atmosphere = new HarrisPriester(CelestialBodyFactory.getSun(), earth); 
 
     public void propagator_real_orbit(List<Parametres> liste_par_sats_real_orbit){
-        Propagator_1 propa = new Propagator_1();
+        
     // Paramétrage du propagateur numérique
         for  (Parametres p : liste_par_sats_real_orbit){
-            NumericalPropagator propagator = new NumericalPropagator(propa.integrator(p));
+            NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(p));
             propagator.setOrbitType(OrbitType.CARTESIAN);
             propagator.setInitialState(p.s_initialState); 
             //Ajout des forces au modèles
@@ -87,7 +83,7 @@ public class Propagator_1
             // Ajout du détecteur d'altitude
             AltitudeDetector altitudeDetector = new AltitudeDetector(p.Detectionaltitude,Parametres.earth).withHandler(new Propagator_1.Altitude_limit(p,propagator));
             propagator.addEventDetector(altitudeDetector);
-            //p.manoeuvre.lancement_manoeuvre(p, propagator);
+            p.manoeuvre.lancement_manoeuvre(p, propagator);
             Visulations.export_csv(propagator, p);
             propagator.propagate(new AbsoluteDate(Parametres.date_orekit, Parametres.duration)); 
         }
@@ -102,7 +98,7 @@ public class Propagator_1
 
             NumericalPropagatorBuilder builder =new NumericalPropagatorBuilder(pNoisy.get_Cartesian_Orbit(), integratorBuilder(),pNoisy.get_type_anomalie(), 1.0);
             RealMatrix processNoiseMatrix = MatrixUtils.createRealDiagonalMatrix(new double[]{
-                100000, 100000, 100000,  // position [m²]
+                100000, 100000, 100000,  // position [m²]   
                 0.1, 0.10, 0.10   // velocity [(m/s)²]
             });
             RealMatrix initialStateCovariance = MatrixUtils.createRealDiagonalMatrix(new double[]{
@@ -124,6 +120,8 @@ public class Propagator_1
                 // Get “true” position & velocity from real orbit
                 PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
                 
+                boolean gs_detected= (Ground_station.station1.getElevation(truePV.getPosition(),Parametres.frame,Parametres.date_orekit.shiftedBy(t)))>Math.toRadians(10);
+                System.err.println(gs_detected);
                 Vector3D noisyPos = new Vector3D(
                     truePV.getPosition().getX() + 1*rng.nextGaussian(),  // position noise ~1000 m
                     truePV.getPosition().getY() + 1*rng.nextGaussian(),
@@ -162,6 +160,9 @@ public class Propagator_1
                     satellite
                 );
                 kalman.estimationStep(meas);
+
+
+
                 RealVector temp_s= kalman.getPhysicalEstimatedState();
                 // Position
                 double x = temp_s.getEntry(0);
@@ -170,7 +171,7 @@ public class Propagator_1
                 // Velocity
                 Vector3D pos = new Vector3D(x, y, z);
                 Visulations.export_csv_kalman_add_step(pNoisy, t, pos);
-                double distance = pos.subtract(truePV.getPosition()).getNorm();
+                // test to check kalman filter double distance = pos.subtract(truePV.getPosition()).getNorm();
                 //System.err.println(distance);
             }
             
@@ -182,7 +183,7 @@ public class Propagator_1
         return new DormandPrince853IntegratorBuilder(minStep, maxStep, dP);
     }
 
-    public AdaptiveStepsizeIntegrator integrator(Parametres p) {
+    public static AdaptiveStepsizeIntegrator integrator(Parametres p) {
         Orbit o=p.get_Cartesian_Orbit();
         final double[][] tolerance = ToleranceProvider.getDefaultToleranceProvider(dP).getTolerances(o, OrbitType.CARTESIAN);
         AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(minStep, maxStep, tolerance[0], tolerance[1]);

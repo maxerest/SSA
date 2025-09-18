@@ -41,8 +41,8 @@ public class Manoeuvre {
             }
             this.thrust = params_motor[0];
             this.isp    = params_motor[1];
-            final Vector3D direction = new Vector3D(FastMath.toRadians(-7.4978),
-                                                    FastMath.toRadians(351));
+            final Vector3D direction = new Vector3D(FastMath.toRadians(0),
+                                                    FastMath.toRadians(0));
             final AttitudeProvider attitudeOverride =
                             new FrameAlignedProvider(new Rotation(direction, Vector3D.PLUS_I), Parametres.frame);
 
@@ -52,7 +52,7 @@ public class Manoeuvre {
                                                                    "apogee-engine");
             //triggers.isFiring(null, null);
             // build maneuver and add it to the propagator as a new force model
-            propagator.addForceModel(new Maneuver(null, triggers, propulsionModel));
+            propagator.addForceModel(new Maneuver(attitudeOverride, triggers, propulsionModel));
         
     }
     public void lancement_manoeuvre(Parametres p, NumericalPropagatorBuilder propagator){
@@ -78,7 +78,7 @@ public class Manoeuvre {
                                                                "apogee-engine");
         //triggers.isFiring(null, null);
         // build maneuver and add it to the propagator as a new force model
-        propagator.addForceModel(new Maneuver(null, triggers, propulsionModel));
+        propagator.addForceModel(new Maneuver(attitudeOverride, triggers, propulsionModel));
     
 }
     // Builder class
@@ -91,8 +91,8 @@ public class Manoeuvre {
         public Manoeuvre build() { return new Manoeuvre(this); }
     }
     private double[]  motor_1() {
-        this.thrust = 800;
-        this.isp    = 318;
+        this.thrust = 8000;
+        this.isp    = 3180;
         return new double[] {this.thrust,this.isp};
     }
     private double[]  motor_2() {
