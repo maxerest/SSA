@@ -1,9 +1,11 @@
 package com.example;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.Ground_stations.Ground_station;
 import com.example.View.Visulations;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
+import org.orekit.estimation.measurements.GroundStation;
 import org.orekit.estimation.sequential.KalmanEstimatorBuilder;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.utils.Constants;
@@ -24,7 +26,10 @@ public class App
         final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
+        // Definition des GS
+        Ground_station.loadStationsFromCSV();
 
+        // Definition des satellites
         int nb_sat =1;
         List<Parametres> liste_par_sats_real_orbit = real_orbit(nb_sat);
         List<Parametres> liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
@@ -36,7 +41,7 @@ public class App
         //Setting up and propagation of the noise orbits
         Propagator_1 propagator_noisy_orbit = new Propagator_1();
         propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
-
+        //Visualisation du tout
         Visulations.RunPythonScript(liste_par_sats_real_orbit,liste_par_sats_noisy_orbit);
         
     }

@@ -10,7 +10,6 @@ filenames = [arg + ".csv" for arg in sys.argv[1:]]
 if not filenames:
     print("Usage: python Visualisation.py sat1 sat2 ...")
     sys.exit(1)
-
 # --- Create plotter and Earth ---
 plotter = pv.Plotter()
 Earth = examples.planets.load_earth(radius=6378.1)
@@ -19,6 +18,37 @@ Earth.rotate_z(180, inplace=True)
 texture = examples.load_globe_texture()
 plotter.add_background_image(examples.planets.download_stars_sky_background(load=False))
 plotter.add_mesh(Earth, texture=texture, smooth_shading=True)
+
+# --- Ground stations ---
+def latlon_to_ecef(lat_deg, lon_deg, alt_km=0, R=6378100):
+    lat = np.radians(lat_deg)
+    lon = np.radians(lon_deg)
+    r = R + alt_km
+    x = r * np.cos(lat) * np.cos(lon)
+    y = r * np.cos(lat) * np.sin(lon)
+    z = r * np.sin(lat)
+    return np.array([x, y, z])
+
+# --- CSV load ---
+GS_csv = pd.read_csv("src/main/java/com/example/Ground_stations/GS_coordinates.csv")
+
+# --- Plot each station ---
+for idx, row in GS_csv.iterrows():
+    name = row["name"]
+    lat = float(row["lat"])       # CSV: lat column
+    lon = float(row["long"])      # CSV: long column
+    alt = float(row["alt"])       # altitude in km
+
+    # Convert to ECEF (and scale/lift)
+    pos = latlon_to_ecef(lat, lon, alt )    # +50 m for visibility
+    pos = np.array([pos[0], pos[1], pos[2]])
+
+    # Add station sphere
+    gs_sphere = pv.Sphere(radius=3e5, center=pos)
+    plotter.add_mesh(gs_sphere, color="white", smooth_shading=True)
+    
+    # Add label
+    plotter.add_point_labels([pos], [name], font_size=20, text_color="white")
 
 # --- Satellite setup ---
 trail_length = 20

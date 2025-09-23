@@ -44,7 +44,6 @@ import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
 import org.orekit.propagation.conversion.ODEIntegratorBuilder;
 import org.orekit.propagation.events.AltitudeDetector;
 import org.orekit.propagation.events.EventDetector;
-import org.orekit.propagation.events.VisibilityTrigger;
 import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
@@ -120,8 +119,11 @@ public class Propagator_1
                 // Get “true” position & velocity from real orbit
                 PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
                 
-                boolean gs_detected= (Ground_station.station1.getElevation(truePV.getPosition(),Parametres.frame,Parametres.date_orekit.shiftedBy(t)))>Math.toRadians(10);
-                System.err.println(gs_detected);
+                boolean gs_detected= Ground_station.hasVisibleStations(pReal.s_initialState,Parametres.date_orekit.shiftedBy(t));
+                if (!gs_detected){
+                    System.err.println("No station detected at t="+Parametres.date_orekit.shiftedBy(t));
+                    continue;
+                }
                 Vector3D noisyPos = new Vector3D(
                     truePV.getPosition().getX() + 1*rng.nextGaussian(),  // position noise ~1000 m
                     truePV.getPosition().getY() + 1*rng.nextGaussian(),
