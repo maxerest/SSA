@@ -2,6 +2,7 @@ package com.example;
 
 import java.util.Date;
 
+import org.hipparchus.util.FastMath;
 import org.orekit.attitudes.Attitude;
 import org.orekit.attitudes.AttitudeProvider;
 import org.orekit.bodies.BodyShape;
@@ -33,6 +34,9 @@ public class Parametres
     public static Frame frame = FramesFactory.getEME2000();
     public static double mu = Constants.EIGEN5C_EARTH_MU;
     public static BodyShape earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,Constants.WGS84_EARTH_FLATTENING,FramesFactory.getITRF(IERSConventions.IERS_2010, true));
+    
+    // Ground Station elevation limit
+    public static double elevation =  FastMath.toRadians(40.0);
 
     // Definiton parametres orbitaux
     private double mass;
@@ -62,9 +66,6 @@ public class Parametres
     //Inital state of the satellite
     public SpacecraftState s_initialState; 
 
-    // Ground Station
-    public GeodeticPoint paris = new GeodeticPoint(Math.toRadians(48.8566), Math.toRadians(2.3522), 62);
-    public TopocentricFrame stationFrame = new TopocentricFrame(earth, paris, "Paris_Station");
   
     private Parametres(Builder builder) {
         this.nom_sat = builder.nom_sat;

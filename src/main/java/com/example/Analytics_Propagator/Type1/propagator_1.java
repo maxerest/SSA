@@ -82,7 +82,7 @@ public class Propagator_1
             // Ajout du détecteur d'altitude
             AltitudeDetector altitudeDetector = new AltitudeDetector(p.Detectionaltitude,Parametres.earth).withHandler(new Propagator_1.Altitude_limit(p,propagator));
             propagator.addEventDetector(altitudeDetector);
-            p.manoeuvre.lancement_manoeuvre(p, propagator);
+            //p.manoeuvre.lancement_manoeuvre(p, propagator);
             Visulations.export_csv(propagator, p);
             propagator.propagate(new AbsoluteDate(Parametres.date_orekit, Parametres.duration)); 
         }
@@ -121,7 +121,7 @@ public class Propagator_1
                 
                 boolean gs_detected= Ground_station.hasVisibleStations(pReal.s_initialState,Parametres.date_orekit.shiftedBy(t));
                 if (!gs_detected){
-                    System.err.println("No station detected at t="+Parametres.date_orekit.shiftedBy(t));
+                    //System.err.println("No station detected at t="+Parametres.date_orekit.shiftedBy(t));
                     continue;
                 }
                 Vector3D noisyPos = new Vector3D(

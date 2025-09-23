@@ -76,7 +76,6 @@ public class Manoeuvre {
                         new BasicConstantThrustPropulsionModel(thrust, isp,
                                                                Vector3D.MINUS_I,
                                                                "apogee-engine");
-        //triggers.isFiring(null, null);
         // build maneuver and add it to the propagator as a new force model
         propagator.addForceModel(new Maneuver(attitudeOverride, triggers, propulsionModel));
     

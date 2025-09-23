@@ -47,8 +47,8 @@ public class Ground_station {
     }
 
     private static boolean isVisibleFromStation(TopocentricFrame station, SpacecraftState s, AbsoluteDate current_date){
-        double elevation =  FastMath.toRadians(45.0);
-        return station.getElevation(s.getPosition(), Parametres.frame, current_date)>elevation;
+        
+        return station.getElevation(s.getPosition(), Parametres.frame, current_date)>Parametres.elevation;
     }
 
     public static boolean hasVisibleStations(SpacecraftState s, AbsoluteDate current_date) {
