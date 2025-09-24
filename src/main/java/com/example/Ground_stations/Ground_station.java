@@ -54,7 +54,7 @@ public class Ground_station {
     public static boolean hasVisibleStations(SpacecraftState s, AbsoluteDate current_date) {
         for (TopocentricFrame station : liste_GS) {
             if (isVisibleFromStation(station, s,current_date)) {
-                System.err.println("Visible from station: " + station.getName());
+                //System.err.println("Visible from station: " + station.getName());
                 return true;
             }
         }

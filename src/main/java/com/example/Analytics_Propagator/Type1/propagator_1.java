@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -37,6 +38,7 @@ import org.orekit.models.earth.atmosphere.Atmosphere;
 import org.orekit.models.earth.atmosphere.HarrisPriester;
 import org.orekit.orbits.Orbit;
 import org.orekit.orbits.OrbitType;
+import org.orekit.propagation.Propagator;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.ToleranceProvider;
 import org.orekit.propagation.conversion.DormandPrince853IntegratorBuilder;
@@ -88,51 +90,60 @@ public class Propagator_1
         }
         
     }
-
+    //Definition parametres matrices Kalman 
+    private RealMatrix processNoiseMatrix = MatrixUtils.createRealDiagonalMatrix(new double[]{
+        100000, 100000, 100000,  // position [m²]   
+        0.1, 0.10, 0.10   // velocity [(m/s)²]
+    });
+    private RealMatrix initialStateCovariance = MatrixUtils.createRealDiagonalMatrix(new double[]{
+        100, 100, 100,   // position in m² → almost zero uncertainty
+        0.001,0.001, 0.001    // velocity in (m/s)² → almost zero uncertainty
+    });
 
     public void propagator_noisy_orbit(List<Parametres> liste_par_sats_noisy_orbit,List<Parametres> liste_par_sats_real_orbit){
         for (int i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
+            ObservableSatellite satellite = new ObservableSatellite(i); // index 0, adjust if multiple satellites
             Parametres pNoisy = liste_par_sats_noisy_orbit.get(i);
             Parametres pReal  = liste_par_sats_real_orbit.get(i);
-
             NumericalPropagatorBuilder builder =new NumericalPropagatorBuilder(pNoisy.get_Cartesian_Orbit(), integratorBuilder(),pNoisy.get_type_anomalie(), 1.0);
-            RealMatrix processNoiseMatrix = MatrixUtils.createRealDiagonalMatrix(new double[]{
-                100000, 100000, 100000,  // position [m²]   
-                0.1, 0.10, 0.10   // velocity [(m/s)²]
-            });
-            RealMatrix initialStateCovariance = MatrixUtils.createRealDiagonalMatrix(new double[]{
-                100, 100, 100,   // position in m² → almost zero uncertainty
-                0.001,0.001, 0.001    // velocity in (m/s)² → almost zero uncertainty
-            });
-            Propagator_1.add_force_propagator(builder,pNoisy.get_area(),pNoisy.get_cd(),pNoisy.get_srpCrossSection(), pNoisy.get_srpCoeff());
-            
-            //pNoisy.manoeuvre.lancement_manoeuvre(pNoisy, builder);
+            builder =Propagator_1.add_force_propagator(builder,pNoisy.get_area(),pNoisy.get_cd(),pNoisy.get_srpCrossSection(), pNoisy.get_srpCoeff());
             KalmanEstimatorBuilder kalmanBuilder = new KalmanEstimatorBuilder();
             kalmanBuilder.addPropagationConfiguration(builder, new ConstantProcessNoise( initialStateCovariance,processNoiseMatrix));
             KalmanEstimator kalman = kalmanBuilder.build();
-            kalman.setObserver(new MyKalmanObserver());
             // process each measuremen
-            Random rng = new Random();
             double measurementInterval = 60.0;
             Visulations.export_csv_kalman_init(pNoisy);
             for (double t = 0; t <= Parametres.duration; t += measurementInterval) {
                 // Get “true” position & velocity from real orbit
                 PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
-                
                 boolean gs_detected= Ground_station.hasVisibleStations(pReal.s_initialState,Parametres.date_orekit.shiftedBy(t));
-                if (!gs_detected){
-                    //System.err.println("No station detected at t="+Parametres.date_orekit.shiftedBy(t));
-                    continue;
+                if (gs_detected){              
+                    boolean trigger = pReal.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t),null);
+                    kalman=added_noisy_value(kalman,truePV,trigger,satellite,t);
+                }else{
+                    kalman=add_dummy_value(kalman,satellite,truePV,t);
                 }
+                // Get the estimated state from the Kalman filter
+                RealVector temp_s = kalman.getPhysicalEstimatedState();
+                Vector3D estimatedPos = new Vector3D(temp_s.getEntry(0), temp_s.getEntry(1), temp_s.getEntry(2));
+                
+                // Get the true position from PVCoordinates
+                Vector3D truePos = truePV.getPosition();
+
+                // Compute distance between estimated and true position
+                Visulations.export_csv_kalman_add_step(pNoisy, t, temp_s);
+            }
+        }
+    }
+
+    private KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t) {
+                Random rng = new Random();  
                 Vector3D noisyPos = new Vector3D(
                     truePV.getPosition().getX() + 1*rng.nextGaussian(),  // position noise ~1000 m
                     truePV.getPosition().getY() + 1*rng.nextGaussian(),
                     truePV.getPosition().getZ() + 1*rng.nextGaussian()
                 );
-                boolean trigger = pReal.manoeuvre.getTriggers().isFiring(
-                Parametres.date_orekit.shiftedBy(t),
-                null
-                );
+ 
                 Vector3D noisyVel;
                 if (trigger) {
                     noisyVel = new Vector3D(
@@ -145,13 +156,10 @@ public class Propagator_1
                     truePV.getVelocity().getY() + 0.1*rng.nextGaussian(),
                     truePV.getVelocity().getZ() + 0.1*rng.nextGaussian());
                 }
-
-
-            
                 double sigmaPosition = 1000;  // meters
                 double sigmaVelocity = 0.1;  // m/s
                 double baseWeight = 1.0;      // weight of measurement
-                ObservableSatellite satellite = new ObservableSatellite(i); // index 0, adjust if multiple satellites
+
                 PV meas = new PV(
                     Parametres.date_orekit.shiftedBy(t),
                     noisyPos,
@@ -162,25 +170,24 @@ public class Propagator_1
                     satellite
                 );
                 kalman.estimationStep(meas);
-
-
-
-                RealVector temp_s= kalman.getPhysicalEstimatedState();
-                // Position
-                double x = temp_s.getEntry(0);
-                double y = temp_s.getEntry(1);
-                double z = temp_s.getEntry(2);
-                // Velocity
-                Vector3D pos = new Vector3D(x, y, z);
-                Visulations.export_csv_kalman_add_step(pNoisy, t, pos);
-                // test to check kalman filter double distance = pos.subtract(truePV.getPosition()).getNorm();
-                //System.err.println(distance);
-            }
-            
-        }
-        
+        return kalman;
     }
 
+    private KalmanEstimator add_dummy_value(KalmanEstimator kalman,ObservableSatellite satellite,PVCoordinates truePV, double t) {
+        
+        // True position but weight =0 therefore as ignored as possible by the Kalman filter
+        PV dummyMeas = new PV(
+            Parametres.date_orekit.shiftedBy(t),
+            truePV.getPosition(),   
+            truePV.getVelocity(),   
+            100000, 
+            100000,
+            0.0000,    
+            satellite
+        );
+        kalman.estimationStep(dummyMeas);
+        return kalman;
+    }
     public ODEIntegratorBuilder integratorBuilder() {
         return new DormandPrince853IntegratorBuilder(minStep, maxStep, dP);
     }
@@ -190,7 +197,6 @@ public class Propagator_1
         final double[][] tolerance = ToleranceProvider.getDefaultToleranceProvider(dP).getTolerances(o, OrbitType.CARTESIAN);
         AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(minStep, maxStep, tolerance[0], tolerance[1]);
         integrator.setInitialStepSize(initStep);
-        
         return integrator;
     }
 
@@ -257,22 +263,14 @@ public class Propagator_1
                 this.propagator = propagator;
             }
         
-            public org.hipparchus.ode.events.Action eventOccurred(final SpacecraftState s, final EventDetector detector, final boolean increasingdouble) {
-                
+            public org.hipparchus.ode.events.Action eventOccurred(final SpacecraftState s, final EventDetector detector, final boolean increasingdouble) {  
                 System.out.println("Altitude reached "+(Detectionaltitude-Constants.WGS84_EARTH_EQUATORIAL_RADIUS)+"km at "+String.format("%.2f",s.getDate().durationFrom(p.get_Date())/3600)+"h after the start, stopping propagation.");
                 Visulations.export_csv(propagator, p);
                 return org.hipparchus.ode.events.Action.STOP;
             }
         }
-        public class MyKalmanObserver implements KalmanObserver {
 
-            @Override
-            public void evaluationPerformed(KalmanEstimation estimation) {
-
-                // Add any other logging or processing as needed
-            }
-        }
-
+        
     
         
 }

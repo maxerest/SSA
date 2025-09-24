@@ -11,6 +11,7 @@ import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
 import org.orekit.time.AbsoluteDate;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
+import org.hipparchus.linear.RealVector;
 import org.orekit.estimation.sequential.KalmanEstimator;
 import org.orekit.estimation.sequential.KalmanEstimatorBuilder;
 
@@ -35,7 +36,7 @@ public class Visulations {
     }
 
     public static void export_csv_kalman_init(Parametres p) {
-        // TODO Auto-generated method stub
+        //Auto-generated method stub
         String sat= p.get_Name();
         File csvFile = new File("src/main/java/com/example/View/"+sat+".csv");
         if (csvFile.exists()) {
@@ -47,8 +48,13 @@ public class Visulations {
             e.printStackTrace();
         }
     }
-    public static void export_csv_kalman_add_step(Parametres p,double t,Vector3D pos) {
-
+    public static void export_csv_kalman_add_step(Parametres p,double t, RealVector temp_s) {
+                // Position
+                double x = temp_s.getEntry(0);
+                double y = temp_s.getEntry(1);
+                double z = temp_s.getEntry(2);
+                // Velocity
+                Vector3D pos = new Vector3D(x, y, z);
                 boolean triger = p.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null);
                 File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"+p.get_Name()+".csv");
                 
