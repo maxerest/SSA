@@ -46,7 +46,7 @@ for idx, row in GS_csv.iterrows():
 
     # Add station sphere
     gs_sphere = pv.Sphere(radius=1.5e5, center=pos)
-    color = "white" if activation  else "red"
+    color = "green" if activation  else "red"
     plotter.add_mesh(
         gs_sphere,
         color=color,
