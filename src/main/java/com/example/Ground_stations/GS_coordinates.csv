@@ -1,5 +1,5 @@
-name,lat,long,alt
-Paris,48.85,2.35,100
-Nairobi,-1.21,36.82,150
-NY,40.7,-74.0,30
-Tokyo,35.68,139.76,40
+name,lat,long,alt,activated
+Paris,48.85,2.35,100,1
+Nairobi,-1.21,36.82,150,0
+NY,40.7,-74.0,30,0
+Tokyo,35.68,139.76,40,1

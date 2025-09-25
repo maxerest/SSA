@@ -53,18 +53,20 @@ public class Visulations {
                 double x = temp_s.getEntry(0);
                 double y = temp_s.getEntry(1);
                 double z = temp_s.getEntry(2);
+                double station_active = temp_s.getEntry(3);
                 // Velocity
                 Vector3D pos = new Vector3D(x, y, z);
                 boolean triger = p.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null);
                 File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"+p.get_Name()+".csv");
-                
                 try (FileWriter fw = new FileWriter(csvFile, true);
-                    PrintWriter writer = new PrintWriter(fw)) {
-                    writer.printf(Locale.US, "%f,%f,%f,%f,%d%n", pos.getX(), pos.getY(), pos.getZ(),t, triger ? 1 : 0);
-                } catch (IOException e) {
-                e.printStackTrace();
-                }  
-    }
+                        PrintWriter writer = new PrintWriter(fw)) {
+                        writer.printf(Locale.US, "%f,%f,%f,%f,%d%n", pos.getX(), pos.getY(), pos.getZ(),t, triger ? 1 : 0);
+                    } catch (IOException e) {
+                    e.printStackTrace();
+                    }
+                
+            }
+    
 
     
 

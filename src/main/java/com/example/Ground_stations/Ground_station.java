@@ -29,7 +29,10 @@ public class Ground_station {
                 double lat = Double.parseDouble(parts[1].trim());
                 double lon = Double.parseDouble(parts[2].trim());
                 double alt = Double.parseDouble(parts[3].trim());
-
+                double station_activation= Double.parseDouble(parts[4].trim());
+                if (station_activation==0){
+                    continue;
+                    }
                 TopocentricFrame station = new TopocentricFrame(
                         Parametres.earth,
                         new GeodeticPoint(

@@ -117,21 +117,11 @@ public class Propagator_1
                 // Get “true” position & velocity from real orbit
                 PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
                 boolean gs_detected= Ground_station.hasVisibleStations(pReal.s_initialState,Parametres.date_orekit.shiftedBy(t));
-                if (gs_detected){              
-                    boolean trigger = pReal.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t),null);
-                    kalman=added_noisy_value(kalman,truePV,trigger,satellite,t);
-                }else{
-                    kalman=add_dummy_value(kalman,satellite,truePV,t);
-                }
-                // Get the estimated state from the Kalman filter
-                RealVector temp_s = kalman.getPhysicalEstimatedState();
-                Vector3D estimatedPos = new Vector3D(temp_s.getEntry(0), temp_s.getEntry(1), temp_s.getEntry(2));
-                
-                // Get the true position from PVCoordinates
-                Vector3D truePos = truePV.getPosition();
-
+                kalman = gs_detected ?
+                  added_noisy_value(kalman, truePV, pReal.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null), satellite, t)
+                : add_dummy_value(kalman, satellite, truePV, t);
                 // Compute distance between estimated and true position
-                Visulations.export_csv_kalman_add_step(pNoisy, t, temp_s);
+                Visulations.export_csv_kalman_add_step(pNoisy, t, kalman.getPhysicalEstimatedState());
             }
         }
     }

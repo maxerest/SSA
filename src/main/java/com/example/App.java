@@ -5,12 +5,9 @@ import com.example.View.Visulations;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
-import org.orekit.estimation.measurements.GroundStation;
-import org.orekit.estimation.sequential.KalmanEstimatorBuilder;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.utils.Constants;
 import java.util.List;
-import java.util.Random;
 import java.io.File;
 import java.util.ArrayList;
 /**
@@ -42,9 +39,9 @@ public class App
         Propagator_1 propagator_noisy_orbit = new Propagator_1();
         propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
         //Visualisation du tout
-        Visulations.RunPythonScript(liste_par_sats_real_orbit,liste_par_sats_noisy_orbit);
-        
+        Visulations.RunPythonScript(liste_par_sats_real_orbit,liste_par_sats_noisy_orbit);    
     }
+
     public static List<Parametres> real_orbit(int nb_sat){
         
         List<Parametres> liste_par_sats = new ArrayList<>();

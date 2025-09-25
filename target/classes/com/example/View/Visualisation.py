@@ -38,17 +38,21 @@ for idx, row in GS_csv.iterrows():
     lat = float(row["lat"])       # CSV: lat column
     lon = float(row["long"])      # CSV: long column
     alt = float(row["alt"])       # altitude in km
+    activation = bool(row["activated"])  # 1 if active, 0 if not
 
     # Convert to ECEF (and scale/lift)
     pos = latlon_to_ecef(lat, lon, alt )    # +50 m for visibility
     pos = np.array([pos[0], pos[1], pos[2]])
 
     # Add station sphere
-    gs_sphere = pv.Sphere(radius=3e5, center=pos)
-    plotter.add_mesh(gs_sphere, color="white", smooth_shading=True)
-    
-    # Add label
-    plotter.add_point_labels([pos], [name], font_size=20, text_color="white")
+    gs_sphere = pv.Sphere(radius=1.5e5, center=pos)
+    color = "white" if activation  else "red"
+    plotter.add_mesh(
+        gs_sphere,
+        color=color,
+        smooth_shading=True,
+        name=f"gs_{name}"   # unique ID per ground station
+    )
 
 # --- Satellite setup ---
 trail_length = 20
