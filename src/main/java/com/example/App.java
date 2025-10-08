@@ -10,10 +10,7 @@ import org.orekit.utils.Constants;
 import java.util.List;
 import java.io.File;
 import java.util.ArrayList;
-/**
- * Hello world!
- *
- */
+
 
 public class App 
 {       
@@ -38,6 +35,7 @@ public class App
         //Setting up and propagation of the noise orbits
         Propagator_1 propagator_noisy_orbit = new Propagator_1();
         propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
+
         //Visualisation du tout
         Visulations.RunPythonScript(liste_par_sats_real_orbit,liste_par_sats_noisy_orbit);    
     }

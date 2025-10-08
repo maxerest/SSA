@@ -101,7 +101,8 @@ public class Propagator_1
     });
 
     public void propagator_noisy_orbit(List<Parametres> liste_par_sats_noisy_orbit,List<Parametres> liste_par_sats_real_orbit){
-        for (int i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
+        int i;
+        for (i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
             ObservableSatellite satellite = new ObservableSatellite(i); // index 0, adjust if multiple satellites
             Parametres pNoisy = liste_par_sats_noisy_orbit.get(i);
             Parametres pReal  = liste_par_sats_real_orbit.get(i);
@@ -111,15 +112,34 @@ public class Propagator_1
             kalmanBuilder.addPropagationConfiguration(builder, new ConstantProcessNoise( initialStateCovariance,processNoiseMatrix));
             KalmanEstimator kalman = kalmanBuilder.build();
             // process each measuremen
-            double measurementInterval = 60.0;
+            double measurementInterval = initStep;
             Visulations.export_csv_kalman_init(pNoisy);
+            int j=0;
+            boolean has_detected=false;
             for (double t = 0; t <= Parametres.duration; t += measurementInterval) {
+                
                 // Get “true” position & velocity from real orbit
                 PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
                 boolean gs_detected= Ground_station.hasVisibleStations(pReal.s_initialState,Parametres.date_orekit.shiftedBy(t));
-                kalman = gs_detected ?
-                  added_noisy_value(kalman, truePV, pReal.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null), satellite, t)
-                : add_dummy_value(kalman, satellite, truePV, t);
+                
+                // Add measurement to Kalman filter if visible from ground station (only 1 step out of 4), otherwise add dummy measurement
+                if (gs_detected){
+                    if ((has_detected && j==0)||!has_detected){
+                        kalman=added_noisy_value(kalman, truePV, pReal.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null), satellite, t);
+                        has_detected=true;
+                        
+                    }else if(has_detected && j!=0){
+                        kalman=add_dummy_value(kalman, satellite, truePV, t);
+                        has_detected=true;
+                    }else {
+                        throw new IllegalStateException("Unexpected state in detection logic.");
+                    }
+                    j=(j+1)%4;
+                }else {
+                    has_detected=false;
+                    kalman=add_dummy_value(kalman, satellite, truePV, t);
+                    j=0;
+                }
                 // Compute distance between estimated and true position
                 Visulations.export_csv_kalman_add_step(pNoisy, t, kalman.getPhysicalEstimatedState());
             }
@@ -128,27 +148,28 @@ public class Propagator_1
 
     private KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t) {
                 Random rng = new Random();  
+                double sigmaPosition = 1000;  // meters
+                double sigmaVelocity = 50;  // m/s
+                double baseWeight = 1.0;      // weight of measurement
                 Vector3D noisyPos = new Vector3D(
-                    truePV.getPosition().getX() + 1*rng.nextGaussian(),  // position noise ~1000 m
-                    truePV.getPosition().getY() + 1*rng.nextGaussian(),
-                    truePV.getPosition().getZ() + 1*rng.nextGaussian()
+                    truePV.getPosition().getX() + sigmaPosition*rng.nextGaussian(),  // position noise ~1000 m
+                    truePV.getPosition().getY() + sigmaPosition*rng.nextGaussian(),
+                    truePV.getPosition().getZ() + sigmaPosition*rng.nextGaussian()
                 );
  
                 Vector3D noisyVel;
                 if (trigger) {
                     noisyVel = new Vector3D(
-                    truePV.getVelocity().getX() + 50*rng.nextGaussian(), // velocity noise ~0.1 m/s
-                    truePV.getVelocity().getY() + 50*rng.nextGaussian(),
-                    truePV.getVelocity().getZ() + 50*rng.nextGaussian());
+                    truePV.getVelocity().getX() + sigmaVelocity*2*rng.nextGaussian(), // velocity noise ~50 is a manoeuvre is ongoing
+                    truePV.getVelocity().getY() + sigmaVelocity*2*rng.nextGaussian(),
+                    truePV.getVelocity().getZ() + sigmaVelocity*2*rng.nextGaussian());
                 }else{
                     noisyVel = new Vector3D(
-                    truePV.getVelocity().getX() + 0.1*rng.nextGaussian(), // velocity noise ~0.1 m/s
-                    truePV.getVelocity().getY() + 0.1*rng.nextGaussian(),
-                    truePV.getVelocity().getZ() + 0.1*rng.nextGaussian());
+                    truePV.getVelocity().getX() + sigmaVelocity*rng.nextGaussian(), // velocity noise ~0.1 m/s
+                    truePV.getVelocity().getY() + sigmaVelocity*rng.nextGaussian(),
+                    truePV.getVelocity().getZ() + sigmaVelocity*rng.nextGaussian());
                 }
-                double sigmaPosition = 1000;  // meters
-                double sigmaVelocity = 0.1;  // m/s
-                double baseWeight = 1.0;      // weight of measurement
+
 
                 PV meas = new PV(
                     Parametres.date_orekit.shiftedBy(t),
