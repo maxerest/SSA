@@ -6,6 +6,7 @@ import time
 import sys
 
 # --- Load CSV filenames from command line ---
+pv.close_all()
 filenames = [arg + ".csv" for arg in sys.argv[1:]]
 if not filenames:
     print("Usage: python Visualisation.py sat1 sat2 ...")

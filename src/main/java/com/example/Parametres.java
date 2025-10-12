@@ -3,14 +3,10 @@ package com.example;
 import java.util.Date;
 
 import org.hipparchus.util.FastMath;
-import org.orekit.attitudes.Attitude;
-import org.orekit.attitudes.AttitudeProvider;
 import org.orekit.bodies.BodyShape;
-import org.orekit.bodies.GeodeticPoint;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.frames.Frame;
 import org.orekit.frames.FramesFactory;
-import org.orekit.frames.TopocentricFrame;
 import org.orekit.orbits.CartesianOrbit;
 import org.orekit.orbits.KeplerianOrbit;
 import org.orekit.orbits.Orbit;
@@ -28,7 +24,7 @@ public class Parametres
     public String nom_sat;
     //Gestion temps
     public static AbsoluteDate date_orekit = new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600);
-    public static double duration =Constants.JULIAN_DAY-(3600*23); //Constants.JULIAN_DAY;
+    public static double duration =Constants.JULIAN_DAY-(3600*10); //Constants.JULIAN_DAY;
 
     // définition de la Terre
     public static Frame frame = FramesFactory.getEME2000();
@@ -49,11 +45,13 @@ public class Parametres
     private PositionAngleType type_anomalie;
     private Orbit orbit_kepl;
     private Orbit orbit_cart;
+
     //Defintion manoeuvre
     private int type_moteur;
     private double start_manoeuvre;
     private double duration_manoeuvre;
     public Manoeuvre manoeuvre;
+    
     // Parametres satellite
     private double area;    // m^2
     private double cd ;

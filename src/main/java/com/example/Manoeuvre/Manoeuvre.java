@@ -23,8 +23,6 @@ public class Manoeuvre {
     private  ManeuverTriggers triggers;
     private double thrust = 800;
     private double isp    = 318;
-    private AbsoluteDate firingDate;
-    private double duration;
 
     public Manoeuvre(Builder builder) { 
         this.triggers=new DateBasedManeuverTriggers(builder.firingDate,builder.duration);

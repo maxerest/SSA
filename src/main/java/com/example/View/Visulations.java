@@ -48,12 +48,22 @@ public class Visulations {
             e.printStackTrace();
         }
     }
+
+    public static void write_csv_before_detection(Parametres p){
+        String sat= p.get_Name();
+        File csvFile = new File("src/main/java/com/example/View/"+sat+".csv");
+        try (FileWriter fw = new FileWriter(csvFile, true);
+            PrintWriter writer = new PrintWriter(fw)) {
+            writer.printf(Locale.US, "0,0,0,0%n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     public static void export_csv_kalman_add_step(Parametres p,double t, RealVector temp_s) {
                 // Position
                 double x = temp_s.getEntry(0);
                 double y = temp_s.getEntry(1);
                 double z = temp_s.getEntry(2);
-                double station_active = temp_s.getEntry(3);
                 // Velocity
                 Vector3D pos = new Vector3D(x, y, z);
                 boolean triger = p.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null);
