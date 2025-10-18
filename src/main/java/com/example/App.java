@@ -24,7 +24,7 @@ public class App
         Ground_station.loadStationsFromCSV();
 
         // Definition des satellites
-        int nb_sat =1;
+        int nb_sat =10;
         List<Parametres> liste_par_sats_real_orbit = real_orbit(nb_sat);
         List<Parametres> liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
 
@@ -53,7 +53,7 @@ public class App
                 .eccentricity(0.005)
                 .inclinaison(Math.toRadians(50))
                 .long_noeud_ascendant(Math.toRadians(90))
-                .arg_periastre(Math.toRadians(0))
+                .arg_periastre(Math.toRadians((i+1)*15))
                 .anomalie(Math.toRadians(60 + ((i+1)*15)))
                 .type_anomalie(PositionAngleType.MEAN)
                 .type_moteur(1)

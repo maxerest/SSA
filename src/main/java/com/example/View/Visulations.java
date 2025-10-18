@@ -8,13 +8,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import org.orekit.propagation.numerical.NumericalPropagator;
-import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
-import org.orekit.time.AbsoluteDate;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.RealVector;
-import org.orekit.estimation.sequential.KalmanEstimator;
-import org.orekit.estimation.sequential.KalmanEstimatorBuilder;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -28,7 +23,7 @@ public class Visulations {
             csvFile.delete();
         }
         try (PrintWriter writer = new PrintWriter(csvFile)) {
-            writer.println("x,y,z,t,firing");
+            writer.println("x,y,z,t,firing,detected_by_GS");
             propagator.getMultiplexer().add(60,new Propagator_1.Propagation_step(sat,p));
         } catch (IOException e) {
             e.printStackTrace();
@@ -43,7 +38,7 @@ public class Visulations {
             csvFile.delete();
         }
         try (PrintWriter writer = new PrintWriter(csvFile)) {
-            writer.println("x,y,z,t,firing");
+            writer.println("x,y,z,t,firing,detected_by_GS");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -54,12 +49,12 @@ public class Visulations {
         File csvFile = new File("src/main/java/com/example/View/"+sat+".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);
             PrintWriter writer = new PrintWriter(fw)) {
-            writer.printf(Locale.US, "0,0,0,0%n");
+            writer.printf(Locale.US, "0,0,0,0,0%n");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    public static void export_csv_kalman_add_step(Parametres p,double t, RealVector temp_s) {
+    public static void export_csv_kalman_add_step(Parametres p,double t, RealVector temp_s,boolean detected_by_GS) {
                 // Position
                 double x = temp_s.getEntry(0);
                 double y = temp_s.getEntry(1);
@@ -70,7 +65,7 @@ public class Visulations {
                 File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"+p.get_Name()+".csv");
                 try (FileWriter fw = new FileWriter(csvFile, true);
                         PrintWriter writer = new PrintWriter(fw)) {
-                        writer.printf(Locale.US, "%f,%f,%f,%f,%d%n", pos.getX(), pos.getY(), pos.getZ(),t, triger ? 1 : 0);
+                        writer.printf(Locale.US, "%f,%f,%f,%f,%d,%d%n", pos.getX(), pos.getY(), pos.getZ(),t, triger ? 1 : 0,detected_by_GS? 1:0);
                     } catch (IOException e) {
                     e.printStackTrace();
                     }

@@ -104,8 +104,8 @@ public class Propagator_1
     public void propagator_noisy_orbit(List<Parametres> liste_par_sats_noisy_orbit,List<Parametres> liste_par_sats_real_orbit){
         int i;
         for (i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
-
-            ObservableSatellite satellite = new ObservableSatellite(i);
+            
+            ObservableSatellite satellite = new ObservableSatellite(0);
             Parametres pNoisy = liste_par_sats_noisy_orbit.get(i);
             Parametres pReal  = liste_par_sats_real_orbit.get(i);
             // Setup Kalman filter
@@ -127,13 +127,15 @@ public class Propagator_1
                 
                 // Get “true” position & velocity from real orbit
                 PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
-
-                boolean gs_detected= Ground_station.hasVisibleStations(pReal.s_initialState,Parametres.date_orekit.shiftedBy(t));
+                SpacecraftState currentState = new SpacecraftState(pReal.get_Cartesian_Orbit().shiftedBy(t));         
+                boolean gs_detected= Ground_station.hasVisibleStations(currentState,Parametres.date_orekit.shiftedBy(t));
                 // Add measurement to Kalman filter if visible from ground station (only 1 step out of 4(variable for faster convergsion)), otherwise add dummy measurement
                 if (gs_detected){
+                    //System.out.println("Ground station detected "+t);
+                    System.out.println(Ground_station.which_station_visible(currentState,Parametres.date_orekit.shiftedBy(t)).getBaseFrame().getName()); 
                     if (!first_detection){
-                        
-                        PVCoordinates pvG = Ground_station.getIodGaussInstance(Parametres.date_orekit.shiftedBy(t), Parametres.date_orekit.shiftedBy(t+120), Parametres.date_orekit.shiftedBy(t+240), Ground_station.which_station_visible(pReal.s_initialState,Parametres.date_orekit.shiftedBy(t)),satellite,pReal);
+                         
+                        PVCoordinates pvG = Ground_station.getIodGaussInstance(Parametres.date_orekit.shiftedBy(t), Parametres.date_orekit.shiftedBy(t+120), Parametres.date_orekit.shiftedBy(t+240), Ground_station.which_station_visible(currentState,Parametres.date_orekit.shiftedBy(t)),satellite,pReal);
                         // Create measurement uncertainties (sigma) and weights
                         PV meas = new PV(
                             Parametres.date_orekit.shiftedBy(t),
@@ -158,10 +160,11 @@ public class Propagator_1
                     }else {
                         throw new IllegalStateException("Unexpected state in detection logic.");
                     }
-                    j=(j+1)%4;
+                    //j=(j+1)%4;
                 }else {
                     has_been_detected_too_soon_ago=false;
                     if (!first_detection){
+                        //System.out.println("Before first detection "+t);
                         Visulations.write_csv_before_detection(pNoisy); 
                         continue;
                     }
@@ -169,7 +172,7 @@ public class Propagator_1
                     j=0;
                 }
                 // Compute distance between estimated and true position
-                Visulations.export_csv_kalman_add_step(pNoisy, t, kalman.getPhysicalEstimatedState());
+                Visulations.export_csv_kalman_add_step(pNoisy, t, kalman.getPhysicalEstimatedState(),gs_detected);
             }
         }
     }
@@ -177,7 +180,7 @@ public class Propagator_1
     private KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t) {
                 Random rng = new Random();  
                 double sigmaPosition = 1000;  // meters
-                double sigmaVelocity = 50;  // m/s
+                double sigmaVelocity = 5;  // m/s
                 double baseWeight = 1;      // weight of measurement
                 Vector3D noisyPos = new Vector3D(
                     truePV.getPosition().getX() + sigmaPosition*rng.nextGaussian(),  // position noise ~1000 m
@@ -283,7 +286,7 @@ public class Propagator_1
             Vector3D pos = currentState.getPVCoordinates().getPosition();
             try (FileWriter fw = new FileWriter(csvFile, true);
              PrintWriter writer = new PrintWriter(fw)) {
-                writer.printf(Locale.US, "%f,%f,%f,%f,%d%n", pos.getX(), pos.getY(), pos.getZ(),currentState.getDate().durationFrom(new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600)), triger ? 1 : 0);
+                writer.printf(Locale.US, "%f,%f,%f,%f,%d,0%n", pos.getX(), pos.getY(), pos.getZ(),currentState.getDate().durationFrom(new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600)), triger ? 1 : 0);
             } catch (IOException e) {
                 e.printStackTrace();
             }         

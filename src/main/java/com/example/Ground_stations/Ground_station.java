@@ -74,7 +74,6 @@ public class Ground_station {
     public static boolean hasVisibleStations(SpacecraftState s, AbsoluteDate current_date) {
         for (GroundStation station : liste_GS) {
             if (isVisibleFromStation(station, s,current_date)) {
-                //System.err.println("Visible from station: " + station.getName());
                 return true;
             }
         }
@@ -108,7 +107,8 @@ public class Ground_station {
         azel2[1] = station.getBaseFrame().getElevation(pv2.getPosition(), Parametres.frame, t2);
         
         Random rand = new Random();
-        double noise = 1e-4;
+        //Chaneg itif no valid orbit is found
+        double noise = 1e-1;
         // Added noise to the true positions to help Gauss to converge
         for (int i=0; i<2; i++) {
             azel0[i] += rand.nextGaussian() * noise;
@@ -118,6 +118,7 @@ public class Ground_station {
         
     // Measurement uncertainties (example: 1 milliradian)
         double[] sigma = { noise, noise};
+    // Measurement weights (example: higher weight = more confidence => longer conv)
         double[] weight = { 10, 10 };
         
         AngularAzEl meas0 = new AngularAzEl(station, t0, azel0, sigma, weight, sat);

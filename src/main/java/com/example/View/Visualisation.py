@@ -40,6 +40,7 @@ for idx, row in GS_csv.iterrows():
     lon = float(row["long"])      # CSV: long column
     alt = float(row["alt"])       # altitude in km
     activation = bool(row["activated"])  # 1 if active, 0 if not
+      # 1 if detected, 0 if not
 
     # Convert to ECEF (and scale/lift)
     pos = latlon_to_ecef(lat, lon, alt )    # +50 m for visibility
@@ -71,9 +72,8 @@ satellites = []
 for idx, filename in enumerate(filenames):
     df = pd.read_csv("src/main/java/com/example/View/" + filename)
     # points: x, y, z, t, firing
-    points = np.column_stack((df["x"], df["y"], df["z"], df["t"], df["firing"]))
+    points = np.column_stack((df["x"], df["y"], df["z"], df["t"], df["firing"], df["detected_by_GS"]))
     base_color = colors[idx % len(colors)]
-
     # Satellite mesh and actor
     satellite_mesh = pv.Sphere(radius=100000, center=points[0][:3])
     satellite_actor = plotter.add_mesh(satellite_mesh, color=base_color, smooth_shading=True)
@@ -100,6 +100,8 @@ for i in range(n_frames):
             # Update color based on firing flag
             if points[i][4] == 1:
                 color=[1.0, 0.5, 0.0] # orange when firing
+            elif points[i][5] == 1:
+                color=[1.0, 1.0, 1.0] # white when detected by GS
             else:
                 color=base_color
             sat_actor =plotter.add_mesh(sat_mesh, color= color, smooth_shading=True)   
@@ -111,9 +113,9 @@ for i in range(n_frames):
             # Optionally fade trail colors
             for j, (actor, sphere) in enumerate(trail_spheres):
                 fade = 1.0 - (j / trail_length) * 0.7
-                actor.prop.color = [c * fade for c in base_color]
+                actor.prop.color = [c * fade for c in color]
 
     plotter.update()
-    time.sleep(0.02)
+    time.sleep(0.01)
 
 plotter.show()
