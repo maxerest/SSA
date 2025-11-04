@@ -10,8 +10,8 @@ import org.orekit.utils.Constants;
 import java.util.List;
 import java.io.File;
 import java.util.ArrayList;
-
-
+import java.util.Random;
+import java.util.Scanner;
 public class App 
 {       
     public static void main( String[] args )
@@ -24,7 +24,7 @@ public class App
         Ground_station.loadStationsFromCSV();
 
         // Definition des satellites
-        int nb_sat =10;
+        int nb_sat =1;
         List<Parametres> liste_par_sats_real_orbit = real_orbit(nb_sat);
         List<Parametres> liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
 
@@ -36,15 +36,45 @@ public class App
         Propagator_1 propagator_noisy_orbit = new Propagator_1();
         propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
 
-        //Visualisation du tout
+        //Launch of the python file for visualization
         Visulations.RunPythonScript(liste_par_sats_real_orbit,liste_par_sats_noisy_orbit);    
     }
 
     public static List<Parametres> real_orbit(int nb_sat){
-        
+        boolean random_orbit=false;
+        Scanner user_orbit_input = new Scanner(System.in);
         List<Parametres> liste_par_sats = new ArrayList<>();
         for (int i=0;i<nb_sat;i++){
-        // Création des paramètres pour une orbite avec infos sur modèle et earth fixées
+        //
+        System.out.println("Do you want a random orbit for satellite "+(i+1)+"? (true/false): ");
+        random_orbit= user_orbit_input.nextBoolean();
+        if (random_orbit){
+            System.out.println("Random orbit selected.");
+            Random rand = new Random();
+            double semi_axis = Constants.WGS84_EARTH_EQUATORIAL_RADIUS + (500 + rand.nextDouble() * 1500) * 1000; // between 500 km and 2000 km
+            double eccentricity = rand.nextDouble() * 0.01; // between 0 and 0.01
+            double inclinaison = Math.toRadians(rand.nextDouble() * 90); // between 0 and 90 degrees
+            double long_noeud_ascendant = Math.toRadians(rand.nextDouble() * 360); // between 0 and 360 degrees
+            double arg_periastre = Math.toRadians(rand.nextDouble() * 360); // between 0 and 360 degrees
+            double anomalie = Math.toRadians(rand.nextDouble() * 360); // between 0 and 360 degrees
+
+            liste_par_sats.add(
+                new Parametres.Builder()
+                    .nom_sat("Sat_real" + (i+1))
+                    .mass(2500)
+                    .semi_axis(semi_axis)
+                    .eccentricity(eccentricity)
+                    .inclinaison(inclinaison)
+                    .long_noeud_ascendant(long_noeud_ascendant)
+                    .arg_periastre(arg_periastre)
+                    .anomalie(anomalie)
+                    .type_anomalie(PositionAngleType.MEAN)
+                    .type_moteur(1)
+                    .start_manoeuvre(300.0)
+                    .duration_manoeuvre(360.0)
+                    .build());
+            continue;
+        } 
         liste_par_sats.add(
             new Parametres.Builder()
                 .nom_sat("Sat_real" + (i+1))

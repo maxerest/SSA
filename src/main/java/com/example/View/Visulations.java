@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class Visulations {
+     // Method for the real satellite data export to CSV
      public static void export_csv(NumericalPropagator propagator, Parametres p) {
-        // TODO Auto-generated method stub
         String sat= p.get_Name();
         File csvFile = new File("src/main/java/com/example/View/"+sat+".csv");
         if (csvFile.exists()) {
@@ -29,9 +29,8 @@ public class Visulations {
             e.printStackTrace();
         }
     }
-
+    // Initialize CSV for estimated satellite data
     public static void export_csv_kalman_init(Parametres p) {
-        //Auto-generated method stub
         String sat= p.get_Name();
         File csvFile = new File("src/main/java/com/example/View/"+sat+".csv");
         if (csvFile.exists()) {
@@ -43,13 +42,13 @@ public class Visulations {
             e.printStackTrace();
         }
     }
-
+    // Files the CSV with zeros data before detection from GS for estimated satellite
     public static void write_csv_before_detection(Parametres p){
         String sat= p.get_Name();
         File csvFile = new File("src/main/java/com/example/View/"+sat+".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);
             PrintWriter writer = new PrintWriter(fw)) {
-            writer.printf(Locale.US, "0,0,0,0,0%n");
+            writer.printf(Locale.US, "0,0,0,0,0,0%n");
         } catch (IOException e) {
             e.printStackTrace();
         }

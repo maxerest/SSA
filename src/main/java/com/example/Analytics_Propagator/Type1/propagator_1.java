@@ -1,10 +1,10 @@
 package com.example.Analytics_Propagator.Type1;
 import com.example.Ground_stations.*;
+import com.example.Analytics_Propagator.Least_squares_batch;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -13,7 +13,6 @@ import java.util.Random;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
 import org.hipparchus.linear.RealMatrix;
-import org.hipparchus.linear.RealVector;
 import org.hipparchus.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
 import org.orekit.attitudes.LofOffset;
@@ -38,7 +37,6 @@ import org.orekit.models.earth.atmosphere.Atmosphere;
 import org.orekit.models.earth.atmosphere.HarrisPriester;
 import org.orekit.orbits.Orbit;
 import org.orekit.orbits.OrbitType;
-import org.orekit.propagation.Propagator;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.ToleranceProvider;
 import org.orekit.propagation.conversion.DormandPrince853IntegratorBuilder;
@@ -56,8 +54,6 @@ import org.orekit.utils.ExtendedPositionProvider;
 import org.orekit.utils.IERSConventions;
 import org.orekit.utils.PVCoordinates;
 import org.orekit.estimation.measurements.PV;
-import org.orekit.estimation.sequential.KalmanEstimation;
-import org.orekit.estimation.sequential.KalmanObserver;
 
 import com.example.Parametres;
 import com.example.View.Visulations;
@@ -86,6 +82,7 @@ public class Propagator_1
             propagator.addEventDetector(altitudeDetector);
             //p.manoeuvre.lancement_manoeuvre(p, propagator);
             Visulations.export_csv(propagator, p);
+            
             propagator.propagate(new AbsoluteDate(Parametres.date_orekit, Parametres.duration)); 
         }
         
@@ -129,10 +126,8 @@ public class Propagator_1
                 PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
                 SpacecraftState currentState = new SpacecraftState(pReal.get_Cartesian_Orbit().shiftedBy(t));         
                 boolean gs_detected= Ground_station.hasVisibleStations(currentState,Parametres.date_orekit.shiftedBy(t));
-                // Add measurement to Kalman filter if visible from ground station (only 1 step out of 4(variable for faster convergsion)), otherwise add dummy measurement
-                if (gs_detected){
-                    //System.out.println("Ground station detected "+t);
-                    System.out.println(Ground_station.which_station_visible(currentState,Parametres.date_orekit.shiftedBy(t)).getBaseFrame().getName()); 
+                // Add measurement to Kalman filter if visible from ground station , otherwise add dummy measurement
+                if (gs_detected){ 
                     if (!first_detection){
                          
                         PVCoordinates pvG = Ground_station.getIodGaussInstance(Parametres.date_orekit.shiftedBy(t), Parametres.date_orekit.shiftedBy(t+120), Parametres.date_orekit.shiftedBy(t+240), Ground_station.which_station_visible(currentState,Parametres.date_orekit.shiftedBy(t)),satellite,pReal);
@@ -148,6 +143,7 @@ public class Propagator_1
                         );                 
                         kalman.estimationStep(meas);
                         first_detection=true;
+                        Least_squares_batch.least_squares_estimation(pReal,Ground_station.which_station_visible(currentState,Parametres.date_orekit.shiftedBy(t)),60);
                         continue;
                     }
                     if ((has_been_detected_too_soon_ago && j==0)||!has_been_detected_too_soon_ago){
