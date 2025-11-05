@@ -3,15 +3,21 @@ from pyvista import examples
 import pandas as pd
 import numpy as np
 import time
-import sys
+import os
+import glob
 
-# --- Load CSV filenames from command line ---
+# --- Load all CSV files from the folder ---
 pv.close_all()
-print(sys.argv[1:])
-filenames = [arg + ".csv" for arg in sys.argv[1:]]
-if not filenames:
-    print("Usage: python Visualisation.py sat1 sat2 ...")
-    sys.exit(1)
+
+# Obtenir le répertoire du script actuel
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Chercher tous les CSV dans ce répertoire
+filenames = glob.glob(os.path.join(script_dir, "*.csv"))
+
+# Alternative: utiliser seulement les noms de fichiers sans chemin complet
+filenames = [os.path.basename(f) for f in filenames]
+
 # --- Create plotter and Earth ---
 plotter = pv.Plotter()
 Earth = examples.planets.load_earth(radius=6378.1)

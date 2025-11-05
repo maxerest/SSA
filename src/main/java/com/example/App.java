@@ -45,9 +45,10 @@ public class App
         Scanner user_orbit_input = new Scanner(System.in);
         List<Parametres> liste_par_sats = new ArrayList<>();
         for (int i=0;i<nb_sat;i++){
-        //
+        
         System.out.println("Do you want a random orbit for satellite "+(i+1)+"? (true/false): ");
         random_orbit= user_orbit_input.nextBoolean();
+
         if (random_orbit){
             System.out.println("Random orbit selected.");
             Random rand = new Random();

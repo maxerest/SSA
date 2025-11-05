@@ -53,6 +53,7 @@ public class Ground_station {
                         name
                 );
                 GroundStation station_gs = new GroundStation(station);
+                
                 liste_GS.add(station_gs);
             }
         } catch (Exception e) {

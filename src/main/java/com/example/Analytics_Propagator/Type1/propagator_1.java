@@ -18,6 +18,7 @@ import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
 import org.orekit.attitudes.LofOffset;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
+import org.orekit.estimation.measurements.GroundStation;
 import org.orekit.estimation.measurements.ObservableSatellite;
 import org.orekit.estimation.sequential.ConstantProcessNoise;
 import org.orekit.estimation.sequential.KalmanEstimator;
@@ -57,6 +58,7 @@ import org.orekit.estimation.measurements.PV;
 
 import com.example.Parametres;
 import com.example.View.Visulations;
+import com.jogamp.common.util.VersionUtil;
 
 public class Propagator_1
 {   
@@ -120,6 +122,9 @@ public class Propagator_1
             int j=0;
             boolean has_been_detected_too_soon_ago=false;
             boolean first_detection=false;
+            //Creation of the estimated orbit through the least square batch method
+            Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
+           
             for (double t = 0; t <= Parametres.duration; t += measurementInterval) {
                 
                 // Get “true” position & velocity from real orbit
@@ -143,7 +148,7 @@ public class Propagator_1
                         );                 
                         kalman.estimationStep(meas);
                         first_detection=true;
-                        Least_squares_batch.least_squares_estimation(pReal,Ground_station.which_station_visible(currentState,Parametres.date_orekit.shiftedBy(t)),60);
+                        
                         continue;
                     }
                     if ((has_been_detected_too_soon_ago && j==0)||!has_been_detected_too_soon_ago){
@@ -170,7 +175,7 @@ public class Propagator_1
                 // Compute distance between estimated and true position
                 Visulations.export_csv_kalman_add_step(pNoisy, t, kalman.getPhysicalEstimatedState(),gs_detected);
             }
-        }
+        }      
     }
 
     private KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t) {
