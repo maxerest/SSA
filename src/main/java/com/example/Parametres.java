@@ -32,7 +32,7 @@ public class Parametres
     public static BodyShape earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,Constants.WGS84_EARTH_FLATTENING,FramesFactory.getITRF(IERSConventions.IERS_2010, true));
     
     // Ground Station elevation limit
-    public static double elevation =  FastMath.toRadians(40.0);
+    public static double elevation =  FastMath.toRadians(10.0);
 
     // Definiton parametres orbitaux
     private double mass;

@@ -8,6 +8,8 @@ The goal of this project is to use the Orekit library in Java to estimate an orb
 If you want to use this project you need to do the following:
 -Check in the "GD_coordinates.CSV" file, you have the ground station you want (defined by name, position and if it is currently on or not)
 -In the App.java file, enter the number of "real" sats you want to create that will then be estimated
--Launch the file and enjoy the view
+-Launch the file and file the asked information
+-Enjoy the view 
+IF THE INPUT ORBIT PARAMETERS ARE NOT CORRECT THE FILE WILL NOT BE ABLE TO CALCULATE AN ESTIMATED ORBIT
 
 For each step here is an 

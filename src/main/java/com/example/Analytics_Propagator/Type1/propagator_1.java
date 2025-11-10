@@ -18,7 +18,6 @@ import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
 import org.orekit.attitudes.LofOffset;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
-import org.orekit.estimation.measurements.GroundStation;
 import org.orekit.estimation.measurements.ObservableSatellite;
 import org.orekit.estimation.sequential.ConstantProcessNoise;
 import org.orekit.estimation.sequential.KalmanEstimator;
@@ -58,7 +57,6 @@ import org.orekit.estimation.measurements.PV;
 
 import com.example.Parametres;
 import com.example.View.Visulations;
-import com.jogamp.common.util.VersionUtil;
 
 public class Propagator_1
 {   
@@ -173,6 +171,8 @@ public class Propagator_1
                     j=0;
                 }
                 // Compute distance between estimated and true position
+                
+                //ICI POUR FAIRE OU NON LE CSV DE KALAMAN
                 Visulations.export_csv_kalman_add_step(pNoisy, t, kalman.getPhysicalEstimatedState(),gs_detected);
             }
         }      
@@ -312,8 +312,5 @@ public class Propagator_1
                 return org.hipparchus.ode.events.Action.STOP;
             }
         }
-
-        
-    
         
 }

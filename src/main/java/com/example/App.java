@@ -92,7 +92,8 @@ public class App
                 .duration_manoeuvre(360.0)
                 .build());        
         }
-     return liste_par_sats;
+        user_orbit_input.close();
+        return liste_par_sats;
     }
 
     public static List<Parametres> noisy_orbit(List<Parametres> liste_par_sats_real_orbit) {
