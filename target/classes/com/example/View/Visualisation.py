@@ -98,7 +98,7 @@ for filename in filenames:
     satellite_mesh = pv.Sphere(radius=100000, center=points[0][:3])
     satellite_actor = plotter.add_mesh(satellite_mesh, color=base_color, smooth_shading=True)
     
-    # Trail meshes - PRÉ-CRÉER ET STOCKER
+    # Trail meshes 
     trail_actors = []
     trail_meshes = []
     for j in range(trail_length):
@@ -120,7 +120,7 @@ for filename in filenames:
 # --- Animation ---
 frames = get_time_based_frames(satellites, frame_interval=60.0)
 
-plotter.show(interactive_update=True, full_screen=True)  # False pour moins d'overhead
+plotter.show(interactive_update=True, full_screen=True)
 
 for frame_start, frame_end, frame_indices in frames:
     #Every frame we rotate earth and the position of the GS
@@ -147,10 +147,10 @@ for frame_start, frame_end, frame_indices in frames:
             # Satellite vrai: vert si detected, rouge sinon
             color = [0.0, 1.0, 0.0] if detected else [1.0, 0.0, 0.0]
         
-        # Update actor color (pas de add_mesh à chaque fois!)
+        # Update actor color 
         sat['actor'].prop.color = color
         
-        # Update trail - plus efficace
+        # Update trail
         for j in range(len(sat['trail_meshes']) - 1, 0, -1):
             sat['trail_meshes'][j].points[:] = sat['trail_meshes'][j - 1].points[:]
             fade = 1.0 - (j / trail_length) * 0.7

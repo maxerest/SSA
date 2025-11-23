@@ -27,7 +27,7 @@ import org.hipparchus.random.JDKRandomGenerator;
 import org.hipparchus.random.RandomGenerator;
 import org.hipparchus.linear.MatrixUtils;
 import org.hipparchus.linear.RealMatrix;
-import org.hipparchus.stat.correlation.Covariance;
+import org.hipparchus.random.CorrelatedRandomVectorGenerator;
 
 public class Least_squares_batch {
 
@@ -74,19 +74,18 @@ public class Least_squares_batch {
 
         // ========== AJOUTER UN SCHEDULER POUR CHAQUE STATION ==========
         for (GroundStation groundStation : groundStations) {
-            
             RealMatrix covarianceMatrix = MatrixUtils.createRealMatrix(1, 1);
-            covarianceMatrix.setEntry(0, 0, 1.0);  // variance = 1.0
-
-            org.hipparchus.random.CorrelatedRandomVectorGenerator noiseSource = new org.hipparchus.random.CorrelatedRandomVectorGenerator(
-            covarianceMatrix,
-                1e-12,  // small singular value threshold
-                gaussianGenerator);
+            covarianceMatrix.setEntry(0, 0, 1.0); // variance = 1.0
+            CorrelatedRandomVectorGenerator noiseSource = new CorrelatedRandomVectorGenerator(
+                    covarianceMatrix,
+                    1e-12, // small singular value threshold
+                    gaussianGenerator);
             ElevationDetector elevationDetector = new ElevationDetector(groundStation.getBaseFrame())
                     .withConstantElevation(Parametres.elevation);
+
             // SCHEDULER RANGE basé sur la visibilité
             RangeBuilder rangeBuilder = new RangeBuilder(
-                noiseSource,
+                    noiseSource,
                     groundStation,
                     false, // two-way measurement
                     10,
@@ -102,21 +101,16 @@ public class Least_squares_batch {
 
             generator.addScheduler(rangeScheduler);
 
-            // SCHEDULER AZIMUTH & ELEVATION basé sur la visibilité
-            // ===== BRUIT POUR AZIMUTH & ELEVATION =====
+            RealMatrix covarianceMatrixAzEl = MatrixUtils.createRealMatrix(2, 2);
+            covarianceMatrixAzEl.setEntry(0, 0, 1.0); // Az variance
+            covarianceMatrixAzEl.setEntry(1, 1, 1.0); // El variance
+            covarianceMatrixAzEl.setEntry(0, 1, 1);
+            covarianceMatrixAzEl.setEntry(1, 0, 1);
 
-    
-    RealMatrix covarianceMatrixAzEl = MatrixUtils.createRealMatrix(2, 2);
-    covarianceMatrixAzEl.setEntry(0, 0, 1.0);  // Az variance
-    covarianceMatrixAzEl.setEntry(1, 1, 1.0);  // El variance
-    covarianceMatrixAzEl.setEntry(0, 1, 1);  
-    covarianceMatrixAzEl.setEntry(1, 0, 1);
-
-    org.hipparchus.random.CorrelatedRandomVectorGenerator noiseSourceAzEl = 
-        new org.hipparchus.random.CorrelatedRandomVectorGenerator(
-            covarianceMatrixAzEl, 1e-12, gaussianGeneratorAzEl);
+            CorrelatedRandomVectorGenerator noiseSourceAzEl = new org.hipparchus.random.CorrelatedRandomVectorGenerator(
+                    covarianceMatrixAzEl, 1e-12, gaussianGeneratorAzEl);
             AngularAzElBuilder azElBuilder = new AngularAzElBuilder(
-                null,
+                    noiseSourceAzEl,
                     groundStation,
                     new double[] { FastMath.toRadians(0.01), FastMath.toRadians(0.01) },
                     new double[] { 1.0, 1.0 },

@@ -1,4 +1,5 @@
 package com.example;
+import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Ground_stations.Ground_station;
 import com.example.View.Visulations;
@@ -14,13 +15,18 @@ import java.util.Random;
 import java.util.Scanner;
 public class App 
 {       
+
     public static void main( String[] args )
     {   
+        boolean propagate_real_orbit = false;
+        boolean propgate_kalman_filter = true;
+        boolean propagate_least_squares = false;
+        
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
-        // Definition des GS
+        // Definition des GS    
         Ground_station.loadStationsFromCSV();
 
         // Definition des satellites
@@ -29,17 +35,28 @@ public class App
         List<Parametres> liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
 
         //Propagation of the real orbits
-        Propagator_1 propagator_real_orbit = new Propagator_1();
-        propagator_real_orbit.propagator_real_orbit(liste_par_sats_real_orbit);
-
-        //Setting up and propagation of the noise orbits
-        Propagator_1 propagator_noisy_orbit = new Propagator_1();
-        propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
+        if (propagate_real_orbit){
+            Propagator_1 propagator_real_orbit = new Propagator_1();
+            propagator_real_orbit.propagator_real_orbit(liste_par_sats_real_orbit);
+        }
+        if (propgate_kalman_filter){
+            Propagator_1 propagator_noisy_orbit = new Propagator_1();
+            propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
+        }
+        if (propagate_least_squares){
+            for (Parametres pReal : liste_par_sats_real_orbit)
+                //Creation of the estimated orbit through the least square batch method
+                Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
+        }
 
         //Launch of the python file for visualization
         Visulations.RunPythonScript(liste_par_sats_real_orbit,liste_par_sats_noisy_orbit);    
     }
 
+    /**
+     * Création objets satellites pour les orbites réelle de propoagation
+     * @param nb_sat nb d'objets satellites à créer
+     */
     public static List<Parametres> real_orbit(int nb_sat){
         boolean random_orbit=false;
         Scanner user_orbit_input = new Scanner(System.in);
@@ -95,6 +112,12 @@ public class App
         user_orbit_input.close();
         return liste_par_sats;
     }
+    
+    /**
+     * Création objets satellites pour la propagation avec des orbites bruitées
+     * 
+     * @param liste_par_sats_real_orbit liste des satellites avec des orbites réelles pour l'ajout de bruit
+     */
 
     public static List<Parametres> noisy_orbit(List<Parametres> liste_par_sats_real_orbit) {
     List<Parametres> liste_par_sats_noise_orbit = new ArrayList<>();

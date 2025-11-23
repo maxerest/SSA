@@ -101,10 +101,10 @@ public class Propagator_1
     public void propagator_noisy_orbit(List<Parametres> liste_par_sats_noisy_orbit,List<Parametres> liste_par_sats_real_orbit){
         int i;
         for (i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
-            
             ObservableSatellite satellite = new ObservableSatellite(0);
             Parametres pNoisy = liste_par_sats_noisy_orbit.get(i);
             Parametres pReal  = liste_par_sats_real_orbit.get(i);
+
             // Setup Kalman filter
             NumericalPropagatorBuilder builder =new NumericalPropagatorBuilder(pNoisy.get_Cartesian_Orbit(), integratorBuilder(),pNoisy.get_type_anomalie(), 1.0);
             builder =Propagator_1.add_force_propagator(builder,pNoisy.get_area(),pNoisy.get_cd(),pNoisy.get_srpCrossSection(), pNoisy.get_srpCoeff());
@@ -120,8 +120,6 @@ public class Propagator_1
             int j=0;
             boolean has_been_detected_too_soon_ago=false;
             boolean first_detection=false;
-            //Creation of the estimated orbit through the least square batch method
-            Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
            
             for (double t = 0; t <= Parametres.duration; t += measurementInterval) {
                 
@@ -159,7 +157,6 @@ public class Propagator_1
                     }else {
                         throw new IllegalStateException("Unexpected state in detection logic.");
                     }
-                    //j=(j+1)%4;
                 }else {
                     has_been_detected_too_soon_ago=false;
                     if (!first_detection){
@@ -169,10 +166,7 @@ public class Propagator_1
                     }
                     kalman=add_dummy_value(kalman, satellite, truePV, t);
                     j=0;
-                }
-                // Compute distance between estimated and true position
-                
-                //ICI POUR FAIRE OU NON LE CSV DE KALAMAN
+                }                
                 Visulations.export_csv_kalman_add_step(pNoisy, t, kalman.getPhysicalEstimatedState(),gs_detected);
             }
         }      
