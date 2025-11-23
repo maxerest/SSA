@@ -107,7 +107,7 @@ public class Least_squares_batch {
             covarianceMatrixAzEl.setEntry(0, 1, 1);
             covarianceMatrixAzEl.setEntry(1, 0, 1);
 
-            CorrelatedRandomVectorGenerator noiseSourceAzEl = new org.hipparchus.random.CorrelatedRandomVectorGenerator(
+            CorrelatedRandomVectorGenerator noiseSourceAzEl = new CorrelatedRandomVectorGenerator(
                     covarianceMatrixAzEl, 1e-12, gaussianGeneratorAzEl);
             AngularAzElBuilder azElBuilder = new AngularAzElBuilder(
                     noiseSourceAzEl,
@@ -142,14 +142,13 @@ public class Least_squares_batch {
             double range, GroundStation groundStation,
             org.orekit.time.AbsoluteDate date) {
 
-        // 1. Créer le vecteur en coordonnées topocentriques (NEU)
-        // ATTENTION: L'ordre est EAST, NORTH, UP (pas NORTH, EAST, UP!)
+        // ATTENTION: L'ordre est EAST, NORTH, UP 
         double cosEl = FastMath.cos(elevation);
         double sinEl = FastMath.sin(elevation);
         double cosAz = FastMath.cos(azimuth);
         double sinAz = FastMath.sin(azimuth);
 
-        // Orekit uses: X = East, Y = North, Z = Up
+        // X = East, Y = North, Z = Up
         double east = range * cosEl * sinAz; // X axis
         double north = range * cosEl * cosAz; // Y axis
         double up = range * sinEl; // Z axis

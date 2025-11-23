@@ -99,8 +99,7 @@ public class Propagator_1
 
 
     public void propagator_noisy_orbit(List<Parametres> liste_par_sats_noisy_orbit,List<Parametres> liste_par_sats_real_orbit){
-        int i;
-        for (i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
+        for (int i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
             ObservableSatellite satellite = new ObservableSatellite(0);
             Parametres pNoisy = liste_par_sats_noisy_orbit.get(i);
             Parametres pReal  = liste_par_sats_real_orbit.get(i);

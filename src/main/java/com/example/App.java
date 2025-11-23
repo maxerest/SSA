@@ -10,16 +10,19 @@ import org.orekit.orbits.PositionAngleType;
 import org.orekit.utils.Constants;
 import java.util.List;
 import java.io.File;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
+import java.io.IOException;
+
 public class App 
 {       
 
-    public static void main( String[] args )
+    public static void main( String[] args )throws IOException 
     {   
-        boolean propagate_real_orbit = false;
-        boolean propgate_kalman_filter = true;
+        boolean propagate_real_orbit = true;
+        boolean propgate_kalman_filter = false;
         boolean propagate_least_squares = false;
         
         //Recuperation des données Orekit A FAIRE EN PREMIER
@@ -28,7 +31,8 @@ public class App
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
         // Definition des GS    
         Ground_station.loadStationsFromCSV();
-
+        // Delete past CSV files
+        deleteAllCsvFiles();
         // Definition des satellites
         int nb_sat =1;
         List<Parametres> liste_par_sats_real_orbit = real_orbit(nb_sat);
@@ -51,6 +55,21 @@ public class App
 
         //Launch of the python file for visualization
         Visulations.RunPythonScript(liste_par_sats_real_orbit,liste_par_sats_noisy_orbit);    
+    }
+
+    public static void deleteAllCsvFiles() throws IOException  {
+        String folderPath = "C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View";
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folderPath), "*.csv")) {
+            stream.forEach(file -> {
+                try {
+                    Files.delete(file);
+                } catch (IOException e) {
+                    // Ignore if file doesn't exist or cannot be deleted
+                }
+            });
+        } catch (NoSuchFileException e) {
+            // Ignore if no CSV files found
+        }
     }
 
     /**
