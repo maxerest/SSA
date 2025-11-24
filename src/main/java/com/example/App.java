@@ -2,6 +2,8 @@ package com.example;
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Ground_stations.Ground_station;
+import com.example.TLE.My_TLE;
+import com.example.TLE.My_TLE.TLEType;
 import com.example.View.Visulations;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
@@ -21,10 +23,11 @@ public class App
 
     public static void main( String[] args )throws IOException 
     {   
-        boolean propagate_real_orbit = true;
+        boolean propagate_real_orbit = false;
         boolean propgate_kalman_filter = false;
         boolean propagate_least_squares = false;
-        
+        boolean TLE_visualisation = true;
+ 
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
@@ -33,28 +36,32 @@ public class App
         Ground_station.loadStationsFromCSV();
         // Delete past CSV files
         deleteAllCsvFiles();
-        // Definition des satellites
-        int nb_sat =1;
-        List<Parametres> liste_par_sats_real_orbit = real_orbit(nb_sat);
-        List<Parametres> liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
 
-        //Propagation of the real orbits
+        if (TLE_visualisation)
+            My_TLE.main();
+        
         if (propagate_real_orbit){
+            // Definition des satellites
+            int nb_sat =1;
+            List<Parametres> liste_par_sats_real_orbit = real_orbit(nb_sat);
             Propagator_1 propagator_real_orbit = new Propagator_1();
             propagator_real_orbit.propagator_real_orbit(liste_par_sats_real_orbit);
-        }
-        if (propgate_kalman_filter){
-            Propagator_1 propagator_noisy_orbit = new Propagator_1();
-            propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
-        }
-        if (propagate_least_squares){
-            for (Parametres pReal : liste_par_sats_real_orbit)
-                //Creation of the estimated orbit through the least square batch method
-                Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
+            List<Parametres> liste_par_sats_noisy_orbit = null;
+
+            if (propgate_kalman_filter){
+                liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
+                Propagator_1 propagator_noisy_orbit = new Propagator_1();
+                propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
+            }
+            if (propagate_least_squares){
+                for (Parametres pReal : liste_par_sats_real_orbit)
+                    //Creation of the estimated orbit through the least square batch method
+                    Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
+            }  
         }
 
         //Launch of the python file for visualization
-        Visulations.RunPythonScript(liste_par_sats_real_orbit,liste_par_sats_noisy_orbit);    
+        Visulations.RunPythonScript();  
     }
 
     public static void deleteAllCsvFiles() throws IOException  {

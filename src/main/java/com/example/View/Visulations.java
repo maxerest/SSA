@@ -4,13 +4,17 @@ import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Parametres;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+
+import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
+import org.orekit.utils.PVCoordinates;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.RealVector;
 import java.util.ArrayList;
@@ -22,6 +26,7 @@ import java.util.SortedSet;
 import org.orekit.estimation.measurements.EstimatedMeasurementBase;
 import org.orekit.estimation.measurements.GroundStation;
 import org.orekit.estimation.measurements.ObservedMeasurement;
+import org.orekit.frames.FramesFactory;
 
 public class Visulations {
 
@@ -92,7 +97,8 @@ public class Visulations {
             }
         }
 
-        // deuxieme boucle passe au travers des GS pour écrire les fichiers CSV. Chaque station output un CSV avec l'ensemble de ses mesures
+        // deuxieme boucle passe au travers des GS pour écrire les fichiers CSV. Chaque
+        // station output un CSV avec l'ensemble de ses mesures
         for (String stationKey : azElByStationDate.keySet()) {
 
             File csvFile = new File("src/main/java/com/example/View/" + sat + "_" + stationKey + "_LSB.csv");
@@ -123,8 +129,9 @@ public class Visulations {
                                 " pour station " + stationKey);
                         continue;
                     }
-                    
-                    // Recuperer la station au sol correspondante (a voir pour optimiser peu efficace)
+
+                    // Recuperer la station au sol correspondante (a voir pour optimiser peu
+                    // efficace)
                     GroundStation station = null;
                     for (EstimatedMeasurementBase<?> est : measurements) {
                         ObservedMeasurement<?> m = est.getObservedMeasurement();
@@ -157,6 +164,26 @@ public class Visulations {
             }
         }
 
+    }
+
+    public static void export_TLE_intial_position(SpacecraftState state, int i) {
+        String filename = "src/main/java/com/example/View/TLE_initial_positions_sat_" + i + ".csv";
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+                    PVCoordinates pv = state.getPVCoordinates(FramesFactory.getGCRF());
+        
+        System.out.println("Z: " + pv.getPosition().getZ());
+            // Écrire l'en-tête
+            writer.write("x,y,z,t,firing,detected_by_GS\n");
+            double time = state.getDate().durationFrom(Parametres.date_orekit);
+            System.out.println(time);
+            String line = String.format(Locale.US, "%.2f,%.2f,%.2f,%.6f,%s,%s\n",
+            state.getPVCoordinates().getPosition().getX(), state.getPVCoordinates().getPosition().getY(), state.getPVCoordinates().getPosition().getZ(), time, 0, 0);
+             writer.write(line);
+
+            System.out.println("✓ Fichier CSV créé: " + filename);
+        } catch (IOException e) {
+            System.err.println("Erreur lors de la création du fichier CSV du sat 1: " + e.getMessage());
+        }
     }
 
     // Initialize CSV for estimated satellite data
@@ -206,17 +233,12 @@ public class Visulations {
 
     }
 
-    public static void RunPythonScript(List<Parametres> sats, List<Parametres> sats2) {
+    public static void RunPythonScript() {
         try {
             // Build up the full command
             List<String> cmd = new ArrayList<>();
             cmd.add("python");
             cmd.add("src/main/java/com/example/View/Visualisation.py");
-            sats.addAll(sats2);
-            // Add one argument per satellite (e.g., its name or CSV path)
-            for (Parametres p : sats) {
-                cmd.add(p.get_Name()); // or build path: "src/main/java/com/example/View/" + p.get_Name() + ".csv"
-            }
 
             // Pass the whole list into ProcessBuilder
             ProcessBuilder pb = new ProcessBuilder(cmd);
