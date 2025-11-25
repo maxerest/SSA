@@ -1,6 +1,13 @@
 com\example\Parametres.class
-com\example\Analytics_Propagator\Type1\Propagator_1.class
-com\example\Analytics_Propagator\Type1\Propagator_1$Altitude_limit.class
-com\example\App.class
+com\example\Ground_stations\Ground_station.class
+com\example\Manoeuvre\Manoeuvre.class
 com\example\Analytics_Propagator\Type1\Propagator_1$Propagation_step.class
+com\example\Analytics_Propagator\Least_squares_batch.class
+com\example\Analytics_Propagator\Type1\Propagator_1$Altitude_limit.class
+com\example\Manoeuvre\Manoeuvre$Builder.class
+com\example\App.class
 com\example\View\Visulations.class
+com\example\Parametres$Builder.class
+com\example\TLE\My_TLE.class
+com\example\Analytics_Propagator\Type1\Propagator_1.class
+com\example\TLE\My_TLE$TLEType.class

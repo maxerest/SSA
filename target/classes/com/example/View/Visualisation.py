@@ -91,9 +91,6 @@ satellites = []
 for filename in filenames:
     df = pd.read_csv("src/main/java/com/example/View/" + filename)
     points = np.column_stack((df["x"], df["y"], df["z"], df["t"], df["firing"], df["detected_by_GS"]))
-    print(df["x"].values)
-    print(df["y"].values)
-    print(df["z"].values)
     is_noisy = filename.find("noisy") != -1
     base_color = [1.0, 0.0, 0.0] if not is_noisy else [0.0, 0.0, 1.0]  # Red for true, Blue for noisy
     

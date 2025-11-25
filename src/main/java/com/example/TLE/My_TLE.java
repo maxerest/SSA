@@ -1,11 +1,8 @@
 package com.example.TLE;
 import com.example.View.Visulations;
-import com.example.View.Visulations.*;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.analytical.tle.TLE;
 import org.orekit.propagation.analytical.tle.TLEPropagator;
-import org.orekit.time.AbsoluteDate;
-import org.orekit.time.TimeScalesFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -23,22 +20,23 @@ public class My_TLE {
 
     private static final String TLE_DATA_DIR = "src\\main\\java\\com\\example\\TLE";
     private static final String CELESTRAK_BASE = "https://celestrak.org/NORAD/elements/gp.php";
-
+    public static String format = "TLE";
     // Types de TLE disponibles sur Celestrak
     public enum TLEType {
-        ACTIVE("GROUP=active", "active.csv", "Satellites actifs"),
-        LAST_30_DAYS("GROUP=last-30-days", "last-30-days.csv", "Satellites lancés dans les 30 derniers jours"),
-        WEATHER("GROUP=weather", "weather.csv", "Satellites météorologiques"),
-        STATIONS("GROUP=stations", "stations.csv", "Stations spatiales"),
-        HYPERBOLIC("GROUP=hyperbolic", "hyperbolic.csv", "Satellites hyperboliques"),
-        GEO_INACTIVE("GROUP=geo-inactive", "geo-inactive.csv", "Géostationnaires inactifs"),
-        SPACEX("GROUP=starlink", "starlink.csv", "Constellation Starlink"),
-        DECAYING("SPECIAL=DECAYING", "decaying.csv", "Satellites en décroissance");
+        
+        ACTIVE("GROUP=active", "active.", "Satellites actifs"),
+        LAST_30_DAYS("GROUP=last-30-days", "last-30-days.", "Satellites lancés dans les 30 derniers jours"),
+        WEATHER("GROUP=weather", "weather.", "Satellites météorologiques"),
+        STATIONS("GROUP=stations", "stations.", "Stations spatiales"),
+        HYPERBOLIC("GROUP=hyperbolic", "hyperbolic.", "Satellites hyperboliques"),
+        GEO_INACTIVE("GROUP=geo-inactive", "geo-inactive.", "Géostationnaires inactifs"),
+        SPACEX("GROUP=starlink", "starlink.", "Constellation Starlink"),
+        DECAYING("SPECIAL=DECAYING", "decaying.", "Satellites en décroissance");
 
         private final String query;
         private final String filename;
         private final String description;
-
+        
         TLEType(String query, String filename, String description) {
             this.query = query;
             this.filename = filename;
@@ -58,7 +56,7 @@ public class My_TLE {
         }
 
         public String getUrl() {
-            return CELESTRAK_BASE + "?" + query + "&FORMAT=csv";
+            return CELESTRAK_BASE + "?" + query + "&FORMAT="+format;
         }
     }
 
@@ -86,7 +84,7 @@ public class My_TLE {
         Scanner scanner = new Scanner(System.in);
 
         System.out.print("Choisissez le numéro du type de TLE: ");
-        int choice = scanner.nextInt();
+        Integer choice = null;
 
         // Vérifier que le choix est valide
         My_TLE.TLEType[] types = My_TLE.TLEType.values();
@@ -153,7 +151,7 @@ public class My_TLE {
         // Créer le répertoire s'il n'existe pas
         Files.createDirectories(Paths.get(TLE_DATA_DIR));
 
-        String outputFile = TLE_DATA_DIR + File.separator + tleType.getFilename();
+        String outputFile = TLE_DATA_DIR + File.separator + tleType.getFilename()+format;
 
         try (HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
@@ -182,104 +180,62 @@ public class My_TLE {
         }
     }
 
-    private static List<SpacecraftState > create_OREKIT_Statecraft_state(String filename) throws IOException {
+    private static List<SpacecraftState> create_OREKIT_Statecraft_state(String filename) throws IOException {
         List<TLE> tleList = new ArrayList<>();
         List<SpacecraftState> states = new ArrayList<>();
-        String final_filename = "src\\main\\java\\com\\example\\TLE\\"+filename;
+        String final_filename = "src\\main\\java\\com\\example\\TLE\\" + filename + format;
+        
         try (BufferedReader reader = new BufferedReader(new FileReader(final_filename))) {
             String line;
-
-            // Skip header
-            reader.readLine();
-
+            String objectName = null;
+            String tleLine1 = null;
+            
             while ((line = reader.readLine()) != null) {
-                if (line.trim().isEmpty()) {
+                line = line.trim();
+                
+                // Skip empty lines
+                if (line.isEmpty()) {
                     continue;
                 }
-
-                String[] parts = line.split(",");
-
-                if (parts.length < 17) {
-                    System.err.println(" Colonnes insuffisantes (trouvé " + parts.length + "): " + line);
-                    continue;
-                }
-
-                try {
-                    // Parser les colonnes selon le format CSV fourni
-                    String objectName = parts[0].trim(); // OBJECT_NAME
-                    String objectId = parts[1].trim(); // OBJECT_ID
-
-                    // Parser l'époque (format: YYYY-MM-DDTHH:mm:ss.SSSSSS)
-                    String epochStr = parts[2].trim();
-                    AbsoluteDate epoch = new AbsoluteDate(epochStr, TimeScalesFactory.getUTC());
-
-                    // Paramètres orbitaux
-                    double meanMotion = Double.parseDouble(parts[3].trim()); // rev/jour -> conversion nécessaire
-                    double e = Double.parseDouble(parts[4].trim()); // excentricité
-                    double i = Math.toRadians(Double.parseDouble(parts[5].trim())); // inclinaison (convertir deg->rad)
-                    double raan = Math.toRadians(Double.parseDouble(parts[6].trim())); // RA of ascending node
-                                                                                       // (deg->rad)
-                    double pa = Math.toRadians(Double.parseDouble(parts[7].trim())); // arg of perigee (deg->rad)
-                    double meanAnomaly = Math.toRadians(Double.parseDouble(parts[8].trim())); // mean anomaly (deg->rad)
-
-                    int ephemerisType = Integer.parseInt(parts[9].trim()); // EPHEMERIS_TYPE
-                    char classification = parts[10].trim().charAt(0); // CLASSIFICATION_TYPE
-                    int satelliteNumber = Integer.parseInt(parts[11].trim()); // NORAD_CAT_ID
-                    int elementNumber = Integer.parseInt(parts[12].trim()); // ELEMENT_SET_NO
-                    int revolutionNumberAtEpoch = Integer.parseInt(parts[13].trim()); // REV_AT_EPOCH
-                    double bStar = parseBStar(parts[14].trim()); // BSTAR (format scientifique)
-                    double meanMotionFirstDerivative = Double.parseDouble(parts[15].trim()); // MEAN_MOTION_DOT
-                    double meanMotionSecondDerivative = Double.parseDouble(parts[16].trim()); // MEAN_MOTION_DDOT
-
-                    // Convertir MEAN_MOTION de rev/jour en rad/s
-                    double meanMotionRadPerSec = meanMotion * 2 * Math.PI / 86400.0;
-
-                    // Extraire année et numéro de lancement de OBJECT_ID (format: YYYY-NNNX), attention au nombre de lettre a la fin qui est variable
-                    // Ex: 2019-074B -> year=2019, launchNumber=74, launchPiece=B
-                    String[] idParts = objectId.split("-");
-                    int launchYear = Integer.parseInt(idParts[0]);
-                    
-                    long letterCount = idParts[1].chars()
-                        .filter(Character::isLetter)
-                        .count();
-                        int launchNumber = Integer.parseInt(idParts[1].substring(0, idParts[1].length() -  (int) letterCount));
-
-                        String launchPiece = idParts[1].substring(idParts[1].length() - (int) letterCount);
-
-                    // Créer le TLE avec le constructeur complet
-                    TLE tle = new TLE(satelliteNumber, classification, launchYear, launchNumber,
-                            launchPiece, ephemerisType, elementNumber, epoch,
-                            meanMotionRadPerSec, meanMotionFirstDerivative, meanMotionSecondDerivative,
-                            e, i, pa, raan, meanAnomaly, revolutionNumberAtEpoch, bStar);
-                    
-                    tleList.add(tle);
-                    states.add(TLEPropagator.selectExtrapolator(tle).getInitialState());
-                    System.out.println(" TLE #" + satelliteNumber + " (" + objectName + ") chargé");
-
-                } catch (NumberFormatException e) {
-                    System.err.println("Erreur parsing numérique: " + e.getMessage());
-                    System.err.println("   Ligne: " + line);
-                } catch (Exception e) {
-                    System.err.println("Erreur création TLE: " + e.getMessage());
-                    System.err.println("   Ligne: " + line);
+                
+                // Check if this is a TLE line (starts with 1 or 2)
+                if (line.startsWith("1 ") || line.startsWith("2 ")) {
+                    if (line.startsWith("1 ")) {
+                        // First line of TLE
+                        tleLine1 = line;
+                    } else if (line.startsWith("2 ") && tleLine1 != null) {
+                        // Second line of TLE - we have a complete TLE now
+                        String tleLine2 = line;
+                        
+                        try {
+                            // Create TLE from the two-line element set
+                            // Orekit's TLE constructor takes the two lines as strings
+                            TLE tle = new TLE(tleLine1, tleLine2);
+                            
+                            tleList.add(tle);
+                            states.add(TLEPropagator.selectExtrapolator(tle).getInitialState());
+                            System.out.println(" TLE #" + tle.getSatelliteNumber() + " (" + objectName + ") chargé");
+                            
+                            // Reset for next satellite
+                            tleLine1 = null;
+                            objectName = null;
+                        } catch (Exception e) {
+                            System.err.println("Erreur création TLE: " + e.getMessage());
+                            System.err.println("   Ligne 1: " + tleLine1);
+                            System.err.println("   Ligne 2: " + tleLine2);
+                            tleLine1 = null;
+                            objectName = null;
+                        }
+                    }
+                } else {
+                    // This is the satellite name (appears before TLE lines)
+                    objectName = line;
                 }
             }
         }
-
-        System.out.println("\n Total: " + tleList.size() + " TLE chargés depuis: " + filename);
         
+        System.out.println("\n Total: " + tleList.size() + " TLE chargés depuis: " + filename);
         return states;
     }
 
-    /**
-     * Parser BSTAR au format scientifique (ex: .96250111E-4)
-     */
-    private static double parseBStar(String bstarStr) {
-        // Format Celestrak: .96250111E-4
-        // Convertir en format Java standard: 0.96250111E-4
-        if (bstarStr.startsWith(".")) {
-            bstarStr = "0" + bstarStr;
-        }
-        return Double.parseDouble(bstarStr);
-    }
 }
