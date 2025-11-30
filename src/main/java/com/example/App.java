@@ -3,7 +3,6 @@ import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Ground_stations.Ground_station;
 import com.example.TLE.My_TLE;
-import com.example.TLE.My_TLE.TLEType;
 import com.example.View.Visulations;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;

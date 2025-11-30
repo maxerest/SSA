@@ -90,43 +90,74 @@ satellites = []
 
 for filename in filenames:
     df = pd.read_csv("src/main/java/com/example/View/" + filename)
-    points = np.column_stack((df["x"], df["y"], df["z"], df["t"], df["firing"], df["detected_by_GS"]))
     is_noisy = filename.find("noisy") != -1
-    base_color = [1.0, 0.0, 0.0] if not is_noisy else [0.0, 0.0, 1.0]  # Red for true, Blue for noisy
+    base_color = [1.0, 0.0, 0.0] if not is_noisy else [0.0, 0.0, 1.0]
     
-    # Satellite mesh et actor
-    satellite_mesh = pv.Sphere(radius=100000, center=points[0][:3])
-    satellite_actor = plotter.add_mesh(satellite_mesh, color=base_color, smooth_shading=True)
-    
-    # Trail meshes 
-    trail_actors = []
-    trail_meshes = []
-    for j in range(trail_length):
-        sphere = pv.Sphere(radius=50000, center=points[0][:3])
-        actor = plotter.add_mesh(sphere, color=base_color, smooth_shading=True)
-        trail_actors.append(actor)
-        trail_meshes.append(sphere)
-    
-    satellites.append({
-        'points': points,
-        'mesh': satellite_mesh,
-        'actor': satellite_actor,
-        'trail_meshes': trail_meshes,
-        'trail_actors': trail_actors,
-        'base_color': base_color,
-        'is_noisy': is_noisy 
-    })
-
+    # Check if filename contains "TLE"
+    if filename.find("TLE") != -1:
+        # Process each row as a separate satellite
+        for idx, row in df.iterrows():
+            # Create 2D array with shape (1, 6) for consistency
+            points = np.array([[row["x"], row["y"], row["z"], row["t"], row["firing"], row["detected_by_GS"]]])
+            
+            # Satellite mesh and actor
+            satellite_mesh = pv.Sphere(radius=100000, center=points[0][:3])
+            satellite_actor = plotter.add_mesh(satellite_mesh, color=base_color, smooth_shading=True)
+            
+            # Trail meshes
+            trail_actors = []
+            trail_meshes = []
+            for j in range(trail_length):
+                sphere = pv.Sphere(radius=50000, center=points[0][:3])
+                actor = plotter.add_mesh(sphere, color=base_color, smooth_shading=True)
+                trail_actors.append(actor)
+                trail_meshes.append(sphere)
+            
+            satellites.append({
+                'points': points,
+                'mesh': satellite_mesh,
+                'actor': satellite_actor,
+                'trail_meshes': trail_meshes,
+                'trail_actors': trail_actors,
+                'base_color': base_color,
+                'is_noisy': is_noisy
+            })
+    else:
+        # Original behavior: treat entire file as one satellite
+        points = np.column_stack((df["x"], df["y"], df["z"], df["t"], df["firing"], df["detected_by_GS"]))
+        
+        # Satellite mesh and actor
+        satellite_mesh = pv.Sphere(radius=100000, center=points[0][:3])
+        satellite_actor = plotter.add_mesh(satellite_mesh, color=base_color, smooth_shading=True)
+        
+        # Trail meshes
+        trail_actors = []
+        trail_meshes = []
+        for j in range(trail_length):
+            sphere = pv.Sphere(radius=50000, center=points[0][:3])
+            actor = plotter.add_mesh(sphere, color=base_color, smooth_shading=True)
+            trail_actors.append(actor)
+            trail_meshes.append(sphere)
+        
+        satellites.append({
+            'points': points,
+            'mesh': satellite_mesh,
+            'actor': satellite_actor,
+            'trail_meshes': trail_meshes,
+            'trail_actors': trail_actors,
+            'base_color': base_color,
+            'is_noisy': is_noisy
+        })
 # --- Animation ---
 frames = get_time_based_frames(satellites, frame_interval=60.0)
 
 plotter.show(interactive_update=True, full_screen=True)
 
 for frame_start, frame_end, frame_indices in frames:
-    #print(f"Frame: {frame_start} to {frame_end} seconds")
+    
     #Every frame we rotate earth and the position of the GS
     rotate_earth(Earth, frame_end - frame_start, listGS)
-    
+    print(f"Total frames: {zip(satellites, frame_indices)}")
     for sat, indices in zip(satellites, frame_indices):
         if len(indices) == 0:
             continue

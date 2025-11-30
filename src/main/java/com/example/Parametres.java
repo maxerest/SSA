@@ -23,7 +23,7 @@ public class Parametres
 {   
     public String nom_sat;
     //Gestion temps
-    public static AbsoluteDate date_orekit = new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(-3600*20); //-3600*20 to start at t=0s
+    public static AbsoluteDate date_orekit = new AbsoluteDate(new Date(), TimeScalesFactory.getUTC());
     public static double duration =Constants.JULIAN_DAY-(3600*20); //Constants.JULIAN_DAY;
 
     // définition de la Terre

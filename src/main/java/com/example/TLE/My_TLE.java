@@ -83,13 +83,13 @@ public class My_TLE {
         // Choix du type de TLE
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Choisissez le numéro du type de TLE: ");
-        Integer choice = null;
+        System.out.print("Choisissez le numéro du type de TLE: \n");
+        int choice = -1;
 
         // Vérifier que le choix est valide
         My_TLE.TLEType[] types = My_TLE.TLEType.values();
         do {
-            System.out.print("Entrez un numéro valide (1-" + types.length + "): ");
+            System.out.print("Choisissez le numéro du type de TLE:(1-" + types.length + "): ");
             // Vérifier que c'est bien un nombre
             if (!scanner.hasNextInt()) {
                 System.out.println(" Veuillez entrer un nombre!");
@@ -101,7 +101,7 @@ public class My_TLE {
         My_TLE.TLEType selectedType = types[choice - 1];
 
         try {
-            My_TLE.check_if_download_tle(selectedType);
+            check_if_download_tle(selectedType);
         } catch (Exception e) {
             System.err.println("Erreur dans la méthode de télechargement des TLE : " + e.getMessage());
             e.printStackTrace();
@@ -113,7 +113,7 @@ public class My_TLE {
             e.printStackTrace();
         }
         try {
-            create_Statecraft_position(states);
+            Visulations.export_TLE_intial_position(states,selectedType);
         } catch (Exception e) {
             System.err.println("Erreur dans propagation statecraft : " + e.getMessage());
             e.printStackTrace();
@@ -122,13 +122,6 @@ public class My_TLE {
     }
 
 
-    private static void create_Statecraft_position( List<SpacecraftState> states) {
-        int i=1;
-        for (SpacecraftState state : states) {
-            Visulations.export_TLE_intial_position(state,i);
-            i+=1;
-        }
-    }
 
     /**
      * Affiche tous les types de TLE disponibles
@@ -204,7 +197,7 @@ public class My_TLE {
                         // First line of TLE
                         tleLine1 = line;
                     } else if (line.startsWith("2 ") && tleLine1 != null) {
-                        // Second line of TLE - we have a complete TLE now
+                        // Second line of TLE 
                         String tleLine2 = line;
                         
                         try {

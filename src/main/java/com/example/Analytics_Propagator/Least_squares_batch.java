@@ -78,7 +78,7 @@ public class Least_squares_batch {
             covarianceMatrix.setEntry(0, 0, 1.0); // variance = 1.0
             CorrelatedRandomVectorGenerator noiseSource = new CorrelatedRandomVectorGenerator(
                     covarianceMatrix,
-                    1e-12, // small singular value threshold
+                    1e-1, // small singular value threshold
                     gaussianGenerator);
             ElevationDetector elevationDetector = new ElevationDetector(groundStation.getBaseFrame())
                     .withConstantElevation(Parametres.elevation);
@@ -87,7 +87,7 @@ public class Least_squares_batch {
             RangeBuilder rangeBuilder = new RangeBuilder(
                     noiseSource,
                     groundStation,
-                    false, // two-way measurement
+                    true, // two-way measurement
                     10,
                     1.0,
                     satellite);
@@ -102,10 +102,10 @@ public class Least_squares_batch {
             generator.addScheduler(rangeScheduler);
 
             RealMatrix covarianceMatrixAzEl = MatrixUtils.createRealMatrix(2, 2);
-            covarianceMatrixAzEl.setEntry(0, 0, 1.0); // Az variance
-            covarianceMatrixAzEl.setEntry(1, 1, 1.0); // El variance
-            covarianceMatrixAzEl.setEntry(0, 1, 1);
-            covarianceMatrixAzEl.setEntry(1, 0, 1);
+            covarianceMatrixAzEl.setEntry(0, 0, 0.000003); // Az variance
+            covarianceMatrixAzEl.setEntry(0, 1, 0.000003); // El variance
+            covarianceMatrixAzEl.setEntry(1, 0, 0.000003);
+            covarianceMatrixAzEl.setEntry(1, 1, 0.000003);
 
             CorrelatedRandomVectorGenerator noiseSourceAzEl = new CorrelatedRandomVectorGenerator(
                     covarianceMatrixAzEl, 1e-12, gaussianGeneratorAzEl);

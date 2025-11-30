@@ -1,5 +1,6 @@
 package com.example.View;
 
+import com.example.TLE.My_TLE;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Parametres;
@@ -166,21 +167,21 @@ public class Visulations {
 
     }
 
-    public static void export_TLE_intial_position(SpacecraftState state, int i) {
-        String filename = "src/main/java/com/example/View/TLE_initial_positions_sat_" + i + ".csv";
+    public static void export_TLE_intial_position(List<SpacecraftState> states,My_TLE.TLEType selectedType) {
+        String filename = "src/main/java/com/example/View/TLE_sat_"+selectedType+".csv";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-            PVCoordinates pv = state.getPVCoordinates(FramesFactory.getGCRF());
-            // Écrire l'en-tête
             writer.write("x,y,z,t,firing,detected_by_GS\n");
+            for (SpacecraftState state : states) {
+            PVCoordinates pv = state.getPVCoordinates(FramesFactory.getGCRF());
+            // Écrire l'en-tête       
             double time = state.getDate().durationFrom(Parametres.date_orekit);
-            System.out.println(time);
             String line = String.format( Locale.US,"%.2f,%.2f,%.2f,%.6f,%s,%s\n",
             pv.getPosition().getX(), pv.getPosition().getY(), pv.getPosition().getZ(), 0.000000, 0, 0);
-             writer.write(line);
+            writer.write(line);
 
-            System.out.println("✓ Fichier créé: " + filename);
+        }   
         } catch (IOException e) {
-            System.err.println("Erreur lors de la création du fichierdu sat "+i+": " + e.getMessage());
+            System.err.println("Erreur lors de la création du fichier du sat TLE: " + e.getMessage());
         }
     }
 

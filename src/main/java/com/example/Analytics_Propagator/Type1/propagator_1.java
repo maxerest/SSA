@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+import org.checkerframework.checker.units.qual.g;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
 import org.hipparchus.linear.RealMatrix;
@@ -131,6 +132,7 @@ public class Propagator_1
                     if (!first_detection){
                          
                         PVCoordinates pvG = Ground_station.getIodGaussInstance(Parametres.date_orekit.shiftedBy(t), Parametres.date_orekit.shiftedBy(t+120), Parametres.date_orekit.shiftedBy(t+240), Ground_station.which_station_visible(currentState,Parametres.date_orekit.shiftedBy(t)),satellite,pReal);
+
                         // Create measurement uncertainties (sigma) and weights
                         PV meas = new PV(
                             Parametres.date_orekit.shiftedBy(t),
@@ -173,7 +175,7 @@ public class Propagator_1
 
     private KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t) {
                 Random rng = new Random();  
-                double sigmaPosition = 1000;  // meters
+                double sigmaPosition = 1;  // meters
                 double sigmaVelocity = 5;  // m/s
                 double baseWeight = 1;      // weight of measurement
                 Vector3D noisyPos = new Vector3D(
@@ -216,8 +218,8 @@ public class Propagator_1
             Parametres.date_orekit.shiftedBy(t),
             truePV.getPosition(),   
             truePV.getVelocity(),   
-            100000, 
-            100000,
+            10000, 
+            10000,
             0.0000,    
             satellite
         );
@@ -280,7 +282,7 @@ public class Propagator_1
             Vector3D pos = currentState.getPVCoordinates().getPosition();
             try (FileWriter fw = new FileWriter(csvFile, true);
              PrintWriter writer = new PrintWriter(fw)) {
-                writer.printf(Locale.US, "%f,%f,%f,%f,%d,0%n", pos.getX(), pos.getY(), pos.getZ(),currentState.getDate().durationFrom(new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()).shiftedBy(2*3600)), triger ? 1 : 0);
+                writer.printf(Locale.US, "%f,%f,%f,%f,%d,0%n", pos.getX(), pos.getY(), pos.getZ(),currentState.getDate().durationFrom(new AbsoluteDate(new Date(), TimeScalesFactory.getUTC())), triger ? 1 : 0);
             } catch (IOException e) {
                 e.printStackTrace();
             }         
