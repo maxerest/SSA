@@ -167,40 +167,55 @@ public class Visulations {
 
     }
 
-    public static void export_TLE_intial_position(List<SpacecraftState> states,My_TLE.TLEType selectedType) {
-        String filename = "src/main/java/com/example/View/TLE_sat_"+selectedType+".csv";
+    /**
+     * Méthode pour la création des fichiers CSV des TLE. Tous les sats de la TLE
+     * dans un seul fichier puor la visualisation
+     * 
+     * @param states       ; Liste des SpacecraftState des TLE
+     * @param selectedType : Type de TLE sélectionné dans Celestrak
+     */
+    public static void export_TLE_intial_position(List<SpacecraftState> states, My_TLE.TLEType selectedType) {
+        String filename = "src/main/java/com/example/View/TLE_sat_" + selectedType + ".csv";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            // Ecrire l'entête
             writer.write("x,y,z,t,firing,detected_by_GS\n");
-            for (SpacecraftState state : states) {
-            PVCoordinates pv = state.getPVCoordinates(FramesFactory.getGCRF());
-            // Écrire l'en-tête       
-            double time = state.getDate().durationFrom(Parametres.date_orekit);
-            String line = String.format( Locale.US,"%.2f,%.2f,%.2f,%.6f,%s,%s\n",
-            pv.getPosition().getX(), pv.getPosition().getY(), pv.getPosition().getZ(), 0.000000, 0, 0);
-            writer.write(line);
 
-        }   
+            for (SpacecraftState state : states) {
+                PVCoordinates pv = state.getPVCoordinates(FramesFactory.getGCRF());
+                // double time = state.getDate().durationFrom(Parametres.date_orekit);
+                String line = String.format(Locale.US, "%.2f,%.2f,%.2f,%.6f,%s,%s\n",
+                        pv.getPosition().getX(), pv.getPosition().getY(), pv.getPosition().getZ(), 0.000000, 0, 0);
+                writer.write(line);
+
+            }
         } catch (IOException e) {
             System.err.println("Erreur lors de la création du fichier du sat TLE: " + e.getMessage());
         }
     }
 
-    // Initialize CSV for estimated satellite data
-    public static void export_csv_kalman_init(Parametres p) {
-        String sat = p.get_Name();
-        File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
-        if (csvFile.exists()) {
-            csvFile.delete();
-        }
-        try (PrintWriter writer = new PrintWriter(csvFile)) {
-            writer.println("x,y,z,t,firing,detected_by_GS");
-        } catch (IOException e) {
-            e.printStackTrace();
+    /** Initialize CSV files for Kalman filter estimated satellites
+     * 
+     * @param pList : Liste of Parametres of all the satellites
+     */
+    public static void export_csv_kalman_init(List<Parametres> pList) {
+        for (Parametres p : pList) {
+            String sat = p.get_Name();
+            File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
+            if (csvFile.exists()) {
+                csvFile.delete();
+            }
+            try (PrintWriter writer = new PrintWriter(csvFile)) {
+                writer.println("x,y,z,t,firing,detected_by_GS");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    // Files the CSV with zeros data before detection from GS for estimated
-    // satellite
+    /** Initialize CSV file for Kalman filter before detection, fill with 0 to allow smooth visualization
+     * 
+     * @param p : Parametres of the satellite
+     */
     public static void write_csv_before_detection(Parametres p) {
         String sat = p.get_Name();
         File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
@@ -211,7 +226,13 @@ public class Visulations {
             e.printStackTrace();
         }
     }
-
+    /** Add a step to the CSV file for Kalman filter CSV file for visualization
+     * 
+     * @param p : Parametres of the satellite
+     * @param t : time of the step
+     * @param temp_s : state vector at time t
+     * @param detected_by_GS : boolean indicating if the satellite is detected by a ground station at time t
+     */
     public static void export_csv_kalman_add_step(Parametres p, double t, RealVector temp_s, boolean detected_by_GS) {
         // Position
         double x = temp_s.getEntry(0);
@@ -231,7 +252,9 @@ public class Visulations {
         }
 
     }
-
+    /** Run the python script for visualization
+     * 
+     */
     public static void RunPythonScript() {
         try {
             // Build up the full command

@@ -23,7 +23,7 @@ import org.orekit.estimation.measurements.ObservableSatellite;
 public class Ground_station {
     public static List<GroundStation> liste_GS=new ArrayList<>();
     
-    // Call this method at program initialization
+    // Call this method at program initialization to load ground stations from CSV within the public static list liste_GS
     public static void loadStationsFromCSV() {
         String filename = "src/main/java/com/example/Ground_stations/GS_coordinates.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
@@ -41,6 +41,7 @@ public class Ground_station {
                 double alt = Double.parseDouble(parts[3].trim());
                 double station_activation= Double.parseDouble(parts[4].trim());
                 if (station_activation==0){
+                    // Station is deactivated, skip it
                     continue;
                     }
                 TopocentricFrame station = new TopocentricFrame(
@@ -61,6 +62,13 @@ public class Ground_station {
         }
     }
 
+    /**
+     * Check if the satellite is visible from the ground station
+     * @param station : GroundStation where the satellite visibility is checked
+     * @param s : SpacecraftState of the satellite to be checked
+     * @param current_date : Time of check
+     * @return boolean : true if visible, false otherwise
+     */
     private static boolean isVisibleFromStation(GroundStation station, SpacecraftState s, AbsoluteDate current_date){
         
         TopocentricFrame topo = station.getBaseFrame();
@@ -72,6 +80,13 @@ public class Ground_station {
         return elevation > Parametres.elevation;
     }
 
+    /**
+     * Check if at least one ground station can see the satellite
+     * @param s : SpacecraftState of the satellite to be checked
+     * @param current_date : Time of check
+     * @return boolean : true if at least one station can see the satellite, false otherwise
+     */
+
     public static boolean hasVisibleStations(SpacecraftState s, AbsoluteDate current_date) {
         for (GroundStation station : liste_GS) {
             if (isVisibleFromStation(station, s,current_date)) {
@@ -80,6 +95,12 @@ public class Ground_station {
         }
         return false;
     }
+    /**
+     * Return the first ground station that can see the satellite
+     * @param s : SpacecraftState of the satellite to be checked
+     * @param current_date : Time of check
+     * @return GroundStation : first station that can see the satellite, null if none can see it
+     */
     public static GroundStation which_station_visible(SpacecraftState s, AbsoluteDate current_date) {
         for (GroundStation station : liste_GS) {
             if (isVisibleFromStation(station, s,current_date)) {
@@ -88,8 +109,17 @@ public class Ground_station {
         }
         return null;
     }
-    public static PVCoordinates getIodGaussInstance(AbsoluteDate t0, AbsoluteDate t1, AbsoluteDate t2,GroundStation station,ObservableSatellite sat,Parametres pReal) {
-        
+    /**
+     * Implementation of the IOD Gauss method to get an initial orbit determination from 3 angular measurements
+     * @param t0 : time of first measurement
+     * @param t1 : time of second measurement
+     * @param t2 : time of third measurement
+     * @param station : GroundStation where the measurements are taken
+     * @param sat : ObservableSatellite object
+     * @param pReal : Parametres object of the real satellite
+     * @return PVCoordinates : estimated PVCoordinates at time t1
+     */
+    public static PVCoordinates getIodGaussInstance(AbsoluteDate t0, AbsoluteDate t1, AbsoluteDate t2,GroundStation station,ObservableSatellite sat,Parametres pReal) {    
     // Example: az/el in radians
         double[] azel0 = new double[2];
         double[] azel1 = new double[2];
@@ -108,7 +138,7 @@ public class Ground_station {
         azel2[1] = station.getBaseFrame().getElevation(pv2.getPosition(), Parametres.frame, t2);
         
         Random rand = new Random();
-        //Chaneg itif no valid orbit is found
+        //Change it if no valid orbit is found, or too close in time
         double noise = 1e-1;
         // Added noise to the true positions to help Gauss to converge
         for (int i=0; i<2; i++) {
@@ -117,15 +147,15 @@ public class Ground_station {
             azel2[i] += rand.nextGaussian() * noise;
         }
         
-    // Measurement uncertainties (example: 1 milliradian)
+    // Measurement uncertainties 
         double[] sigma = { noise, noise};
     // Measurement weights (example: higher weight = more confidence => longer conv)
-        double[] weight = { 10, 10 };
+        double[] weight = { 1, 1 };
         
         AngularAzEl meas0 = new AngularAzEl(station, t0, azel0, sigma, weight, sat);
         AngularAzEl meas1 = new AngularAzEl(station, t1, azel1, sigma, weight, sat);
         AngularAzEl meas2 = new AngularAzEl(station, t2, azel2, sigma, weight, sat);
-        // ------------------ Gauss example ------------------
+ 
         
         IodGauss gauss = new IodGauss(Parametres.mu);
         // IodGauss also returns an Orbit at the central observation time (t1)

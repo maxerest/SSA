@@ -28,8 +28,8 @@ public class My_TLE {
         LAST_30_DAYS("GROUP=last-30-days", "last-30-days.", "Satellites lancés dans les 30 derniers jours"),
         WEATHER("GROUP=weather", "weather.", "Satellites météorologiques"),
         STATIONS("GROUP=stations", "stations.", "Stations spatiales"),
-        HYPERBOLIC("GROUP=hyperbolic", "hyperbolic.", "Satellites hyperboliques"),
-        GEO_INACTIVE("GROUP=geo-inactive", "geo-inactive.", "Géostationnaires inactifs"),
+        COSMOS_DEBRIS("GROUP=cosmos-2251-debris", "cosmos-2251-debris.", "Debris cosmos "),
+        PLANET("GROUP=planet", "planet.", "Constellation Planet"),
         SPACEX("GROUP=starlink", "starlink.", "Constellation Starlink"),
         DECAYING("SPECIAL=DECAYING", "decaying.", "Satellites en décroissance");
 
@@ -67,11 +67,21 @@ public class My_TLE {
         System.out.println("Initialisation des TLE : " + tleType.getDescription());
         // Créer un scanner pour lire l'entrée
         Scanner scanner = new Scanner(System.in);
-        System.out.print("Telecharger les fichiers? (true/false)");
-        boolean download = scanner.nextBoolean();
+
+        while (true) {
+            System.out.print("Voulez-vous télécharger les fichiers TLE pour " + tleType.getDescription() + "? (true/false): ");
+            if (scanner.hasNextBoolean()) {
+                break;
+            } else {
+                System.out.println(" Entrée invalide. Veuillez entrer 'true' ou 'false'.");
+                scanner.next(); // Consommer l'entrée invalide
+            }
+        }
+        boolean download= scanner.nextBoolean();
+
+
         if (download)
             downloadTLEFiles(tleType);
-        // loadAndDisplayTLEs(tleType);*
 
         scanner.close();
     }
