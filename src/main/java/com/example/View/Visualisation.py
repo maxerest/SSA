@@ -157,7 +157,6 @@ for frame_start, frame_end, frame_indices in frames:
     
     #Every frame we rotate earth and the position of the GS
     rotate_earth(Earth, frame_end - frame_start, listGS)
-    print(f"Total frames: {zip(satellites, frame_indices)}")
     for sat, indices in zip(satellites, frame_indices):
         if len(indices) == 0:
             continue

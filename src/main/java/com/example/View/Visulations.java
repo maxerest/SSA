@@ -2,6 +2,7 @@ package com.example.View;
 
 import com.example.TLE.My_TLE;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.Orbiting_object.*;
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Parametres;
 import java.io.BufferedReader;
@@ -30,7 +31,8 @@ import org.orekit.estimation.measurements.ObservedMeasurement;
 import org.orekit.frames.FramesFactory;
 
 public class Visulations {
-
+    private static PrintWriter csvWriter = null;
+    private static String currentFileName = null;
     /**
      * Création objets satellites pour les orbites réelle de propoagation
      * 
@@ -39,21 +41,37 @@ public class Visulations {
      * @param p          Paramètres du satellite qui sera utilisé dans le propagator
      *                   pour faire un export csv
      */
-
-    public static void export_csv(NumericalPropagator propagator, Parametres p) {
-        String sat = p.get_Name();
-        File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
-        if (csvFile.exists()) {
-            csvFile.delete();
+    public static void export_CSV_real(String name,Vector3D pos, AbsoluteDate currentdate,boolean triger) {
+        if (csvWriter == null) {
+            System.err.println("CSV file not opened. Call openCSV() first.");
+            return;
         }
-        try (PrintWriter writer = new PrintWriter(csvFile)) {
-            writer.println("x,y,z,t,firing,detected_by_GS");
-            propagator.getMultiplexer().add(60, new Propagator_1.Propagation_step(sat, p));
+        try {
+            csvWriter.printf(Locale.US,"%f,%f,%f,%f,%d,%d%n", pos.getX(), pos.getY(), pos.getZ(), (double)currentdate.durationFrom(Parametres.date_orekit), triger ? 1 : 0, 0);
+            csvWriter.flush(); // Ensure data is written immediately
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public static void openCSV_reel_sat(String name){
+        try {
+            if (csvWriter != null) {
+                csvWriter.close();
+            }
+            currentFileName = "src/main/java/com/example/View/" + name + ".csv";
+            csvWriter = new PrintWriter(new FileWriter(currentFileName));
+            csvWriter.println("x,y,z,t,firing,detected_by_GS");
+            csvWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
+    public static void closeCSV() {
+        if (csvWriter != null) {
+            csvWriter.close();
+            csvWriter = null;
+        }
+    }
     /**
      * Méthode pour l'export des mesures de la méthode LSB en CSV
      * 
@@ -61,7 +79,7 @@ public class Visulations {
      *                     utilisées pour faire l'export
      * @param p            Paramètres du satellite
      */
-    public static void export_LSB_csv(Parametres p,
+    public static void export_LSB_csv(Orbiting_object p,
             SortedSet<EstimatedMeasurementBase<?>> measurements) {
         String sat = p.get_Name().replaceAll("real", "noisy");
         // Stocker les mesures par (date, station) pour les associer correctement
@@ -176,10 +194,10 @@ public class Visulations {
      */
     public static void export_TLE_intial_position(List<SpacecraftState> states, My_TLE.TLEType selectedType) {
         String filename = "src/main/java/com/example/View/TLE_sat_" + selectedType + ".csv";
+        filename.equals(filename);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             // Ecrire l'entête
             writer.write("x,y,z,t,firing,detected_by_GS\n");
-
             for (SpacecraftState state : states) {
                 PVCoordinates pv = state.getPVCoordinates(FramesFactory.getGCRF());
                 // double time = state.getDate().durationFrom(Parametres.date_orekit);
@@ -197,8 +215,8 @@ public class Visulations {
      * 
      * @param pList : Liste of Parametres of all the satellites
      */
-    public static void export_csv_kalman_init(List<Parametres> pList) {
-        for (Parametres p : pList) {
+    public static void export_csv_kalman_init(List<Orbiting_object> pList) {
+        for (Orbiting_object p : pList) {
             String sat = p.get_Name();
             File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
             if (csvFile.exists()) {
@@ -216,7 +234,7 @@ public class Visulations {
      * 
      * @param p : Parametres of the satellite
      */
-    public static void write_csv_before_detection(Parametres p) {
+    public static void write_csv_before_detection(Orbiting_object p) {
         String sat = p.get_Name();
         File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);
@@ -233,7 +251,7 @@ public class Visulations {
      * @param temp_s : state vector at time t
      * @param detected_by_GS : boolean indicating if the satellite is detected by a ground station at time t
      */
-    public static void export_csv_kalman_add_step(Parametres p, double t, RealVector temp_s, boolean detected_by_GS) {
+    public static void export_csv_kalman_add_step(Orbiting_object p, double t, RealVector temp_s, boolean detected_by_GS) {
         // Position
         double x = temp_s.getEntry(0);
         double y = temp_s.getEntry(1);

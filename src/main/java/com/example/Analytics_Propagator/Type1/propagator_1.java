@@ -1,16 +1,8 @@
 package com.example.Analytics_Propagator.Type1;
 import com.example.Ground_stations.*;
-import com.example.Analytics_Propagator.Least_squares_batch;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Date;
+import com.example.Orbiting_object.*;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
-
-import org.checkerframework.checker.units.qual.g;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
 import org.hipparchus.linear.RealMatrix;
@@ -42,14 +34,12 @@ import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.ToleranceProvider;
 import org.orekit.propagation.conversion.DormandPrince853IntegratorBuilder;
 import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
-import org.orekit.propagation.conversion.ODEIntegratorBuilder;
 import org.orekit.propagation.events.AltitudeDetector;
 import org.orekit.propagation.events.EventDetector;
 import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
-import org.orekit.time.TimeScalesFactory;
 import org.orekit.utils.Constants;
 import org.orekit.utils.ExtendedPositionProvider;
 import org.orekit.utils.IERSConventions;
@@ -84,22 +74,25 @@ public class Propagator_1
     * @param liste_par_sats_real_orbit : liste des paramètres des satellites avec orbites réelles (sans bruit)
     **/
 
-   public void propagator_real_orbit(List<Parametres> liste_par_sats_real_orbit){
+   public void propagator_real_orbit(List<Orbiting_object> liste_par_sats_real_orbit){
         
     // Paramétrage du propagateur numérique
-        for  (Parametres p : liste_par_sats_real_orbit){
+        for  (Orbiting_object p : liste_par_sats_real_orbit){
             NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(p));
             propagator.setOrbitType(OrbitType.CARTESIAN);
-            propagator.setInitialState(p.s_initialState); 
+            propagator.setInitialState(p.get_s_initialState()); 
             //Ajout des forces au modèles
             Propagator_1.add_force_propagator(propagator,p.get_area(),p.get_cd(),p.get_srpCrossSection(), p.get_srpCoeff());
             // Ajout du détecteur d'altitude
-            AltitudeDetector altitudeDetector = new AltitudeDetector(p.Detectionaltitude,Parametres.earth).withHandler(new Propagator_1.Altitude_limit(p,propagator));
+            AltitudeDetector altitudeDetector = new AltitudeDetector(p.get_Detectionaltitude(),Parametres.earth).withHandler(new Propagator_1.Altitude_limit(p,propagator));
             propagator.addEventDetector(altitudeDetector);
             //p.manoeuvre.lancement_manoeuvre(p, propagator);
-            Visulations.export_csv(propagator, p);
-            
-            propagator.propagate(new AbsoluteDate(Parametres.date_orekit, Parametres.duration)); 
+           
+            propagator.getMultiplexer().add(60, new Propagator_1.Propagation_step( p));
+            Visulations.openCSV_reel_sat(p.get_Name());
+            propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration)); 
+
+            Visulations.closeCSV();
         }
         
     }
@@ -110,14 +103,14 @@ public class Propagator_1
     * 
     * */
 
-    public void propagator_noisy_orbit(List<Parametres> liste_par_sats_noisy_orbit,List<Parametres> liste_par_sats_real_orbit){
+    public void propagator_noisy_orbit(List<Orbiting_object> liste_par_sats_noisy_orbit,List<Orbiting_object> liste_par_sats_real_orbit){
         //Creation of the initial output csv file with basic info(names of colonnes) 
         Visulations.export_csv_kalman_init(liste_par_sats_noisy_orbit);
 
         for (int i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
             ObservableSatellite satellite = new ObservableSatellite(0);
-            Parametres pNoisy = liste_par_sats_noisy_orbit.get(i);
-            Parametres pReal  = liste_par_sats_real_orbit.get(i);
+            Orbiting_object pNoisy = liste_par_sats_noisy_orbit.get(i);
+            Orbiting_object pReal  = liste_par_sats_real_orbit.get(i);
 
             // Setup Kalman estimator
             NumericalPropagatorBuilder builder =new NumericalPropagatorBuilder(pNoisy.get_Cartesian_Orbit(), new DormandPrince853IntegratorBuilder(minStep, maxStep, dP),pNoisy.get_type_anomalie(), 1.0);
@@ -260,7 +253,7 @@ public class Propagator_1
     
 
     //Sets up the integrator for the propagator
-    public static AdaptiveStepsizeIntegrator integrator(Parametres p) {
+    public static AdaptiveStepsizeIntegrator integrator(Orbiting_object p) {
         Orbit o=p.get_Cartesian_Orbit();
         final double[][] tolerance = ToleranceProvider.getDefaultToleranceProvider(dP).getTolerances(o, OrbitType.CARTESIAN);
         AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(minStep, maxStep, tolerance[0], tolerance[1]);
@@ -298,24 +291,16 @@ public class Propagator_1
 
 
     public static class Propagation_step implements OrekitFixedStepHandler {
-        private final String sat;
-        private final Parametres p;
-        public Propagation_step(String sat,Parametres p) {
-            this.sat = sat;
+        private final Orbiting_object p;
+        public Propagation_step(Orbiting_object p) {
             this.p = p;
         }
-
+ 
     
         public void handleStep(SpacecraftState currentState) {
             boolean triger = p.manoeuvre.getTriggers().isFiring(currentState.getDate(), null);
-            File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"+sat+".csv");
             Vector3D pos = currentState.getPVCoordinates().getPosition();
-            try (FileWriter fw = new FileWriter(csvFile, true);
-             PrintWriter writer = new PrintWriter(fw)) {
-                writer.printf(Locale.US, "%f,%f,%f,%f,%d,0%n", pos.getX(), pos.getY(), pos.getZ(),currentState.getDate().durationFrom(new AbsoluteDate(new Date(), TimeScalesFactory.getUTC())), triger ? 1 : 0);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }         
+            Visulations.export_CSV_real(p.get_Name(),pos,currentState.getDate(),triger);
         }
        
     }
@@ -323,18 +308,18 @@ public class Propagator_1
 
     public static class Altitude_limit implements EventHandler{
             private double Detectionaltitude; // Altitude limit for detection
-            private Parametres p; 
+            private Orbiting_object p; 
             private NumericalPropagator propagator;
     
-            public Altitude_limit(Parametres p, NumericalPropagator propagator) {
-                this.Detectionaltitude = p.Detectionaltitude;
+            public Altitude_limit(Orbiting_object p, NumericalPropagator propagator) {
+                this.Detectionaltitude = p.get_Detectionaltitude();
                 this.p = p;
                 this.propagator = propagator;
             }
             // When the event occurs, stop the propagation and export the CSV
             public org.hipparchus.ode.events.Action eventOccurred(final SpacecraftState s, final EventDetector detector, final boolean increasingdouble) {  
-                System.out.println("Altitude reached "+(Detectionaltitude-Constants.WGS84_EARTH_EQUATORIAL_RADIUS)+"km at "+String.format("%.2f",s.getDate().durationFrom(p.get_Date())/3600)+"h after the start, stopping propagation.");
-                Visulations.export_csv(propagator, p);
+                System.out.println("Altitude reached "+(Detectionaltitude-Constants.WGS84_EARTH_EQUATORIAL_RADIUS)+"km at "+String.format("%.2f",s.getDate().durationFrom(Parametres.date_orekit)/3600)+"h after the start, stopping propagation.");
+                //Visulations.export_csv(propagator, p);
                 return org.hipparchus.ode.events.Action.STOP;
             }
         }

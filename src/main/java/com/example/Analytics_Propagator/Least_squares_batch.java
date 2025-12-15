@@ -3,6 +3,8 @@ package com.example.Analytics_Propagator;
 import java.util.SortedSet;
 import com.example.Parametres;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.Orbiting_object.*;
+
 import org.orekit.estimation.measurements.generation.GatheringSubscriber;
 import org.orekit.estimation.measurements.generation.Generator;
 import org.orekit.estimation.measurements.generation.RangeBuilder;
@@ -46,8 +48,9 @@ public class Least_squares_batch {
      * @param groundStations  Liste de toutes les stations au sol
      * @param measurementStep Intervalle entre les mesures (en secondes)
      */
+    
     public static SortedSet<EstimatedMeasurementBase<?>> least_squares_estimation(
-            Parametres p,
+            Orbiting_object p,
             java.util.List<GroundStation> groundStations,
             double measurementStep) {
 
@@ -55,7 +58,7 @@ public class Least_squares_batch {
         // la propagation du satellite
         NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(p));
         propagator.setOrbitType(OrbitType.CARTESIAN);
-        propagator.setInitialState(p.s_initialState);
+        propagator.setInitialState(p.get_s_initialState());
 
         // Ajout des forces au modèle
         Propagator_1.add_force_propagator(propagator, p.get_area(), p.get_cd(),

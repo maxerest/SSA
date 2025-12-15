@@ -1,6 +1,7 @@
 package com.example;
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
 import com.example.TLE.My_TLE;
 import com.example.View.Visulations;
@@ -22,11 +23,10 @@ public class App
 
     public static void main( String[] args )throws IOException 
     {   
-        boolean propagate_real_orbit = false;
+        boolean propagate_real_orbit = true;
         boolean propgate_kalman_filter = false;
-        boolean propagate_least_squares = false;
-        boolean TLE_visualisation = true;
- 
+        boolean propagate_least_squares = true;
+        boolean TLE_visualisation = false;
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
@@ -42,10 +42,10 @@ public class App
         if (propagate_real_orbit){
             // Definition des satellites
             int nb_sat =1;
-            List<Parametres> liste_par_sats_real_orbit = real_orbit(nb_sat);
+            List<Orbiting_object> liste_par_sats_real_orbit = real_orbit(nb_sat);
             Propagator_1 propagator_real_orbit = new Propagator_1();
             propagator_real_orbit.propagator_real_orbit(liste_par_sats_real_orbit);
-            List<Parametres> liste_par_sats_noisy_orbit = null;
+            List<Orbiting_object> liste_par_sats_noisy_orbit = null;
 
             if (propgate_kalman_filter){
                 liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
@@ -53,7 +53,7 @@ public class App
                 propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
             }
             if (propagate_least_squares){
-                for (Parametres pReal : liste_par_sats_real_orbit)
+                for (Orbiting_object pReal : liste_par_sats_real_orbit)
                     //Creation of the estimated orbit through the least square batch method
                     Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
             }  
@@ -82,10 +82,10 @@ public class App
      * Création objets satellites pour les orbites réelle de propoagation
      * @param nb_sat nb d'objets satellites à créer
      */
-    public static List<Parametres> real_orbit(int nb_sat){
+    public static List<Orbiting_object> real_orbit(int nb_sat){
         boolean random_orbit=false;
         Scanner user_orbit_input = new Scanner(System.in);
-        List<Parametres> liste_par_sats = new ArrayList<>();
+        List<Orbiting_object> liste_par_sats = new ArrayList<>();
         for (int i=0;i<nb_sat;i++){
         
         System.out.println("Do you want a random orbit for satellite "+(i+1)+"? (true/false): ");
@@ -102,7 +102,7 @@ public class App
             double anomalie = Math.toRadians(rand.nextDouble() * 360); // between 0 and 360 degrees
 
             liste_par_sats.add(
-                new Parametres.Builder()
+                new Orbiting_object.Builder()
                     .nom_sat("Sat_real" + (i+1))
                     .mass(2500)
                     .semi_axis(semi_axis)
@@ -114,12 +114,12 @@ public class App
                     .type_anomalie(PositionAngleType.MEAN)
                     .type_moteur(1)
                     .start_manoeuvre(300.0)
-                    .duration_manoeuvre(360.0)
+                    .duration_manoeuvre(3600.0)
                     .build());
             continue;
         } 
         liste_par_sats.add(
-            new Parametres.Builder()
+            new Orbiting_object.Builder()
                 .nom_sat("Sat_real" + (i+1))
                 .mass(2500)
                 .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 7000e3)
@@ -144,13 +144,13 @@ public class App
      * @param liste_par_sats_real_orbit liste des satellites avec des orbites réelles pour l'ajout de bruit
      */
 
-    public static List<Parametres> noisy_orbit(List<Parametres> liste_par_sats_real_orbit) {
-    List<Parametres> liste_par_sats_noise_orbit = new ArrayList<>();
+    public static List<Orbiting_object> noisy_orbit(List<Orbiting_object> liste_par_sats_real_orbit) {
+    List<Orbiting_object> liste_par_sats_noise_orbit = new ArrayList<>();
     int i = 0;
-    for (Parametres p : liste_par_sats_real_orbit) {
+    for (Orbiting_object p : liste_par_sats_real_orbit) {
 
         // Build noisy orbit parameters
-        Parametres noisyP = new Parametres.Builder()
+        Orbiting_object noisyP = new Orbiting_object.Builder()
             .nom_sat("Sat_noisy" + (++i))
             .mass(p.get_mass()) // keep same
             .semi_axis(p.get_semi_axis()-100000)

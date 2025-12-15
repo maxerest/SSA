@@ -1,5 +1,7 @@
 package com.example.Ground_stations;
 import com.example.Parametres;
+import com.example.Orbiting_object.*;
+
 import org.orekit.bodies.GeodeticPoint;
 import org.orekit.frames.TopocentricFrame;
 import org.orekit.orbits.Orbit;
@@ -119,7 +121,7 @@ public class Ground_station {
      * @param pReal : Parametres object of the real satellite
      * @return PVCoordinates : estimated PVCoordinates at time t1
      */
-    public static PVCoordinates getIodGaussInstance(AbsoluteDate t0, AbsoluteDate t1, AbsoluteDate t2,GroundStation station,ObservableSatellite sat,Parametres pReal) {    
+    public static PVCoordinates getIodGaussInstance(AbsoluteDate t0, AbsoluteDate t1, AbsoluteDate t2,GroundStation station,ObservableSatellite sat,Orbiting_object pReal) {    
     // Example: az/el in radians
         double[] azel0 = new double[2];
         double[] azel1 = new double[2];
