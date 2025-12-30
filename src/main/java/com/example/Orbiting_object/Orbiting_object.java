@@ -4,7 +4,6 @@ import org.orekit.orbits.Orbit;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.utils.Constants;
-import org.orekit.time.AbsoluteDate;
 import org.orekit.orbits.KeplerianOrbit;
 
 import org.orekit.orbits.CartesianOrbit;
