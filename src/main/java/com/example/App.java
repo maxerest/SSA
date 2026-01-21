@@ -6,7 +6,6 @@ import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
 import com.example.TLE.My_TLE;
 import com.example.View.Visulations;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
