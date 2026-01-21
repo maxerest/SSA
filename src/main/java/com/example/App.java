@@ -1,10 +1,12 @@
 package com.example;
+
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
 import com.example.TLE.My_TLE;
 import com.example.View.Visulations;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
@@ -22,11 +24,14 @@ public class App
 {       
 
     public static void main( String[] args )throws IOException 
-    {   
+    {
         boolean propagate_real_orbit = true;
-        boolean propgate_kalman_filter = false;
+        boolean propagate_kalman_filter = false;
         boolean propagate_least_squares = true;
         boolean TLE_visualisation = false;
+        boolean py_3d_visulations=false;
+        boolean py_graphs_visulations=true;
+
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
@@ -41,13 +46,13 @@ public class App
         
         if (propagate_real_orbit){
             // Definition des satellites
-            int nb_sat =1;
+            int nb_sat =2;
             List<Orbiting_object> liste_par_sats_real_orbit = real_orbit(nb_sat);
             Propagator_1 propagator_real_orbit = new Propagator_1();
             propagator_real_orbit.propagator_real_orbit(liste_par_sats_real_orbit);
             List<Orbiting_object> liste_par_sats_noisy_orbit = null;
 
-            if (propgate_kalman_filter){
+            if (propagate_kalman_filter){
                 liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
                 Propagator_1 propagator_noisy_orbit = new Propagator_1();
                 propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
@@ -59,8 +64,12 @@ public class App
             }  
         }
 
-        //Launch of the python file for visualization
-        Visulations.RunPythonScript();  
+        if(py_3d_visulations){
+        Visulations.RunPythonScript();
+        }
+        if(py_graphs_visulations){
+            Visulations.Python_graph_orbital_param();
+        }
     }
 
     public static void deleteAllCsvFiles() throws IOException  {
@@ -83,14 +92,13 @@ public class App
      * @param nb_sat nb d'objets satellites à créer
      */
     public static List<Orbiting_object> real_orbit(int nb_sat){
-        boolean random_orbit=false;
         Scanner user_orbit_input = new Scanner(System.in);
         List<Orbiting_object> liste_par_sats = new ArrayList<>();
-        for (int i=0;i<nb_sat;i++){
+
+        for (int i = 0; i<nb_sat; i++){
         
         System.out.println("Do you want a random orbit for satellite "+(i+1)+"? (true/false): ");
-        random_orbit= user_orbit_input.nextBoolean();
-
+        boolean random_orbit= user_orbit_input.nextBoolean();
         if (random_orbit){
             System.out.println("Random orbit selected.");
             Random rand = new Random();

@@ -46,7 +46,7 @@ def get_time_based_frames(satellites, frame_interval=60.0):
 pv.close_all()
 script_dir = os.path.dirname(os.path.abspath(__file__))
 filenames = glob.glob(os.path.join(script_dir, "*.csv"))
-filenames = [os.path.basename(f) for f in filenames]
+filenames = [os.path.basename(f) for f in filenames if "Orbital_param" not in f]
 
 # --- Create plotter and Earth ---
 plotter = pv.Plotter()

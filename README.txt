@@ -16,7 +16,7 @@ Visualization of real vs. estimated orbits using Python
 Project Structure
 SSA/
 ├── src/                          # Java source code
-│   ├── App.java                 # Main application entry point
+│   ├── com.example.App.java                 # Main application entry point
 │   └── [orbital mechanics & filtering classes]
 ├── orekit-data/                 # Orekit library data files
 ├── pom.xml                      # Maven configuration
@@ -53,7 +53,7 @@ Geographic coordinates (latitude, longitude, altitude)
 Status (active/inactive)
 
 Step 2: Set Up Satellites
-In App.java, configure:
+In com.example.App.java, configure:
 If you want only the simulated real satellite, if you want Kalman and LSB orbit determination
 Number of "real" satellites to create and estimate
 

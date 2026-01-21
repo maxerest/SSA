@@ -53,7 +53,7 @@ public class Propagator_1
     // Parametres de propagation
     public static double dP = 1.0;
     public static double minStep = 0.1;
-    public static double maxStep = 300.0; // let it go up to 5 min
+    public static double maxStep = 300.0;
     public static double initStep = 60.0;
     public static OneAxisEllipsoid one_axis_earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,Constants.WGS84_EARTH_FLATTENING,FramesFactory.getITRF(IERSConventions.IERS_2010, true));
     public static ExtendedPositionProvider sun = CelestialBodyFactory.getSun();
@@ -83,14 +83,13 @@ public class Propagator_1
             //Ajout des forces au modèles
             Propagator_1.add_force_propagator(propagator,p.get_area(),p.get_cd(),p.get_srpCrossSection(), p.get_srpCoeff());
             // Ajout du détecteur d'altitude
-            AltitudeDetector altitudeDetector = new AltitudeDetector(p.get_Detectionaltitude(),Parametres.earth).withHandler(new Propagator_1.Altitude_limit(p,propagator));
+            AltitudeDetector altitudeDetector = new AltitudeDetector(p.get_Detectionaltitude(),Parametres.earth);
             propagator.addEventDetector(altitudeDetector);
             //p.manoeuvre.lancement_manoeuvre(p, propagator);
            
-            propagator.getMultiplexer().add(60, new Propagator_1.Propagation_step( p));
-            Visulations.openCSV_reel_sat(p.get_Name());
-            propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration)); 
-
+            propagator.getMultiplexer().add(60, new Propagator_1.Propagation_step(p));
+            Visulations.create_CSV_files(p.get_Name());
+            propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
             Visulations.closeCSV();
         }
         
@@ -182,7 +181,7 @@ public class Propagator_1
     }
 
     /** This method adds a noisy measurement to the Kalman filter if the conditions are met
-    * @param kalaman :Kalman estimator created in propagator_noisy_orbit
+    * @param kalman :Kalman estimator created in propagator_noisy_orbit
     * @param truePV : true PVCoordinates of the satellite at time t
     * @param trigger : boolean to know if a manoeuvre is ongoing
     * @param satellite : ObservableSatellite object
@@ -227,9 +226,8 @@ public class Propagator_1
 
     
     /** This method adds a dummy measurement to the Kalman filter. The weight is set to 0 so that the filter ignores it but still performs an estimation step.
-    * @param kalaman :Kalman estimator created in propagator_noisy_orbit
+    * @param kalman :Kalman estimator created in propagator_noisy_orbit
     * @param truePV : true PVCoordinates of the satellite at time t
-    * @param trigger : boolean to know if a manoeuvre is ongoing
     * @param satellite : ObservableSatellite object
     * @param t : time of the measurement 
     **/
@@ -297,30 +295,12 @@ public class Propagator_1
  
     
         public void handleStep(SpacecraftState currentState) {
-            boolean triger = p.manoeuvre.getTriggers().isFiring(currentState.getDate(), null);
+            boolean trigger = p.manoeuvre.getTriggers().isFiring(currentState.getDate(), null);
             Vector3D pos = currentState.getPVCoordinates().getPosition();
-            Visulations.export_CSV_real(p.get_Name(),pos,currentState.getDate(),triger);
+            Visulations.update_CSV_xyz_realsat(p.get_Name(),pos,currentState.getDate(),trigger);
+            Visulations.update_csv_orbital_realsat(p.get_Name(),currentState.getOrbit(), currentState.getDate(),trigger);
         }
        
     }
-    //This class handles the altitude event, if a specific altitude is reached, the propagation stops
-
-    public static class Altitude_limit implements EventHandler{
-            private double Detectionaltitude; // Altitude limit for detection
-            private Orbiting_object p; 
-            private NumericalPropagator propagator;
-    
-            public Altitude_limit(Orbiting_object p, NumericalPropagator propagator) {
-                this.Detectionaltitude = p.get_Detectionaltitude();
-                this.p = p;
-                this.propagator = propagator;
-            }
-            // When the event occurs, stop the propagation and export the CSV
-            public org.hipparchus.ode.events.Action eventOccurred(final SpacecraftState s, final EventDetector detector, final boolean increasingdouble) {  
-                System.out.println("Altitude reached "+(Detectionaltitude-Constants.WGS84_EARTH_EQUATORIAL_RADIUS)+"km at "+String.format("%.2f",s.getDate().durationFrom(Parametres.date_orekit)/3600)+"h after the start, stopping propagation.");
-                //Visulations.export_csv(propagator, p);
-                return org.hipparchus.ode.events.Action.STOP;
-            }
-        }
         
 }

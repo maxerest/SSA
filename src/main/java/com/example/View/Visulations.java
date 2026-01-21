@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
+import org.orekit.orbits.Orbit;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
@@ -30,46 +31,72 @@ import org.orekit.estimation.measurements.GroundStation;
 import org.orekit.estimation.measurements.ObservedMeasurement;
 import org.orekit.frames.FramesFactory;
 
+import javax.swing.plaf.synth.SynthTextAreaUI;
+
 public class Visulations {
-    private static PrintWriter csvWriter = null;
+    private static Map<String, PrintWriter> csvWriters = new HashMap<>();
     private static String currentFileName = null;
-    /**
-     * Création objets satellites pour les orbites réelle de propoagation
-     * 
-     * @param propagator propgateur utilisé pour la simulation qui sera utilisée
-     *                   pour l'export
-     * @param p          Paramètres du satellite qui sera utilisé dans le propagator
-     *                   pour faire un export csv
-     */
-    public static void export_CSV_real(String name,Vector3D pos, AbsoluteDate currentdate,boolean triger) {
-        if (csvWriter == null) {
-            System.err.println("CSV file not opened. Call openCSV() first.");
-            return;
+
+    public static void update_csv_orbital_realsat (String name,Orbit orbit_sat, AbsoluteDate currentdate,boolean trigger){
+        name = name + "_Orbital_param";
+        if (!csvWriters.containsKey(name)) {
+            csvWriters.get(name).close();
         }
         try {
-            csvWriter.printf(Locale.US,"%f,%f,%f,%f,%d,%d%n", pos.getX(), pos.getY(), pos.getZ(), (double)currentdate.durationFrom(Parametres.date_orekit), triger ? 1 : 0, 0);
-            csvWriter.flush(); // Ensure data is written immediately
+            PrintWriter v = csvWriters.get(name);
+            v.printf(Locale.US,"%f,%f,%f,%f,%d,%d%n", orbit_sat.getA(), orbit_sat.getE(), orbit_sat.getI(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
+            v.flush(); // Ensure data is written immediately
+        } catch (Exception e) {
+            System.out.println("erreur param orbit CSV");
+            e.printStackTrace();
+        }
+
+
+    }
+    public static void update_CSV_xyz_realsat(String name,Vector3D pos, AbsoluteDate currentdate,boolean trigger) {
+
+
+            // Close previous writer if it exists
+        if (!csvWriters.containsKey(name)) {
+                csvWriters.get(name).close();
+            }
+        try {
+            PrintWriter v = csvWriters.get(name);
+            v.printf(Locale.US,"%f,%f,%f,%f,%d,%d%n", pos.getX(), pos.getY(), pos.getZ(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
+            v.flush();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public static void openCSV_reel_sat(String name){
+
+    public static void create_CSV_files(String name){
+        List<String> names = List.of(name, name + "_Orbital_param");
+        for ( String name_temp :names){
         try {
-            if (csvWriter != null) {
-                csvWriter.close();
+            if (csvWriters.containsKey(name_temp)) {
+                csvWriters.get(name_temp).close();
+
             }
-            currentFileName = "src/main/java/com/example/View/" + name + ".csv";
-            csvWriter = new PrintWriter(new FileWriter(currentFileName));
-            csvWriter.println("x,y,z,t,firing,detected_by_GS");
+            currentFileName = "src/main/java/com/example/View/" + name_temp + ".csv";
+            PrintWriter csvWriter = new PrintWriter(new FileWriter(currentFileName));
+            if (name_temp.contains("_Orbital_param")){
+                csvWriter.println("a,e,i,t,firing,detected_by_GS");
+            }else{
+                csvWriter.println("x,y,z,t,firing,detected_by_GS");
+            }
+            csvWriters.put(name_temp, csvWriter);
             csvWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        }
+
     }
     public static void closeCSV() {
-        if (csvWriter != null) {
-            csvWriter.close();
-            csvWriter = null;
+        for (Map.Entry<String , PrintWriter> entry : csvWriters.entrySet()) {
+            PrintWriter v = entry.getValue();
+            v.close();
         }
     }
     /**
@@ -258,12 +285,12 @@ public class Visulations {
         double z = temp_s.getEntry(2);
         // Velocity
         Vector3D pos = new Vector3D(x, y, z);
-        boolean triger = p.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null);
+        boolean trigger = p.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null);
         File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"
                 + p.get_Name() + ".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);
                 PrintWriter writer = new PrintWriter(fw)) {
-            writer.printf(Locale.US, "%f,%f,%f,%f,%d,%d%n", pos.getX(), pos.getY(), pos.getZ(), t, triger ? 1 : 0,
+            writer.printf(Locale.US, "%f,%f,%f,%f,%d,%d%n", pos.getX(), pos.getY(), pos.getZ(), t, trigger ? 1 : 0,
                     detected_by_GS ? 1 : 0);
         } catch (IOException e) {
             e.printStackTrace();
@@ -283,12 +310,10 @@ public class Visulations {
             // Pass the whole list into ProcessBuilder
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
-
             Process process = pb.start();
-
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
-                while ((line = reader.readLine()) != null) {
+                while (( line = reader.readLine()) != null) {
                     System.out.println("[PY] " + line);
                 }
             }
@@ -297,9 +322,31 @@ public class Visulations {
             System.out.println("Exited with code: " + exitCode);
 
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            Thread.currentThread().interrupt();
+            System.out.println("Error while launching the py 3d visualisation");
         }
     }
+    public static void Python_graph_orbital_param(){
+        try {
+            // Build up the full command
+            List<String> cmd = new ArrayList<>();
+            cmd.add("python");
+            cmd.add("src/main/java/com/example/View/graphs.py");
+            ProcessBuilder pb = new ProcessBuilder(cmd);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while (( line = reader.readLine()) != null) {
+                    System.out.println("[PY] " + line);
+                }
+            }
+            int exitCode = process.waitFor();
+            System.out.println("Exited with code: " + exitCode);
 
+        } catch (IOException | InterruptedException e) {
+            System.out.println("Error while launching the py graphs visulations");
+        }
+
+
+    }
 }
