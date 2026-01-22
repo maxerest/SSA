@@ -73,21 +73,20 @@ public class Propagator_1
     * @param liste_par_sats_real_orbit : liste des paramètres des satellites avec orbites réelles (sans bruit)
     **/
 
-   public void propagator_real_orbit(List<Orbiting_object> liste_par_sats_real_orbit){
+   public void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit){
         
     // Paramétrage du propagateur numérique
-        for  (Orbiting_object p : liste_par_sats_real_orbit){
+        for  (Satellite p : liste_par_sats_real_orbit){
             NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(p));
             propagator.setOrbitType(OrbitType.CARTESIAN);
-            propagator.setInitialState(p.get_s_initialState()); 
+            propagator.setInitialState(p.get_s_initialState());
             //Ajout des forces au modèles
-            Propagator_1.add_force_propagator(propagator,p.get_area(),p.get_cd(),p.get_srpCrossSection(), p.get_srpCoeff());
+            Propagator_1.add_force_propagator(propagator,p.getArea(),p.getCd(),p.getSrpCrossSection(), p.getSrpCoeff());
             // Ajout du détecteur d'altitude
             AltitudeDetector altitudeDetector = new AltitudeDetector(p.get_Detectionaltitude(),Parametres.earth);
             propagator.addEventDetector(altitudeDetector);
-            //p.manoeuvre.lancement_manoeuvre(p, propagator);
-           
-            propagator.getMultiplexer().add(60, new Propagator_1.Propagation_step(p));
+            p.manoeuvre.lancement_manoeuvre(p, propagator);
+            propagator.getMultiplexer().add(60, new Propagator_1.step_handler(p));
             Visulations.create_CSV_files(p.get_Name());
             propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
             Visulations.closeCSV();
@@ -95,24 +94,30 @@ public class Propagator_1
         
     }
 
+    public  NumericalPropagator creation_propagator(SpacecraftState s){
+        NumericalPropagator propagator =null;
+        return propagator;
+   }
+
+
     /** 
     *@param liste_par_sats_noisy_orbit : liste des paramètres des satellites avec orbites bruitées
     *@param liste_par_sats_real_orbit : liste des paramètres des satellites avec orbites réelles (sans bruit) 
     * 
     * */
 
-    public void propagator_noisy_orbit(List<Orbiting_object> liste_par_sats_noisy_orbit,List<Orbiting_object> liste_par_sats_real_orbit){
+    public void propagator_noisy_orbit(List<Satellite> liste_par_sats_noisy_orbit,List<Satellite> liste_par_sats_real_orbit){
         //Creation of the initial output csv file with basic info(names of colonnes) 
         Visulations.export_csv_kalman_init(liste_par_sats_noisy_orbit);
 
         for (int i = 0; i < liste_par_sats_noisy_orbit.size(); i++) {
             ObservableSatellite satellite = new ObservableSatellite(0);
-            Orbiting_object pNoisy = liste_par_sats_noisy_orbit.get(i);
-            Orbiting_object pReal  = liste_par_sats_real_orbit.get(i);
+            Satellite pNoisy = liste_par_sats_noisy_orbit.get(i);
+            Satellite pReal  = liste_par_sats_real_orbit.get(i);
 
             // Setup Kalman estimator
             NumericalPropagatorBuilder builder =new NumericalPropagatorBuilder(pNoisy.get_Cartesian_Orbit(), new DormandPrince853IntegratorBuilder(minStep, maxStep, dP),pNoisy.get_type_anomalie(), 1.0);
-            builder =Propagator_1.add_force_propagator(builder,pNoisy.get_area(),pNoisy.get_cd(),pNoisy.get_srpCrossSection(), pNoisy.get_srpCoeff());
+            builder =Propagator_1.add_force_propagator(builder,pNoisy.getArea(),pNoisy.getCd(),pNoisy.getSrpCrossSection(), pNoisy.getSrpCoeff());
             KalmanEstimatorBuilder kalmanBuilder = new KalmanEstimatorBuilder();
             kalmanBuilder.addPropagationConfiguration(builder, new ConstantProcessNoise( initialStateCovariance,processNoiseMatrix));
             KalmanEstimator kalman = kalmanBuilder.build();
@@ -287,9 +292,9 @@ public class Propagator_1
     }
 
 
-    public static class Propagation_step implements OrekitFixedStepHandler {
-        private final Orbiting_object p;
-        public Propagation_step(Orbiting_object p) {
+    public static class step_handler implements OrekitFixedStepHandler {
+        private final Satellite p;
+        public step_handler(Satellite p) {
             this.p = p;
         }
  

@@ -50,7 +50,7 @@ public class Least_squares_batch {
      */
     
     public static SortedSet<EstimatedMeasurementBase<?>> least_squares_estimation(
-            Orbiting_object p,
+            Satellite p,
             java.util.List<GroundStation> groundStations,
             double measurementStep) {
 
@@ -61,8 +61,8 @@ public class Least_squares_batch {
         propagator.setInitialState(p.get_s_initialState());
 
         // Ajout des forces au modèle
-        Propagator_1.add_force_propagator(propagator, p.get_area(), p.get_cd(),
-                p.get_srpCrossSection(), p.get_srpCoeff());
+        Propagator_1.add_force_propagator(propagator, p.getArea(), p.getCd(),
+                p.getSrpCrossSection(), p.getSrpCoeff());
 
         // Création du générateur de mesures
         Generator generator = new Generator();

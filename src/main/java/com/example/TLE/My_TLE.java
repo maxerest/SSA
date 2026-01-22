@@ -86,7 +86,7 @@ public class My_TLE {
         scanner.close();
     }
 
-    public static void main() {
+    public static void choixTLE() {
         // Afficher les options disponibles
         My_TLE.displayAvailableTLETypes();
         List<SpacecraftState> states = null;
@@ -125,7 +125,7 @@ public class My_TLE {
         try {
             Visulations.export_TLE_intial_position(states,selectedType);
         } catch (Exception e) {
-            System.err.println("Erreur dans propagation statecraft : " + e.getMessage());
+            System.err.println("Erreur dans export statecraft : " + e.getMessage());
             e.printStackTrace();
         }
         scanner.close();

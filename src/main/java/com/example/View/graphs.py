@@ -13,11 +13,11 @@ def get_orbital_param_files(folder_path):
     csv_files = glob.glob(os.path.join(folder_path, "*Orbital_param*.csv"))
     return sorted(csv_files)
 
-def plot_csv_data(file_path):
+def plot_csv_data(file_path,sample_rate=3):
     """Read CSV and create plots - first 3 columns are values, 4th is time"""
     try:
-        # Read the CSV file
         df = pd.read_csv(file_path)
+        df = df.iloc[::sample_rate]
 
         # Get first 3 columns as values and 4th as time
         value_cols = df.columns[:3].tolist()

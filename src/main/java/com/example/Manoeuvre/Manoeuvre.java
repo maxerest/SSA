@@ -1,7 +1,9 @@
 package com.example.Manoeuvre;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hipparchus.geometry.euclidean.threed.Rotation;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.util.FastMath;
+import org.jetbrains.annotations.Contract;
 import org.orekit.attitudes.AttitudeProvider;
 import org.orekit.attitudes.FrameAlignedProvider;
 import org.orekit.forces.maneuvers.propulsion.BasicConstantThrustPropulsionModel;
@@ -22,9 +24,10 @@ public class Manoeuvre {
     private  ManeuverTriggers triggers;
     private double thrust = 800;
     private double isp    = 318;
-    private double[]  motor_1() {
-        this.thrust = 8000;
-        this.isp    = 3180;
+    @Contract(value = " -> new", mutates = "this")
+    private double  []  motor_1() {
+        this.thrust = 0.3;
+        this.isp    =2000;
         return new double[] {this.thrust,this.isp};
     }
     private double[]  motor_2() {
@@ -43,15 +46,15 @@ public class Manoeuvre {
      * @param p : Parametres of the satellite
      * @param propagator : NumericalPropagator where the manoeuvre is added
      */
-    public void lancement_manoeuvre(Orbiting_object p, NumericalPropagator propagator){
+    public void lancement_manoeuvre(Satellite p, NumericalPropagator propagator){
             double[] params_motor;
-            if (p.get_Type_moteur()==1){
+            if (p.getType_moteur()==1){
                 params_motor = motor_1();
             }
-            else if (p.get_Type_moteur()==2){
+            else if (p.getType_moteur()==2){
                 params_motor = motor_2();
             }else {
-                throw new IllegalArgumentException("Unknown moteur: " + p.get_Type_moteur());
+                throw new IllegalArgumentException("Unknown moteur: " + p.getType_moteur());
             }
             this.thrust = params_motor[0];
             this.isp    = params_motor[1];
@@ -63,7 +66,7 @@ public class Manoeuvre {
 
             final PropulsionModel propulsionModel =
                             new BasicConstantThrustPropulsionModel(thrust, isp,
-                                                                   Vector3D.MINUS_I,
+                                                                   Vector3D.PLUS_I,
                                                                    "apogee-engine");
             //triggers.isFiring(null, null);
             // build maneuver and add it to the propagator as a new force model

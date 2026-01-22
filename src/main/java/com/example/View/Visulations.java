@@ -221,7 +221,6 @@ public class Visulations {
      */
     public static void export_TLE_intial_position(List<SpacecraftState> states, My_TLE.TLEType selectedType) {
         String filename = "src/main/java/com/example/View/TLE_sat_" + selectedType + ".csv";
-        filename.equals(filename);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             // Ecrire l'entête
             writer.write("x,y,z,t,firing,detected_by_GS\n");
@@ -242,7 +241,7 @@ public class Visulations {
      * 
      * @param pList : Liste of Parametres of all the satellites
      */
-    public static void export_csv_kalman_init(List<Orbiting_object> pList) {
+    public static void export_csv_kalman_init(List<Satellite> pList) {
         for (Orbiting_object p : pList) {
             String sat = p.get_Name();
             File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
@@ -261,7 +260,7 @@ public class Visulations {
      * 
      * @param p : Parametres of the satellite
      */
-    public static void write_csv_before_detection(Orbiting_object p) {
+    public static void write_csv_before_detection(Satellite p) {
         String sat = p.get_Name();
         File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);
@@ -278,7 +277,7 @@ public class Visulations {
      * @param temp_s : state vector at time t
      * @param detected_by_GS : boolean indicating if the satellite is detected by a ground station at time t
      */
-    public static void export_csv_kalman_add_step(Orbiting_object p, double t, RealVector temp_s, boolean detected_by_GS) {
+    public static void export_csv_kalman_add_step(Satellite p, double t, RealVector temp_s, boolean detected_by_GS) {
         // Position
         double x = temp_s.getEntry(0);
         double y = temp_s.getEntry(1);
