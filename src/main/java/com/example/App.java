@@ -24,12 +24,13 @@ public class App
 
     public static void main( String[] args )throws IOException 
     {
-        boolean propagate_real_orbit = true;
+        boolean propagate_real_orbit = false;
         boolean propagate_kalman_filter = false;
-        boolean propagate_least_squares = true;
-        boolean TLE_visualisation = false;
+        boolean propagate_least_squares = false;
+        boolean TLE_visualisation = true;
+        boolean TLE_propagation=true;
         boolean py_3d_visulations=true;
-        boolean py_graphs_visulations=true;
+        boolean py_graphs_visulations=false;
 
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
@@ -42,6 +43,8 @@ public class App
         Satellite test_sat =new Satellite.Builder().cd(10).build();
         if (TLE_visualisation)
             My_TLE.choixTLE();
+        if (TLE_propagation)
+            My_TLE.propagation();
         
         if (propagate_real_orbit){
             // Definition des satellites
@@ -100,15 +103,15 @@ public class App
                 .nom_sat("Sat_real" + (i+1))
                 .mass(2500)
                 .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 300000)
-                .eccentricity(0.005)
-                .inclinaison(Math.toRadians(96.6))
+                .eccentricity(0.001)
+                .inclinaison(Math.toRadians(0))
                 .long_noeud_ascendant(Math.toRadians(90))
                 .arg_periastre(Math.toRadians((i+1)*15))
                 .anomalie(Math.toRadians(60 + ((i+1)*15)))
                 .type_anomalie(PositionAngleType.MEAN)
                 .type_moteur(1)
-                .start_manoeuvre(300.0)
-                .duration_manoeuvre(1)
+                .start_manoeuvre(86400)
+                .duration_manoeuvre(1000)
                 .build());        
         }
         user_orbit_input.close();

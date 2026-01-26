@@ -3,6 +3,8 @@ import com.example.Ground_stations.*;
 import com.example.Orbiting_object.*;
 import java.util.List;
 import java.util.Random;
+
+import org.hipparchus.geometry.Space;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
 import org.hipparchus.linear.RealMatrix;
@@ -77,28 +79,34 @@ public class Propagator_1
         
     // Paramétrage du propagateur numérique
         for  (Satellite p : liste_par_sats_real_orbit){
-            NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(p));
-            propagator.setOrbitType(OrbitType.CARTESIAN);
-            propagator.setInitialState(p.get_s_initialState());
-            //Ajout des forces au modèles
-            Propagator_1.add_force_propagator(propagator,p.getArea(),p.getCd(),p.getSrpCrossSection(), p.getSrpCoeff());
-            // Ajout du détecteur d'altitude
-            AltitudeDetector altitudeDetector = new AltitudeDetector(p.get_Detectionaltitude(),Parametres.earth);
-            propagator.addEventDetector(altitudeDetector);
-            p.manoeuvre.lancement_manoeuvre(p, propagator);
-            propagator.getMultiplexer().add(60, new Propagator_1.step_handler(p));
             Visulations.create_CSV_files(p.get_Name());
+            NumericalPropagator propagator = generic_propagator(p);
+            p.manoeuvre.lancement_manoeuvre(p, propagator);
             propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
             Visulations.closeCSV();
         }
         
     }
 
-    public  NumericalPropagator creation_propagator(SpacecraftState s){
-        NumericalPropagator propagator =null;
-        return propagator;
+    public static void propagator_TLE (List<Satellite> List_Satellite){
+       for (Satellite sat : List_Satellite){
+           Visulations.create_CSV_files(sat.get_Name());
+           generic_propagator(sat).propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
+           Visulations.closeCSV();
+       }
    }
-
+    public static NumericalPropagator generic_propagator(Satellite satellite){
+        NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(satellite));
+        propagator.setOrbitType(OrbitType.CARTESIAN);
+        propagator.setInitialState(satellite.get_s_initialState());
+        //Ajout des forces au propagateur
+        Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
+        // Ajout du détecteur d'altitude
+        AltitudeDetector altitudeDetector = new AltitudeDetector(satellite.get_Detectionaltitude(),Parametres.earth);
+        propagator.addEventDetector(altitudeDetector);
+        propagator.getMultiplexer().add(60, new Propagator_1.step_handler(satellite));
+       return propagator;
+    }
 
     /** 
     *@param liste_par_sats_noisy_orbit : liste des paramètres des satellites avec orbites bruitées

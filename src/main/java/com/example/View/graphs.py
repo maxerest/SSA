@@ -53,7 +53,7 @@ def main():
     if not csv_files:
         print("No CSV files with 'Orbital_param' found in this folder!")
         return
-
+    plt.close('all')
     # Plot each file
     for file_path in csv_files:
         plot_csv_data(file_path)

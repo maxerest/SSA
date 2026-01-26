@@ -22,16 +22,16 @@ import com.example.Orbiting_object.*;
 
 public class Manoeuvre {
     private  ManeuverTriggers triggers;
-    private double thrust = 800;
-    private double isp    = 318;
+    private double thrust;
+    private double isp;
     @Contract(value = " -> new", mutates = "this")
     private double  []  motor_1() {
-        this.thrust = 0.3;
+        this.thrust = 1000;
         this.isp    =2000;
         return new double[] {this.thrust,this.isp};
     }
     private double[]  motor_2() {
-        this.thrust = 3000;
+        this.thrust = 0.2;
         this.isp    = 3180;
         return new double[] {this.thrust,this.isp};
     }
@@ -68,7 +68,6 @@ public class Manoeuvre {
                             new BasicConstantThrustPropulsionModel(thrust, isp,
                                                                    Vector3D.PLUS_I,
                                                                    "apogee-engine");
-            //triggers.isFiring(null, null);
             // build maneuver and add it to the propagator as a new force model
             propagator.addForceModel(new Maneuver(attitudeOverride, triggers, propulsionModel));
         

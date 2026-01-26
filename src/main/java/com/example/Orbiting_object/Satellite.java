@@ -2,6 +2,7 @@ package com.example.Orbiting_object;
 
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Parametres;
+import org.hipparchus.geometry.Space;
 import org.orekit.orbits.CartesianOrbit;
 import org.orekit.orbits.KeplerianOrbit;
 import org.orekit.orbits.PositionAngleType;
@@ -19,8 +20,8 @@ public class Satellite extends Orbiting_object {
             .duration(duration_manoeuvre)
             .build();
     // Parametres satellite
-    private final double area;    // m^2
-    private final double cd ;
+    private double area=2;    // m^2
+    private double cd=0.85 ;
     private final double srpCrossSection;   // m²
     private final double srpCoeff;
 
@@ -34,7 +35,8 @@ public class Satellite extends Orbiting_object {
         this.srpCrossSection = builder.srpCrossSection;
         this.srpCoeff = builder.srpCoeff;
     }
-    public static class Builder extends Orbiting_object.Builder{
+    public static class Builder extends  Orbiting_object.Builder{
+
         private int type_moteur = 1;
         private double start_manoeuvre = 300;
         private double duration_manoeuvre = 360;
@@ -63,7 +65,8 @@ public class Satellite extends Orbiting_object {
         public Builder type_anomalie(PositionAngleType t) { super.type_anomalie(t); return this; }
         @Override
         public Builder Detectionaltitude(Double d) { super.Detectionaltitude(d); return this; }
-
+        @Override
+        public  Builder s_initialState(SpacecraftState s) {super.s_initialState(s);return this;}
         // Delegate to parent Builder for orbital parameters
         public Builder type_moteur(int t) { this.type_moteur = t; return this; }
         public Builder start_manoeuvre(double s) { this.start_manoeuvre = s; return this; }
@@ -103,8 +106,6 @@ public class Satellite extends Orbiting_object {
         return srpCrossSection;
     }
 
-    public double getSrpCoeff() {
-        return srpCoeff;
-    }
+    public double getSrpCoeff() {return srpCoeff;}
 
 }

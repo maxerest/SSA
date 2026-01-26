@@ -5,6 +5,7 @@ import com.example.Parametres;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Orbiting_object.*;
 
+import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.estimation.measurements.generation.GatheringSubscriber;
 import org.orekit.estimation.measurements.generation.Generator;
 import org.orekit.estimation.measurements.generation.RangeBuilder;
@@ -13,6 +14,7 @@ import org.orekit.estimation.measurements.generation.EventBasedScheduler;
 import org.orekit.estimation.measurements.EstimatedMeasurementBase;
 import org.orekit.estimation.measurements.GroundStation;
 import org.orekit.estimation.measurements.ObservableSatellite;
+import org.orekit.frames.TopocentricFrame;
 import org.orekit.orbits.OrbitType;
 import org.orekit.propagation.conversion.DormandPrince853IntegratorBuilder;
 import org.orekit.propagation.conversion.ODEIntegratorBuilder;
@@ -134,8 +136,7 @@ public class Least_squares_batch {
                 Parametres.date_orekit.shiftedBy(Parametres.duration));
 
         // Récupération des mesures
-        SortedSet<EstimatedMeasurementBase<?>> measurements = subscriber.getGeneratedMeasurements();
-        return measurements;
+        return subscriber.getGeneratedMeasurements();
     }
 
     /**
@@ -156,12 +157,12 @@ public class Least_squares_batch {
         double north = range * cosEl * cosAz; // Y axis
         double up = range * sinEl; // Z axis
 
-        org.hipparchus.geometry.euclidean.threed.Vector3D topoPosition = new org.hipparchus.geometry.euclidean.threed.Vector3D(
+        Vector3D topoPosition = new Vector3D(
                 east, north, up);
 
         // 2. Transformer vers ECEF
-        org.orekit.frames.TopocentricFrame topoFrame = groundStation.getBaseFrame();
-        org.hipparchus.geometry.euclidean.threed.Vector3D satellitePosition = topoFrame
+        TopocentricFrame topoFrame = groundStation.getBaseFrame();
+        Vector3D satellitePosition = topoFrame
                 .getTransformTo(Parametres.frame, date)
                 .transformPosition(topoPosition);
 

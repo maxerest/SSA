@@ -20,12 +20,9 @@ import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.PVCoordinates;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.RealVector;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.SortedSet;
+
+import java.util.*;
+
 import org.orekit.estimation.measurements.EstimatedMeasurementBase;
 import org.orekit.estimation.measurements.GroundStation;
 import org.orekit.estimation.measurements.ObservedMeasurement;
@@ -129,6 +126,7 @@ public class Visulations {
                 if (!rangeByStationDate.containsKey(stationKey)) {
                     rangeByStationDate.put(stationKey, new HashMap<>());
                 }
+
                 rangeByStationDate.get(stationKey).put(date, values[0]);
 
             } else if (type.equals("AngularAzEl")) {
@@ -219,13 +217,13 @@ public class Visulations {
      * @param states       ; Liste des SpacecraftState des TLE
      * @param selectedType : Type de TLE sélectionné dans Celestrak
      */
-    public static void export_TLE_intial_position(List<SpacecraftState> states, My_TLE.TLEType selectedType) {
+    public static void export_TLE_intial_position(Collection<SpacecraftState> states, My_TLE.TLEType selectedType) {
         String filename = "src/main/java/com/example/View/TLE_sat_" + selectedType + ".csv";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             // Ecrire l'entête
             writer.write("x,y,z,t,firing,detected_by_GS\n");
             for (SpacecraftState state : states) {
-                PVCoordinates pv = state.getPVCoordinates(FramesFactory.getGCRF());
+                PVCoordinates pv = state.getPVCoordinates(FramesFactory.getEME2000());
                 // double time = state.getDate().durationFrom(Parametres.date_orekit);
                 String line = String.format(Locale.US, "%.2f,%.2f,%.2f,%.6f,%s,%s\n",
                         pv.getPosition().getX(), pv.getPosition().getY(), pv.getPosition().getZ(), 0.000000, 0, 0);
