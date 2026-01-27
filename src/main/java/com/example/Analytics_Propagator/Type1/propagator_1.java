@@ -62,11 +62,11 @@ public class Propagator_1
     public static Atmosphere atmosphere = new HarrisPriester(CelestialBodyFactory.getSun(), one_axis_earth); 
     
     //Definition parametres matrices Kalman 
-    private RealMatrix processNoiseMatrix = MatrixUtils.createRealDiagonalMatrix(new double[]{
+    private static final RealMatrix processNoiseMatrix = MatrixUtils.createRealDiagonalMatrix(new double[]{
         100000, 100000, 100000,  // position [m²]   
         0.1, 0.10, 0.10   // velocity [(m/s)²]
     });
-    private RealMatrix initialStateCovariance = MatrixUtils.createRealDiagonalMatrix(new double[]{
+    private static final RealMatrix initialStateCovariance = MatrixUtils.createRealDiagonalMatrix(new double[]{
         100, 100, 100,   // position in m² → almost zero uncertainty
         0.001,0.001, 0.001    // velocity in (m/s)² → almost zero uncertainty
     });
@@ -75,7 +75,7 @@ public class Propagator_1
     * @param liste_par_sats_real_orbit : liste des paramètres des satellites avec orbites réelles (sans bruit)
     **/
 
-   public void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit){
+   public static void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit){
         
     // Paramétrage du propagateur numérique
         for  (Satellite p : liste_par_sats_real_orbit){
@@ -88,8 +88,8 @@ public class Propagator_1
         
     }
 
-    public static void propagator_TLE (List<Satellite> List_Satellite){
-       for (Satellite sat : List_Satellite){
+    public static void propagator_TLE (List<Satellite> listSatellite){
+       for (Satellite sat : listSatellite){
            Visulations.create_CSV_files(sat.get_Name());
            generic_propagator(sat).propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
            Visulations.closeCSV();
@@ -103,7 +103,7 @@ public class Propagator_1
         Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
         // Ajout du détecteur d'altitude
         AltitudeDetector altitudeDetector = new AltitudeDetector(satellite.get_Detectionaltitude(),Parametres.earth);
-        propagator.addEventDetector(altitudeDetector);
+        //propagator.addEventDetector(altitudeDetector);
         propagator.getMultiplexer().add(60, new Propagator_1.step_handler(satellite));
        return propagator;
     }
@@ -114,7 +114,7 @@ public class Propagator_1
     * 
     * */
 
-    public void propagator_noisy_orbit(List<Satellite> liste_par_sats_noisy_orbit,List<Satellite> liste_par_sats_real_orbit){
+    public static void propagator_noisy_orbit(List<Satellite> liste_par_sats_noisy_orbit,List<Satellite> liste_par_sats_real_orbit){
         //Creation of the initial output csv file with basic info(names of colonnes) 
         Visulations.export_csv_kalman_init(liste_par_sats_noisy_orbit);
 
@@ -200,7 +200,7 @@ public class Propagator_1
     * @param satellite : ObservableSatellite object
     * @param t : time of the measurement 
     **/
-    private KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t) {
+    private static KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t) {
                 Random rng = new Random();  
                 double sigmaPosition = 1;  // meters
                 double sigmaVelocity = 5;  // m/s
@@ -245,7 +245,7 @@ public class Propagator_1
     * @param t : time of the measurement 
     **/
 
-    private KalmanEstimator add_dummy_value(KalmanEstimator kalman,ObservableSatellite satellite,PVCoordinates truePV, double t) {
+    private static KalmanEstimator add_dummy_value(KalmanEstimator kalman,ObservableSatellite satellite,PVCoordinates truePV, double t) {
         
         // True position but weight =0 therefore as ignored as possible by the Kalman filter
         PV dummyMeas = new PV(

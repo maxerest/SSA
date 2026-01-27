@@ -11,12 +11,10 @@ import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.utils.Constants;
-import java.util.List;
+
+import java.util.*;
 import java.io.File;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.Scanner;
 import java.io.IOException;
 
 public class App 
@@ -24,16 +22,16 @@ public class App
 
     public static void main( String[] args )throws IOException 
     {
-        boolean propagate_real_orbit = false;
+        boolean propagate_real_orbit = true;
         boolean propagate_kalman_filter = false;
         boolean propagate_least_squares = false;
-        boolean TLE_visualisation = true;
-        boolean TLE_propagation=true;
+        boolean TLE_visualisation = false;
+        boolean TLE_propagation=false;
         boolean py_3d_visulations=true;
         boolean py_graphs_visulations=false;
 
         //Recuperation des données Orekit A FAIRE EN PREMIER
-        final File orekitData = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA");
+        final File orekitData = new File("orekit-data");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
         // Definition des GS    
@@ -50,14 +48,12 @@ public class App
             // Definition des satellites
             int nb_sat =1;
             List<Satellite> liste_par_sats_real_orbit = real_orbit(nb_sat);
-            Propagator_1 propagator_real_orbit = new Propagator_1();
-            propagator_real_orbit.propagator_real_orbit(liste_par_sats_real_orbit);
-            List<Satellite> liste_par_sats_noisy_orbit = null;
+            Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
+            List<Satellite> liste_par_sats_noisy_orbit;
 
             if (propagate_kalman_filter){
                 liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
-                Propagator_1 propagator_noisy_orbit = new Propagator_1();
-                propagator_noisy_orbit.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
+                Propagator_1.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
             }
             if (propagate_least_squares){
                 for (Satellite pReal : liste_par_sats_real_orbit)
@@ -96,7 +92,7 @@ public class App
     public static List<Satellite> real_orbit(int nb_sat){
         Scanner user_orbit_input = new Scanner(System.in);
         List<Satellite> liste_par_sats = new ArrayList<>();
-
+        /*
         for (int i = 0; i<nb_sat; i++){
         liste_par_sats.add(
             new Satellite.Builder()
@@ -114,6 +110,38 @@ public class App
                 .duration_manoeuvre(1000)
                 .build());        
         }
+         */
+        liste_par_sats.add(
+                new Satellite.Builder()
+                        .nom_sat("Sat_real GEO")
+                        .mass(2500)
+                        .semi_axis(42164170)
+                        .eccentricity(0.0001)
+                        .inclinaison(Math.toRadians(0.05))
+                        .long_noeud_ascendant(Math.toRadians(0))
+                        .arg_periastre(Math.toRadians(0))
+                        .anomalie(Math.toRadians(0))
+                        .type_anomalie(PositionAngleType.TRUE)
+                        .type_moteur(1)
+                        .start_manoeuvre(86400)
+                        .duration_manoeuvre(0)
+                        .build());
+
+        liste_par_sats.add(
+                new Satellite.Builder()
+                        .nom_sat("Sat_real GTO")
+                        .mass(2500)
+                        .semi_axis(28000000)
+                        .eccentricity(0.7285)
+                        .inclinaison(Math.toRadians(0.05))
+                        .long_noeud_ascendant(Math.toRadians(0))
+                        .arg_periastre(Math.toRadians(180))
+                        .anomalie(Math.toRadians(180))
+                        .type_anomalie(PositionAngleType.TRUE)
+                        .type_moteur(1)
+                        .start_manoeuvre(86400)
+                        .duration_manoeuvre(0)
+                        .build());
         user_orbit_input.close();
         return liste_par_sats;
     }
@@ -125,7 +153,7 @@ public class App
      */
 
     public static List<Satellite> noisy_orbit(List<Satellite> liste_par_sats_real_orbit) {
-    List<Satellite> liste_par_sats_noise_orbit = new ArrayList<>();
+    List<Satellite> liste_par_sats_noise_orbit = new LinkedList<>();
     int i = 0;
     for (Satellite p : liste_par_sats_real_orbit) {
 

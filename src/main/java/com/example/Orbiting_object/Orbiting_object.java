@@ -4,10 +4,14 @@ import org.orekit.frames.FramesFactory;
 import org.orekit.orbits.Orbit;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
+import org.orekit.time.AbsoluteDate;
+import org.orekit.time.TimeScalesFactory;
 import org.orekit.utils.Constants;
 import org.orekit.orbits.KeplerianOrbit;
 
 import org.orekit.orbits.CartesianOrbit;
+
+import java.util.Date;
 
 public class Orbiting_object {
     // Definiton parametres orbitaux
@@ -22,7 +26,7 @@ public class Orbiting_object {
     private PositionAngleType type_anomalie;
     private Orbit orbit_kepl;
     private Orbit orbit_cart;
-    private Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS +100e6;
+    private Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS;// +100e6;
     //Inital state of the satellite
     private SpacecraftState s_initialState;
 
@@ -67,25 +71,84 @@ public class Orbiting_object {
 
 
         // Builder methods
-        public Builder nom_sat(String name) { this.nom_sat = name; return this; }
-        public Builder mass(double mass) { this.mass = mass; return this; }
-        public Builder semi_axis(double sa) { this.semi_axis = sa; return this; }
-        public Builder eccentricity(double e) { this.eccentricity = e; return this; }
-        public Builder inclinaison(double i) { this.inclinaison = i; return this; }
-        public Builder long_noeud_ascendant(double lna) { this.long_noeud_ascendant = lna; return this; }
-        public Builder arg_periastre(double arg) { this.arg_periastre = arg; return this; }
-        public Builder anomalie(double a) { this.anomalie = a; return this; }
-        public Builder type_anomalie(PositionAngleType t) { this.type_anomalie = t; return this; }
-        public Builder Detectionaltitude(Double d) { this.Detectionaltitude = d; return this; }
-        public Builder s_initialState(SpacecraftState s) { this.s_initialState = s; return this; }
-        public Orbiting_object build() { return new Orbiting_object(this); }
+        public Builder nom_sat(String name) {
+            this.nom_sat = name;
+            return this;
+        }
+
+        public Builder mass(double mass) {
+            this.mass = mass;
+            return this;
+        }
+
+        public Builder semi_axis(double sa) {
+            this.semi_axis = sa;
+            return this;
+        }
+
+        public Builder eccentricity(double e) {
+            this.eccentricity = e;
+            return this;
+        }
+
+        public Builder inclinaison(double i) {
+            this.inclinaison = i;
+            return this;
+        }
+
+        public Builder long_noeud_ascendant(double lna) {
+            this.long_noeud_ascendant = lna;
+            return this;
+        }
+
+        public Builder arg_periastre(double arg) {
+            this.arg_periastre = arg;
+            return this;
+        }
+
+        public Builder anomalie(double a) {
+            this.anomalie = a;
+            return this;
+        }
+
+        public Builder type_anomalie(PositionAngleType t) {
+            this.type_anomalie = t;
+            return this;
+        }
+
+        public Builder Detectionaltitude(Double d) {
+            this.Detectionaltitude = d;
+            return this;
+        }
+
+        public Builder s_initialState(SpacecraftState s) {
+            this.s_initialState = s;
+            return this;
+        }
+
+        public Orbiting_object build() {
+            // Create the orbit from current builder values
+            KeplerianOrbit orbit = new KeplerianOrbit(
+                    semi_axis,  // Convert km to m
+                    eccentricity,
+                    inclinaison,
+                    long_noeud_ascendant,
+                    arg_periastre,
+                    anomalie,
+                    type_anomalie,
+                    FramesFactory.getEME2000(),
+                    new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()),
+                    Constants.EIGEN5C_EARTH_MU
+            );
+            this.s_initialState = new SpacecraftState(orbit);
+            return new Orbiting_object(this);
+        }
     }
 
     public Orbit get_keplerian_Orbit(){
         return orbit_kepl;
     }
     public Orbit get_Cartesian_Orbit(){return orbit_cart;}
-
     public double get_mass(){
         return mass;
     }

@@ -75,7 +75,7 @@ public class Satellite extends Orbiting_object {
         public Builder cd(double c) { this.cd = c; return this; }
         public Builder srpCrossSection(double s) { this.srpCrossSection = s; return this; }
         public Builder srpCoeff(double s) { this.srpCoeff = s; return this; }
-        public Satellite build() { return new Satellite(this); }
+        public Satellite build() {super.build(); return new Satellite(this); }
     }
 
     public double getCd() {
