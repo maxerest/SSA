@@ -140,7 +140,7 @@ public class Orbiting_object {
                     new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()),
                     Constants.EIGEN5C_EARTH_MU
             );
-            this.s_initialState = new SpacecraftState(orbit);
+            this.s_initialState = new SpacecraftState(orbit).withMass(this.mass);
             return new Orbiting_object(this);
         }
     }

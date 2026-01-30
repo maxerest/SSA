@@ -2,6 +2,7 @@ package com.example;
 
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
 import com.example.TLE.My_TLE;
@@ -28,7 +29,7 @@ public class App
         boolean TLE_visualisation = false;
         boolean TLE_propagation=false;
         boolean py_3d_visulations=true;
-        boolean py_graphs_visulations=false;
+        boolean py_graphs_visulations=true;
 
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
@@ -36,6 +37,7 @@ public class App
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
         // Definition des GS    
         Ground_station.loadStationsFromCSV();
+        Manoeuvre.Motor.initialize_list();
         // Delete past CSV files
         deleteAllCsvFiles();
         Satellite test_sat =new Satellite.Builder().cd(10).build();
@@ -48,6 +50,7 @@ public class App
             // Definition des satellites
             int nb_sat =1;
             List<Satellite> liste_par_sats_real_orbit = real_orbit(nb_sat);
+            liste_par_sats_real_orbit.getFirst().add_manoeuvre(3600,10000);
             Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
             List<Satellite> liste_par_sats_noisy_orbit;
 
@@ -92,25 +95,24 @@ public class App
     public static List<Satellite> real_orbit(int nb_sat){
         Scanner user_orbit_input = new Scanner(System.in);
         List<Satellite> liste_par_sats = new ArrayList<>();
-        /*
+
         for (int i = 0; i<nb_sat; i++){
         liste_par_sats.add(
             new Satellite.Builder()
                 .nom_sat("Sat_real" + (i+1))
                 .mass(2500)
-                .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 300000)
-                .eccentricity(0.001)
-                .inclinaison(Math.toRadians(0))
-                .long_noeud_ascendant(Math.toRadians(90))
-                .arg_periastre(Math.toRadians((i+1)*15))
-                .anomalie(Math.toRadians(60 + ((i+1)*15)))
-                .type_anomalie(PositionAngleType.MEAN)
-                .type_moteur(1)
-                .start_manoeuvre(86400)
-                .duration_manoeuvre(1000)
+                .semi_axis(24396159)
+                .eccentricity(0)
+                .inclinaison(Math.toRadians(7))
+                .long_noeud_ascendant(Math.toRadians(180))
+                .arg_periastre(Math.toRadians(261))
+                .anomalie(Math.toRadians(0))
+                .type_anomalie(PositionAngleType.TRUE)
+                .motor_name("Moteur_2")
                 .build());        
         }
-         */
+
+         /*
         liste_par_sats.add(
                 new Satellite.Builder()
                         .nom_sat("Sat_real GEO")
@@ -142,6 +144,8 @@ public class App
                         .start_manoeuvre(86400)
                         .duration_manoeuvre(0)
                         .build());
+
+         */
         user_orbit_input.close();
         return liste_par_sats;
     }
@@ -168,9 +172,7 @@ public class App
             .arg_periastre(p.get_arg_periastre())
             .anomalie(p.get_anomalie())
             .type_anomalie(p.get_type_anomalie())
-            .type_moteur(p.getType_moteur())
-            .start_manoeuvre(p.getStart_manoeuvre())
-            .duration_manoeuvre(p.getDuration_manoeuvre())
+            .motor_name(p.get_Motor_name())
             .build();
 
         liste_par_sats_noise_orbit.add(noisyP);

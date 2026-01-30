@@ -282,7 +282,7 @@ public class Visulations {
         double z = temp_s.getEntry(2);
         // Velocity
         Vector3D pos = new Vector3D(x, y, z);
-        boolean trigger = p.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null);
+        boolean trigger = p.is_firing(Parametres.date_orekit.shiftedBy(t));
         File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"
                 + p.get_Name() + ".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);

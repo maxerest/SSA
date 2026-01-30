@@ -81,7 +81,7 @@ public class Propagator_1
         for  (Satellite p : liste_par_sats_real_orbit){
             Visulations.create_CSV_files(p.get_Name());
             NumericalPropagator propagator = generic_propagator(p);
-            p.manoeuvre.lancement_manoeuvre(p, propagator);
+            p.launch_manoeuvre(propagator);
             propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
             Visulations.closeCSV();
         }
@@ -99,11 +99,12 @@ public class Propagator_1
         NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(satellite));
         propagator.setOrbitType(OrbitType.CARTESIAN);
         propagator.setInitialState(satellite.get_s_initialState());
+        propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
         //Ajout des forces au propagateur
         Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
         // Ajout du détecteur d'altitude
         AltitudeDetector altitudeDetector = new AltitudeDetector(satellite.get_Detectionaltitude(),Parametres.earth);
-        //propagator.addEventDetector(altitudeDetector);
+        propagator.addEventDetector(altitudeDetector);
         propagator.getMultiplexer().add(60, new Propagator_1.step_handler(satellite));
        return propagator;
     }
@@ -167,7 +168,7 @@ public class Propagator_1
                     }
                     //Case where the satellite has not been detected too soon ago 
                     if ((has_been_detected_too_soon_ago && j==0)||!has_been_detected_too_soon_ago){
-                        kalman=added_noisy_value(kalman, truePV, pReal.manoeuvre.getTriggers().isFiring(Parametres.date_orekit.shiftedBy(t), null), satellite, t);
+                        kalman=added_noisy_value(kalman, truePV, pReal.is_firing(Parametres.date_orekit.shiftedBy(t)), satellite, t);
                         has_been_detected_too_soon_ago=true;
                         
                     }//Case where the satellite has been detected too soon ago
@@ -308,7 +309,7 @@ public class Propagator_1
  
     
         public void handleStep(SpacecraftState currentState) {
-            boolean trigger = p.manoeuvre.getTriggers().isFiring(currentState.getDate(), null);
+            boolean trigger = p.is_firing(currentState);
             Vector3D pos = currentState.getPVCoordinates().getPosition();
             Visulations.update_CSV_xyz_realsat(p.get_Name(),pos,currentState.getDate(),trigger);
             Visulations.update_csv_orbital_realsat(p.get_Name(),currentState.getOrbit(), currentState.getDate(),trigger);
