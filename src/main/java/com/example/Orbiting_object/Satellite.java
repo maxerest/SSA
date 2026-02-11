@@ -21,6 +21,7 @@ import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.Constants;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -28,6 +29,7 @@ public class Satellite extends Orbiting_object {
 
     //Defintion manoeuvre
     private List<Manoeuvre> liste_manoeuvre_sat= new LinkedList<>();
+    private List<SpacecraftState> liste_state_propa= new ArrayList<>();
     private String motor_name="Moteur_1";
 
     // Parametres satellite
@@ -119,6 +121,7 @@ public class Satellite extends Orbiting_object {
 
     public double getSrpCoeff() {return srpCoeff;}
     public List<Manoeuvre> getListe_manoeuvre_sat(){return liste_manoeuvre_sat;}
+    public List<SpacecraftState> get_liste_state_propa(){return liste_state_propa;}
 
     public void add_manoeuvre (double start_date_manoeuvre, double duration_manoeuvre){
         try{
@@ -128,11 +131,13 @@ public class Satellite extends Orbiting_object {
         }
     }
     public void launch_manoeuvre(NumericalPropagator propagator){
-        System.out.println(liste_manoeuvre_sat);
         for (Manoeuvre m : liste_manoeuvre_sat){
             System.out.println(Manoeuvre.Motor.getthrust(this.get_Motor_name()));
             System.out.println(Manoeuvre.Motor.getISP(this.get_Motor_name()));
             m.launch_manoeuvre(Manoeuvre.Motor.getISP(this.get_Motor_name()),Manoeuvre.Motor.getthrust(this.get_Motor_name()),propagator);
         }
+    }
+    public void add_state (SpacecraftState s){
+        this.liste_state_propa.add(s);
     }
 }

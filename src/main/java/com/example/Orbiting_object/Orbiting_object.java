@@ -29,8 +29,8 @@ public class Orbiting_object {
     private Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS;// +100e6;
     //Inital state of the satellite
     private SpacecraftState s_initialState;
-
-    protected Orbiting_object(Builder builder) {
+    public Orbiting_object(){}
+    public Orbiting_object(Builder builder) {
         this.nom_sat = builder.nom_sat;
         this.mass = builder.mass;
         this.semi_axis = builder.semi_axis;

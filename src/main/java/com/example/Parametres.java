@@ -19,7 +19,7 @@ public class Parametres
     public String nom_sat;
     //Gestion temps
     public static AbsoluteDate date_orekit = new AbsoluteDate(new Date(), TimeScalesFactory.getUTC());
-    public static double duration =Constants.JULIAN_DAY; //Constants.JULIAN_DAY;
+    public static double duration =Constants.JULIAN_DAY-(3600*10); //Constants.JULIAN_DAY;
 
     // définition de la Terre
     public static Frame frame = FramesFactory.getEME2000();
@@ -31,10 +31,5 @@ public class Parametres
   
     //Seul de detection altitude
     public Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS +100000e3;
-       
-    //Inital state of the satellite
-    public SpacecraftState s_initialState; 
-
-  
     
 }

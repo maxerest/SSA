@@ -5,12 +5,14 @@ import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
+import com.example.SSA.Patera_detection;
 import com.example.TLE.My_TLE;
 import com.example.View.Visulations;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
 import org.orekit.orbits.PositionAngleType;
+import org.orekit.ssa.collision.shorttermencounter.probability.twod.Patera2005;
 import org.orekit.utils.Constants;
 
 import java.util.*;
@@ -29,7 +31,7 @@ public class App
         boolean TLE_visualisation = false;
         boolean TLE_propagation=false;
         boolean py_3d_visulations=true;
-        boolean py_graphs_visulations=true;
+        boolean py_graphs_visulations=false;
 
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
@@ -40,24 +42,22 @@ public class App
         Manoeuvre.Motor.initialize_list();
         // Delete past CSV files
         deleteAllCsvFiles();
-        Satellite test_sat =new Satellite.Builder().cd(10).build();
         if (TLE_visualisation)
             My_TLE.choixTLE();
         if (TLE_propagation)
             My_TLE.propagation();
-        
         if (propagate_real_orbit){
             // Definition des satellites
             int nb_sat =1;
             List<Satellite> liste_par_sats_real_orbit = real_orbit(nb_sat);
-            liste_par_sats_real_orbit.getFirst().add_manoeuvre(3600,10000);
             Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
             List<Satellite> liste_par_sats_noisy_orbit;
-
+            Patera_detection.verification_post_propagation(liste_par_sats_real_orbit);
             if (propagate_kalman_filter){
                 liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
                 Propagator_1.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
             }
+
             if (propagate_least_squares){
                 for (Satellite pReal : liste_par_sats_real_orbit)
                     //Creation of the estimated orbit through the least square batch method
@@ -102,33 +102,32 @@ public class App
                 .nom_sat("Sat_real" + (i+1))
                 .mass(2500)
                 .semi_axis(24396159)
-                .eccentricity(0)
-                .inclinaison(Math.toRadians(7))
+                .eccentricity(0.5)
+                .inclinaison(Math.toRadians(180))
                 .long_noeud_ascendant(Math.toRadians(180))
-                .arg_periastre(Math.toRadians(261))
-                .anomalie(Math.toRadians(0))
+                .arg_periastre(Math.toRadians(180))
+                .anomalie(Math.toRadians(180))
                 .type_anomalie(PositionAngleType.TRUE)
                 .motor_name("Moteur_2")
                 .build());        
         }
 
-         /*
+
         liste_par_sats.add(
                 new Satellite.Builder()
-                        .nom_sat("Sat_real GEO")
+                        .nom_sat("Sat_real 2")
                         .mass(2500)
-                        .semi_axis(42164170)
-                        .eccentricity(0.0001)
-                        .inclinaison(Math.toRadians(0.05))
-                        .long_noeud_ascendant(Math.toRadians(0))
-                        .arg_periastre(Math.toRadians(0))
+                        .semi_axis(24396159)
+                        .eccentricity(0.5)
+                        .inclinaison(Math.toRadians(0))
+                        .long_noeud_ascendant(Math.toRadians(180))
+                        .arg_periastre(Math.toRadians(180))
                         .anomalie(Math.toRadians(0))
-                        .type_anomalie(PositionAngleType.TRUE)
-                        .type_moteur(1)
-                        .start_manoeuvre(86400)
-                        .duration_manoeuvre(0)
+                        .type_anomalie(PositionAngleType.MEAN)
+                        .motor_name("Moteur_2")
                         .build());
 
+        /*
         liste_par_sats.add(
                 new Satellite.Builder()
                         .nom_sat("Sat_real GTO")

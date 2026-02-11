@@ -4,6 +4,7 @@ import com.example.Orbiting_object.*;
 import java.util.List;
 import java.util.Random;
 
+import com.example.SSA.Patera_detection;
 import org.hipparchus.geometry.Space;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
@@ -108,7 +109,7 @@ public class Propagator_1
         propagator.getMultiplexer().add(60, new Propagator_1.step_handler(satellite));
        return propagator;
     }
-
+    
     /** 
     *@param liste_par_sats_noisy_orbit : liste des paramètres des satellites avec orbites bruitées
     *@param liste_par_sats_real_orbit : liste des paramètres des satellites avec orbites réelles (sans bruit) 
@@ -277,9 +278,9 @@ public class Propagator_1
     public static NumericalPropagator add_force_propagator(NumericalPropagator propagator, double area, double cd,double srpCrossSection, double srpCoeff) {
         NormalizedSphericalHarmonicsProvider provider =GravityFieldFactory.getNormalizedProvider(10, 10);
         ForceModel holmesFeatherstone =new HolmesFeatherstoneAttractionModel(FramesFactory.getITRF(IERSConventions.IERS_2010,true),provider);
-        propagator.addForceModel(holmesFeatherstone);   
+        propagator.addForceModel(holmesFeatherstone);
         DragForce drag = new DragForce(atmosphere, new IsotropicDrag(area, cd));
-        propagator.addForceModel(drag);   
+        propagator.addForceModel(drag);
         RadiationSensitive srpSurface = new IsotropicRadiationSingleCoefficient(srpCrossSection, srpCoeff);
         SolarRadiationPressure srp = new SolarRadiationPressure(sun,one_axis_earth,srpSurface);
         propagator.addForceModel(srp);
@@ -311,6 +312,7 @@ public class Propagator_1
         public void handleStep(SpacecraftState currentState) {
             boolean trigger = p.is_firing(currentState);
             Vector3D pos = currentState.getPVCoordinates().getPosition();
+            p.add_state(currentState);
             Visulations.update_CSV_xyz_realsat(p.get_Name(),pos,currentState.getDate(),trigger);
             Visulations.update_csv_orbital_realsat(p.get_Name(),currentState.getOrbit(), currentState.getDate(),trigger);
         }
