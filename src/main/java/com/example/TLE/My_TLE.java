@@ -1,6 +1,7 @@
 package com.example.TLE;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Orbiting_object.Satellite;
+import com.example.SSA.Patera_detection;
 import com.example.View.Visulations;
 import org.orekit.forces.gravity.LenseThirringRelativity;
 import org.orekit.propagation.SpacecraftState;
@@ -138,6 +139,9 @@ public class My_TLE {
     public static void propagation(){
         Propagator_1.propagator_TLE(satelliteList);
 
+    }
+    public static void collision_TLE(){
+        Patera_detection.check_per_sat_collision(satelliteList);
     }
 
     /**

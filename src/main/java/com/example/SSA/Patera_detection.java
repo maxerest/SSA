@@ -2,6 +2,7 @@ package com.example.SSA;
 
 import com.example.Orbiting_object.Satellite;
 import com.example.Parametres;
+import com.example.View.Visulations;
 import org.hipparchus.geometry.Space;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
@@ -11,15 +12,17 @@ import org.orekit.propagation.SpacecraftState;
 import org.orekit.ssa.collision.shorttermencounter.probability.twod.Patera2005;
 import org.orekit.ssa.metrics.ProbabilityOfCollision;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.*;
 
 public class Patera_detection extends Patera2005 {
-
     public Patera_detection(){
     }
-    public static boolean check_collision(SpacecraftState s1, SpacecraftState s2){
+    public double check_collision(SpacecraftState s1, SpacecraftState s2){
+        List<Double> liste_percentage_collision = new ArrayList<>();
         Vector3D sat_1_pos=s1.getPosition();
         Vector3D sat_1_vel=s1.getVelocity();
         Vector3D satellite_2_pos =s2.getPosition();
@@ -42,7 +45,7 @@ public class Patera_detection extends Patera2005 {
         double ym = relativePos.getY();
         double sigmaX = FastMath.sqrt(covariance.getEntry(0, 0));
         double sigmaY = FastMath.sqrt(covariance.getEntry(1, 1));
-        double collisionRadius = 15000 + 15000; //TODO check the radius
+        double collisionRadius = 1500 + 1500; //TODO check the radius
 
 
         try {
@@ -58,33 +61,55 @@ public class Patera_detection extends Patera2005 {
                     sigmaY,          // y position uncertainty
                     collisionRadius  // combined collision radius
             );
-
-            if (pCollision.getValue()>0.2){
-                System.out.println("\nProbability of Collision: " + pCollision.getValue()+" at time "+s1.getDate()+", "+(s1.getDate().durationFrom(Parametres.date_orekit)) +" seconds after the start ");
-                return true;
-            }
-            return false; // change with thresholdcheck
+            return pCollision.getValue();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
     }
-    public static boolean verification_post_propagation(List<Satellite> list_sat){
-        boolean colision;
-        for (int i = 0; i < list_sat.size(); i++) {
-            for (int j = i + 1; j < list_sat.size(); j++) {
-                Satellite sat1 = list_sat.get(i);
-                Satellite sat2 = list_sat.get(j);
-                for(int k=0;k<sat1.get_liste_state_propa().size();k++){
-                    for(int l=0;l<sat2.get_liste_state_propa().size();l++){
-                        if(check_collision(sat1.get_liste_state_propa().get(k),sat2.get_liste_state_propa().get(l))){
-                            return true;
-                        };
-                    }
+    public void verification_post_propagation(Satellite s, List<Satellite> list_sat) {
+        double percentage_collision;
+        for (Satellite sat2 : list_sat) {
+            if (!sat2.equals(s)) {
+                for (int k = 0; k < s.get_liste_state_propa().size(); k++) {
+                    // Only compare with the state at the same index
+                    percentage_collision=check_collision(s.get_liste_state_propa().get(k), sat2.get_liste_state_propa().get(k));
+                    s.add_map_percentage_collison(sat2.get_Name(),s.get_liste_state_propa().get(k).getDate(),percentage_collision);
+
                 }
             }
         }
-    return false;
     }
+    public void print_csv_detection(Satellite s){
+        File csvFile = new File("src/main/java/com/example/SSA/CSV_per_sat/" + s.get_Name() + "_collision.csv");
+        try (PrintWriter writer = new PrintWriter(csvFile)) {
+            writer.println("t,nom_autre_sat,% collision");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try (FileWriter fw = new FileWriter(csvFile, true);
+             PrintWriter writer = new PrintWriter(fw)) {
+            s.getMap_pourcentage_collision().forEach((nomSat, mapCollisions) -> {
+            mapCollisions.forEach((l, percentage) -> {
+                writer.printf(Locale.US, "%.2f,%s,%.2f%n",
+                        (double) l.durationFrom(Parametres.date_orekit), nomSat, percentage);
+            });
+        });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void check_per_sat_collision (List<Satellite> list_sat){
+        Patera_detection pat =new Patera_detection();
+        for (Satellite s : list_sat){
+            pat.verification_post_propagation(s, list_sat);
+            pat.print_csv_detection(s);
+
+        }
+        Visulations.Python_graph_collision();
+    }
+
 }
 

@@ -21,17 +21,17 @@ import java.nio.file.*;
 import java.io.IOException;
 
 public class App 
-{       
-
+{
     public static void main( String[] args )throws IOException 
     {
-        boolean propagate_real_orbit = true;
+        boolean propagate_real_orbit = false;
         boolean propagate_kalman_filter = false;
         boolean propagate_least_squares = false;
-        boolean TLE_visualisation = false;
+        boolean TLE_visualisation = true;
         boolean TLE_propagation=false;
         boolean py_3d_visulations=true;
         boolean py_graphs_visulations=false;
+        boolean check_collision = true;
 
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
@@ -41,18 +41,25 @@ public class App
         Ground_station.loadStationsFromCSV();
         Manoeuvre.Motor.initialize_list();
         // Delete past CSV files
-        deleteAllCsvFiles();
+        Visulations.deleteAllCsvFiles();
         if (TLE_visualisation)
             My_TLE.choixTLE();
-        if (TLE_propagation)
+        if (TLE_propagation){
             My_TLE.propagation();
+            if (check_collision){
+                My_TLE.collision_TLE();
+            }
+        }
+
         if (propagate_real_orbit){
             // Definition des satellites
             int nb_sat =1;
             List<Satellite> liste_par_sats_real_orbit = real_orbit(nb_sat);
             Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
             List<Satellite> liste_par_sats_noisy_orbit;
-            Patera_detection.verification_post_propagation(liste_par_sats_real_orbit);
+            if (check_collision){
+                Patera_detection.check_per_sat_collision(liste_par_sats_real_orbit);
+            }
             if (propagate_kalman_filter){
                 liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
                 Propagator_1.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
@@ -62,7 +69,8 @@ public class App
                 for (Satellite pReal : liste_par_sats_real_orbit)
                     //Creation of the estimated orbit through the least square batch method
                     Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
-            }  
+            }
+
         }
 
         if(py_3d_visulations){
@@ -73,20 +81,7 @@ public class App
         }
     }
 
-    public static void deleteAllCsvFiles() throws IOException  {
-        String folderPath = "C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View";
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folderPath), "*.csv")) {
-            stream.forEach(file -> {
-                try {
-                    Files.delete(file);
-                } catch (IOException e) {
-                    // Ignore if file doesn't exist or cannot be deleted
-                }
-            });
-        } catch (NoSuchFileException e) {
-            // Ignore if no CSV files found
-        }
-    }
+
 
     /**
      * Création objets satellites pour les orbites réelle de propoagation
@@ -105,7 +100,7 @@ public class App
                 .eccentricity(0.5)
                 .inclinaison(Math.toRadians(180))
                 .long_noeud_ascendant(Math.toRadians(180))
-                .arg_periastre(Math.toRadians(180))
+                .arg_periastre(Math.toRadians(300))
                 .anomalie(Math.toRadians(180))
                 .type_anomalie(PositionAngleType.TRUE)
                 .motor_name("Moteur_2")
@@ -115,17 +110,44 @@ public class App
 
         liste_par_sats.add(
                 new Satellite.Builder()
-                        .nom_sat("Sat_real 2")
+                        .nom_sat("Sat_real_2")
                         .mass(2500)
                         .semi_axis(24396159)
                         .eccentricity(0.5)
                         .inclinaison(Math.toRadians(0))
                         .long_noeud_ascendant(Math.toRadians(180))
-                        .arg_periastre(Math.toRadians(180))
-                        .anomalie(Math.toRadians(0))
+                        .arg_periastre(Math.toRadians(270))
+                        .anomalie(Math.toRadians(180))
                         .type_anomalie(PositionAngleType.MEAN)
                         .motor_name("Moteur_2")
                         .build());
+        liste_par_sats.add(
+                new Satellite.Builder()
+                        .nom_sat("Sat_real_3")
+                        .mass(2500)
+                        .semi_axis(24396159)
+                        .eccentricity(0.5)
+                        .inclinaison(Math.toRadians(180))
+                        .long_noeud_ascendant(Math.toRadians(180))
+                        .arg_periastre(Math.toRadians(90))
+                        .anomalie(Math.toRadians(180))
+                        .type_anomalie(PositionAngleType.MEAN)
+                        .motor_name("Moteur_2")
+                        .build());
+        liste_par_sats.add(
+                new Satellite.Builder()
+                        .nom_sat("Sat_real_4")
+                        .mass(2500)
+                        .semi_axis(24396159)
+                        .eccentricity(0.5)
+                        .inclinaison(Math.toRadians(0))
+                        .long_noeud_ascendant(Math.toRadians(180))
+                        .arg_periastre(Math.toRadians(0))
+                        .anomalie(Math.toRadians(180))
+                        .type_anomalie(PositionAngleType.MEAN)
+                        .motor_name("Moteur_2")
+                        .build());
+
 
         /*
         liste_par_sats.add(

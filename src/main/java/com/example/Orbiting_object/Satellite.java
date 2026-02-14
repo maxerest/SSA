@@ -21,15 +21,14 @@ import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.Constants;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class Satellite extends Orbiting_object {
 
     //Defintion manoeuvre
     private List<Manoeuvre> liste_manoeuvre_sat= new LinkedList<>();
     private List<SpacecraftState> liste_state_propa= new ArrayList<>();
+    private Map<String, Map<AbsoluteDate,Double>> map_pourcentage_collision= new LinkedHashMap<>();
     private String motor_name="Moteur_1";
 
     // Parametres satellite
@@ -122,7 +121,7 @@ public class Satellite extends Orbiting_object {
     public double getSrpCoeff() {return srpCoeff;}
     public List<Manoeuvre> getListe_manoeuvre_sat(){return liste_manoeuvre_sat;}
     public List<SpacecraftState> get_liste_state_propa(){return liste_state_propa;}
-
+    public Map<String, Map<AbsoluteDate,Double>> getMap_pourcentage_collision() {return map_pourcentage_collision;}
     public void add_manoeuvre (double start_date_manoeuvre, double duration_manoeuvre){
         try{
         liste_manoeuvre_sat.add( new Manoeuvre(start_date_manoeuvre,duration_manoeuvre));
@@ -139,5 +138,15 @@ public class Satellite extends Orbiting_object {
     }
     public void add_state (SpacecraftState s){
         this.liste_state_propa.add(s);
+    }
+
+    public void add_map_percentage_collison(String nom_sat,AbsoluteDate date, double percentage_collision ){
+        try{
+            this.map_pourcentage_collision.computeIfAbsent(nom_sat, k -> new LinkedHashMap<>());
+            this.map_pourcentage_collision.get(nom_sat).put(date,percentage_collision);
+        }catch (Exception e){
+            System.out.println("Problème à l'ajout d'un % de collision pour un sat sur le sat : "+this.nom_sat);
+            System.out.println(e);
+        }
     }
 }

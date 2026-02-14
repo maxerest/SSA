@@ -21,6 +21,7 @@ import org.orekit.utils.PVCoordinates;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.RealVector;
 
+import java.nio.file.*;
 import java.util.*;
 
 import org.orekit.estimation.measurements.EstimatedMeasurementBase;
@@ -298,13 +299,23 @@ public class Visulations {
      * 
      */
     public static void RunPythonScript() {
-        try {
             // Build up the full command
             List<String> cmd = new ArrayList<>();
             cmd.add("python");
             cmd.add("src/main/java/com/example/View/Visualisation.py");
+            process_builder(cmd);
 
-            // Pass the whole list into ProcessBuilder
+
+    }
+    public static void Python_graph_orbital_param(){
+        // Build up the full command
+        List<String> cmd = new ArrayList<>();
+        cmd.add("python");
+        cmd.add("src/main/java/com/example/View/graphs.py");
+        process_builder(cmd);
+    }
+    public static void process_builder(List<String> cmd){
+        try {
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -314,7 +325,6 @@ public class Visulations {
                     System.out.println("[PY] " + line);
                 }
             }
-
             int exitCode = process.waitFor();
             System.out.println("Exited with code: " + exitCode);
 
@@ -322,28 +332,30 @@ public class Visulations {
             System.out.println("Error while launching the py 3d visualisation");
         }
     }
-    public static void Python_graph_orbital_param(){
-        try {
+
+    public static void Python_graph_collision(){
             // Build up the full command
             List<String> cmd = new ArrayList<>();
             cmd.add("python");
-            cmd.add("src/main/java/com/example/View/graphs.py");
-            ProcessBuilder pb = new ProcessBuilder(cmd);
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while (( line = reader.readLine()) != null) {
-                    System.out.println("[PY] " + line);
-                }
+            cmd.add("src/main/java/com/example/SSA/CSV_per_sat/graph_collision.py");
+            process_builder(cmd);
+    }
+    public static void deleteAllCsvFiles() throws IOException  {
+        List<String> list_folder_to_clear=new ArrayList<>();
+        list_folder_to_clear.add("src/main/java/com/example/View");
+        list_folder_to_clear.add("src/main/java/com/example/SSA/CSV_per_sat");
+        for (String folderPath:list_folder_to_clear){
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folderPath), "*.csv")) {
+                stream.forEach(file -> {
+                    try {
+                        Files.delete(file);
+                    } catch (IOException e) {
+                        // Ignore if file doesn't exist or cannot be deleted
+                    }
+                });
+            } catch (NoSuchFileException e) {
+                // Ignore if no CSV files found
             }
-            int exitCode = process.waitFor();
-            System.out.println("Exited with code: " + exitCode);
-
-        } catch (IOException | InterruptedException e) {
-            System.out.println("Error while launching the py graphs visulations");
         }
-
-
     }
 }
