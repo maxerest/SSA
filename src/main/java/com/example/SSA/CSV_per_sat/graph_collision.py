@@ -8,7 +8,7 @@ folder_path = 'src/main/java/com/example/SSA/CSV_per_sat'  # Change to your fold
 csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
 
 plot_count = 0
-max_plots = 10
+max_plots = 20
 
 for csv_file in csv_files:
     if plot_count >= max_plots:
@@ -21,7 +21,7 @@ for csv_file in csv_files:
     satellites_to_plot = []
     for satellite in df['nom_autre_sat'].unique():
         sat_data = df[df['nom_autre_sat'] == satellite]
-        if (sat_data['% collision'] != 0.00).any():  # Keep if any non-zero value exists
+        if (sat_data['% collision'] != 0.00).any():# Keep if any non-zero value exists
             satellites_to_plot.append(satellite)
 
     # Only create a plot if there are satellites with non-zero collision values
@@ -31,7 +31,8 @@ for csv_file in csv_files:
 
         for satellite in satellites_to_plot:
             sat_data = df[df['nom_autre_sat'] == satellite]
-            plt.plot(sat_data['t'], sat_data['% collision'], marker='o', label=satellite)
+            if (sat_data['% collision'] != 0.00).any():
+                plt.plot(sat_data['t'], sat_data['% collision'], marker='o', label=satellite)
 
         plt.xlabel('Time (t)')
         plt.ylabel('Collision Percentage (%)')

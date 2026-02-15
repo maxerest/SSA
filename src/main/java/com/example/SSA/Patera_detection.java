@@ -22,10 +22,11 @@ public class Patera_detection extends Patera2005 {
     public Patera_detection(){
     }
     public double check_collision(SpacecraftState s1, SpacecraftState s2){
-        List<Double> liste_percentage_collision = new ArrayList<>();
         Vector3D sat_1_pos=s1.getPosition();
         Vector3D sat_1_vel=s1.getVelocity();
+
         Vector3D satellite_2_pos =s2.getPosition();
+
         Vector3D sat_2_vel=s2.getVelocity();
         Vector3D relativePos = satellite_2_pos.subtract(sat_1_pos);
         Vector3D relativeVel = sat_2_vel.subtract(sat_1_vel);
@@ -45,7 +46,7 @@ public class Patera_detection extends Patera2005 {
         double ym = relativePos.getY();
         double sigmaX = FastMath.sqrt(covariance.getEntry(0, 0));
         double sigmaY = FastMath.sqrt(covariance.getEntry(1, 1));
-        double collisionRadius = 1500 + 1500; //TODO check the radius
+        double collisionRadius = 100000; //TODO check the radius
 
 
         try {
@@ -104,9 +105,9 @@ public class Patera_detection extends Patera2005 {
     public static void check_per_sat_collision (List<Satellite> list_sat){
         Patera_detection pat =new Patera_detection();
         for (Satellite s : list_sat){
+
             pat.verification_post_propagation(s, list_sat);
             pat.print_csv_detection(s);
-
         }
         Visulations.Python_graph_collision();
     }

@@ -3,7 +3,9 @@ import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Orbiting_object.Satellite;
 import com.example.SSA.Patera_detection;
 import com.example.View.Visulations;
+import org.apache.commons.collections4.multiset.SynchronizedMultiSet;
 import org.orekit.forces.gravity.LenseThirringRelativity;
+import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.analytical.tle.TLE;
 import org.orekit.propagation.analytical.tle.TLEPropagator;
@@ -24,7 +26,7 @@ public class My_TLE {
     private static final String TLE_DATA_DIR = "src\\main\\java\\com\\example\\TLE";
     private static final String CELESTRAK_BASE = "https://celestrak.org/NORAD/elements/gp.php";
     public static String format = "TLE";
-    private static List<Satellite> satelliteList= new LinkedList<>();
+    public static List<Satellite> satelliteList= new ArrayList<>();
     // Types de TLE disponibles sur Celestrak
     public enum TLEType {
         
@@ -89,9 +91,9 @@ public class My_TLE {
 
     public static void choixTLE() {
         // Afficher les options disponibles
-        Map<Integer, SpacecraftState> Name_state_TLE = new HashMap<>();
+        Map<String, TLE> Name_state_TLE = new HashMap<>();
         My_TLE.displayAvailableTLETypes();
-        Collection<SpacecraftState> states=new ArrayList<>();
+        List<SpacecraftState> list_spacecraftState = new ArrayList<>();
 
         // Choix du type de TLE
         Scanner scanner = new Scanner(System.in);
@@ -121,20 +123,40 @@ public class My_TLE {
         }
         try {
             Name_state_TLE= create_OREKIT_Statecraft_state(selectedType.getFilename());
-            for (Map.Entry<Integer, SpacecraftState> entry : Name_state_TLE.entrySet()) {
-                satelliteList.add(new Satellite.Builder().s_initialState(entry.getValue()).nom_sat(String.valueOf(entry.getKey())).build());
+            double MU = 3.986004418e14;;
+            double mu_2_3 = Math.pow(MU, 1.0 / 3.0);
+            // Calculate n^(2/3)
+            // Calculate a = μ^(2/3) / (n^(2/3) * 86400)
+            for (Map.Entry<String, TLE> entry : Name_state_TLE.entrySet()) {
+                double n_2_3 = Math.pow(entry.getValue().getMeanMotion(), 2.0 / 3.0);
+                double a = mu_2_3 / (n_2_3);
+                satelliteList.add(new Satellite.Builder()
+                        .nom_sat(entry.getKey())
+                        .mass(2500)
+                        .semi_axis(a)
+                        .eccentricity(entry.getValue().getE())
+                        .inclinaison(entry.getValue().getI())
+                        .long_noeud_ascendant(entry.getValue().getRaan())
+                        .arg_periastre(entry.getValue().getPerigeeArgument())
+                        .anomalie(entry.getValue().getMeanAnomaly())
+                        .type_anomalie(PositionAngleType.MEAN)
+                        .motor_name("Moteur_2")
+                        .build());
+                list_spacecraftState.add(satelliteList.getLast().get_s_initialState());
             }
+
         } catch (Exception e) {
             System.err.println("Erreur dans la création des TLE orekit : " + e.getMessage());
             e.printStackTrace();
         }
         try {
-            Visulations.export_TLE_intial_position(Name_state_TLE.values() ,selectedType);
+            Visulations.export_TLE_intial_position(list_spacecraftState,selectedType);
         } catch (Exception e) {
             System.err.println("Erreur dans export statecraft : " + e.getMessage());
             e.printStackTrace();
         }
         scanner.close();
+
     }
     public static void propagation(){
         Propagator_1.propagator_TLE(satelliteList);
@@ -194,11 +216,10 @@ public class My_TLE {
         }
     }
 
-    private static Map<Integer,SpacecraftState> create_OREKIT_Statecraft_state(String filename) throws IOException {
+    private static Map<String,TLE> create_OREKIT_Statecraft_state(String filename) throws IOException {
         List<TLE> tleList = new LinkedList<>();
-        Map<Integer,SpacecraftState> states = new HashMap();
+        Map<String,TLE> states = new HashMap<>();
         String final_filename = "src\\main\\java\\com\\example\\TLE\\" + filename + format;
-        System.out.println(states);
         try (BufferedReader reader = new BufferedReader(new FileReader(final_filename))) {
             String line;
             String objectName = null;
@@ -226,7 +247,7 @@ public class My_TLE {
                             // Orekit's TLE constructor takes the two lines as strings
                             TLE tle = new TLE(tleLine1, tleLine2);
                             tleList.add(tle);
-                            states.put(tle.getSatelliteNumber(),TLEPropagator.selectExtrapolator(tle).getInitialState());
+                            states.put(objectName,tle);
                             System.out.println(" TLE #" + tle.getSatelliteNumber() + " (" + objectName + ") chargé");
                             
                             // Reset for next satellite

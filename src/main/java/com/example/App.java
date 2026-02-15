@@ -28,8 +28,8 @@ public class App
         boolean propagate_kalman_filter = false;
         boolean propagate_least_squares = false;
         boolean TLE_visualisation = true;
-        boolean TLE_propagation=false;
-        boolean py_3d_visulations=true;
+        boolean TLE_propagation=true;
+        boolean py_3d_visulations=false;
         boolean py_graphs_visulations=false;
         boolean check_collision = true;
 
@@ -98,9 +98,9 @@ public class App
                 .mass(2500)
                 .semi_axis(24396159)
                 .eccentricity(0.5)
-                .inclinaison(Math.toRadians(180))
+                .inclinaison(Math.toRadians(0))
                 .long_noeud_ascendant(Math.toRadians(180))
-                .arg_periastre(Math.toRadians(300))
+                .arg_periastre(Math.toRadians(180))
                 .anomalie(Math.toRadians(180))
                 .type_anomalie(PositionAngleType.TRUE)
                 .motor_name("Moteur_2")
@@ -114,11 +114,11 @@ public class App
                         .mass(2500)
                         .semi_axis(24396159)
                         .eccentricity(0.5)
-                        .inclinaison(Math.toRadians(0))
+                        .inclinaison(Math.toRadians(180))
                         .long_noeud_ascendant(Math.toRadians(180))
-                        .arg_periastre(Math.toRadians(270))
-                        .anomalie(Math.toRadians(180))
-                        .type_anomalie(PositionAngleType.MEAN)
+                        .arg_periastre(Math.toRadians(180))
+                        .anomalie(Math.toRadians(200))
+                        .type_anomalie(PositionAngleType.TRUE)
                         .motor_name("Moteur_2")
                         .build());
         liste_par_sats.add(
@@ -134,19 +134,7 @@ public class App
                         .type_anomalie(PositionAngleType.MEAN)
                         .motor_name("Moteur_2")
                         .build());
-        liste_par_sats.add(
-                new Satellite.Builder()
-                        .nom_sat("Sat_real_4")
-                        .mass(2500)
-                        .semi_axis(24396159)
-                        .eccentricity(0.5)
-                        .inclinaison(Math.toRadians(0))
-                        .long_noeud_ascendant(Math.toRadians(180))
-                        .arg_periastre(Math.toRadians(0))
-                        .anomalie(Math.toRadians(180))
-                        .type_anomalie(PositionAngleType.MEAN)
-                        .motor_name("Moteur_2")
-                        .build());
+
 
 
         /*

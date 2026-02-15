@@ -5,13 +5,8 @@ import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Orbiting_object.*;
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Parametres;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+
+import java.io.*;
 
 import org.orekit.orbits.Orbit;
 import org.orekit.propagation.SpacecraftState;
@@ -52,10 +47,9 @@ public class Visulations {
 
     }
     public static void update_CSV_xyz_realsat(String name,Vector3D pos, AbsoluteDate currentdate,boolean trigger) {
-
-
             // Close previous writer if it exists
         if (!csvWriters.containsKey(name)) {
+
                 csvWriters.get(name).close();
             }
         try {
@@ -214,7 +208,7 @@ public class Visulations {
     /**
      * Méthode pour la création des fichiers CSV des TLE. Tous les sats de la TLE
      * dans un seul fichier puor la visualisation
-     * 
+     *
      * @param states       ; Liste des SpacecraftState des TLE
      * @param selectedType : Type de TLE sélectionné dans Celestrak
      */

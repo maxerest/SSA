@@ -85,6 +85,7 @@ public class Propagator_1
             p.launch_manoeuvre(propagator);
             propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
             Visulations.closeCSV();
+
         }
         
     }
@@ -95,6 +96,7 @@ public class Propagator_1
            generic_propagator(sat).propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
            Visulations.closeCSV();
        }
+
    }
     public static NumericalPropagator generic_propagator(Satellite satellite){
         NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(satellite));
