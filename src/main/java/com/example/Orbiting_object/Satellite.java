@@ -2,6 +2,7 @@ package com.example.Orbiting_object;
 
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Parametres;
+import org.checkerframework.checker.units.qual.K;
 import org.hipparchus.geometry.Space;
 import org.hipparchus.geometry.euclidean.threed.Rotation;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
@@ -144,6 +145,20 @@ public class Satellite extends Orbiting_object {
         try{
             this.map_pourcentage_collision.computeIfAbsent(nom_sat, k -> new LinkedHashMap<>());
             this.map_pourcentage_collision.get(nom_sat).put(date,percentage_collision);
+        }catch (Exception e){
+            System.out.println("Problème à l'ajout d'un % de collision pour un sat sur le sat : "+this.nom_sat);
+            System.out.println(e);
+        }
+    }
+
+    public void remove_last_map_percentage_collison(){
+        try{
+            List<String> allKeys = new ArrayList<>(map_pourcentage_collision.keySet());
+            if (allKeys.size()>2){
+                String actualSecondLastKey = allKeys.get(allKeys.size() - 2);
+                this.map_pourcentage_collision.remove(actualSecondLastKey);
+            }
+
         }catch (Exception e){
             System.out.println("Problème à l'ajout d'un % de collision pour un sat sur le sat : "+this.nom_sat);
             System.out.println(e);

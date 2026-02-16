@@ -12,8 +12,6 @@ import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
 import org.orekit.orbits.PositionAngleType;
-import org.orekit.ssa.collision.shorttermencounter.probability.twod.Patera2005;
-import org.orekit.utils.Constants;
 
 import java.util.*;
 import java.io.File;
@@ -29,10 +27,10 @@ public class App
         boolean propagate_least_squares = false;
         boolean TLE_visualisation = true;
         boolean TLE_propagation=true;
-        boolean py_3d_visulations=false;
+        boolean py_3d_visulations=true;
         boolean py_graphs_visulations=false;
         boolean check_collision = true;
-
+        int nb_sat =1;
         //Recuperation des données Orekit A FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
@@ -53,7 +51,6 @@ public class App
 
         if (propagate_real_orbit){
             // Definition des satellites
-            int nb_sat =1;
             List<Satellite> liste_par_sats_real_orbit = real_orbit(nb_sat);
             Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
             List<Satellite> liste_par_sats_noisy_orbit;
@@ -94,7 +91,7 @@ public class App
         for (int i = 0; i<nb_sat; i++){
         liste_par_sats.add(
             new Satellite.Builder()
-                .nom_sat("Sat_real" + (i+1))
+                .nom_sat("Sat_real_" + (i+1))
                 .mass(2500)
                 .semi_axis(24396159)
                 .eccentricity(0.5)

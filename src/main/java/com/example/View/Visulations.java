@@ -30,14 +30,14 @@ public class Visulations {
     private static Map<String, PrintWriter> csvWriters = new HashMap<>();
     private static String currentFileName = null;
 
-    public static void update_csv_orbital_realsat (String name,Orbit orbit_sat, AbsoluteDate currentdate,boolean trigger){
+    public static void update_csv_orbital_realsat (String name,String name_sat,Orbit orbit_sat, AbsoluteDate currentdate,boolean trigger){
         name = name + "_Orbital_param";
         if (!csvWriters.containsKey(name)) {
             csvWriters.get(name).close();
         }
         try {
             PrintWriter v = csvWriters.get(name);
-            v.printf(Locale.US,"%f,%f,%f,%f,%d,%d%n", orbit_sat.getA(), orbit_sat.getE(), orbit_sat.getI(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
+            v.printf(Locale.US,"%s,%f,%f,%f,%f,%d,%d%n",name_sat, orbit_sat.getA(), orbit_sat.getE(), orbit_sat.getI(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
             v.flush(); // Ensure data is written immediately
         } catch (Exception e) {
             System.out.println("erreur param orbit CSV");
@@ -46,15 +46,11 @@ public class Visulations {
 
 
     }
-    public static void update_CSV_xyz_realsat(String name,Vector3D pos, AbsoluteDate currentdate,boolean trigger) {
-            // Close previous writer if it exists
-        if (!csvWriters.containsKey(name)) {
+    public static void update_CSV_xyz_realsat(String name,String name_sat,Vector3D pos, AbsoluteDate currentdate,boolean trigger) {
 
-                csvWriters.get(name).close();
-            }
         try {
             PrintWriter v = csvWriters.get(name);
-            v.printf(Locale.US,"%f,%f,%f,%f,%d,%d%n", pos.getX(), pos.getY(), pos.getZ(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
+            v.printf(Locale.US,"%s,%f,%f,%f,%f,%d,%d%n",name_sat, pos.getX(), pos.getY(), pos.getZ(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
             v.flush();
 
         } catch (Exception e) {
@@ -62,8 +58,8 @@ public class Visulations {
         }
     }
 
-    public static void create_CSV_files(String name){
-        List<String> names = List.of(name, name + "_Orbital_param");
+    public static void create_CSV_files(String s){
+        List<String> names = List.of(s, s+"_Orbital_param");
         for ( String name_temp :names){
         try {
             if (csvWriters.containsKey(name_temp)) {
@@ -73,9 +69,9 @@ public class Visulations {
             currentFileName = "src/main/java/com/example/View/" + name_temp + ".csv";
             PrintWriter csvWriter = new PrintWriter(new FileWriter(currentFileName));
             if (name_temp.contains("_Orbital_param")){
-                csvWriter.println("a,e,i,t,firing,detected_by_GS");
+                csvWriter.println("name_sat,a,e,i,t,firing,detected_by_GS");
             }else{
-                csvWriter.println("x,y,z,t,firing,detected_by_GS");
+                csvWriter.println("name_sat,x,y,z,t,firing,detected_by_GS");
             }
             csvWriters.put(name_temp, csvWriter);
             csvWriter.flush();

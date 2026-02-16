@@ -4,8 +4,6 @@ import com.example.Orbiting_object.*;
 import java.util.List;
 import java.util.Random;
 
-import com.example.SSA.Patera_detection;
-import org.hipparchus.geometry.Space;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
 import org.hipparchus.linear.RealMatrix;
@@ -38,8 +36,6 @@ import org.orekit.propagation.ToleranceProvider;
 import org.orekit.propagation.conversion.DormandPrince853IntegratorBuilder;
 import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
 import org.orekit.propagation.events.AltitudeDetector;
-import org.orekit.propagation.events.EventDetector;
-import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.utils.Constants;
@@ -77,28 +73,26 @@ public class Propagator_1
     **/
 
    public static void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit){
-        
+       String name_file="real_sats";
+       Visulations.create_CSV_files(name_file);
     // Paramétrage du propagateur numérique
         for  (Satellite p : liste_par_sats_real_orbit){
-            Visulations.create_CSV_files(p.get_Name());
-            NumericalPropagator propagator = generic_propagator(p);
+            NumericalPropagator propagator = generic_propagator(name_file,p);
             p.launch_manoeuvre(propagator);
             propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
-            Visulations.closeCSV();
-
         }
+       Visulations.closeCSV();
         
     }
 
     public static void propagator_TLE (List<Satellite> listSatellite){
        for (Satellite sat : listSatellite){
-           Visulations.create_CSV_files(sat.get_Name());
-           generic_propagator(sat).propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
-           Visulations.closeCSV();
-       }
+           generic_propagator("TLE",sat).propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
 
+       }
+        Visulations.closeCSV();
    }
-    public static NumericalPropagator generic_propagator(Satellite satellite){
+    public static NumericalPropagator generic_propagator(String type_propa,Satellite satellite){
         NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(satellite));
         propagator.setOrbitType(OrbitType.CARTESIAN);
         propagator.setInitialState(satellite.get_s_initialState());
@@ -108,7 +102,7 @@ public class Propagator_1
         // Ajout du détecteur d'altitude
         AltitudeDetector altitudeDetector = new AltitudeDetector(satellite.get_Detectionaltitude(),Parametres.earth);
         propagator.addEventDetector(altitudeDetector);
-        propagator.getMultiplexer().add(60, new Propagator_1.step_handler(satellite));
+        propagator.getMultiplexer().add(60, new Propagator_1.step_handler(type_propa,satellite));
        return propagator;
     }
     
@@ -306,8 +300,10 @@ public class Propagator_1
 
     public static class step_handler implements OrekitFixedStepHandler {
         private final Satellite p;
-        public step_handler(Satellite p) {
+        private final String type_propa;
+        public step_handler(String typepropa, Satellite p) {
             this.p = p;
+            this.type_propa= typepropa;
         }
  
     
@@ -315,8 +311,8 @@ public class Propagator_1
             boolean trigger = p.is_firing(currentState);
             Vector3D pos = currentState.getPVCoordinates().getPosition();
             p.add_state(currentState);
-            Visulations.update_CSV_xyz_realsat(p.get_Name(),pos,currentState.getDate(),trigger);
-            Visulations.update_csv_orbital_realsat(p.get_Name(),currentState.getOrbit(), currentState.getDate(),trigger);
+            Visulations.update_CSV_xyz_realsat(type_propa,p.get_Name(),pos,currentState.getDate(),trigger);
+            Visulations.update_csv_orbital_realsat(type_propa,p.get_Name(),currentState.getOrbit(), currentState.getDate(),trigger);
         }
        
     }

@@ -159,6 +159,7 @@ public class My_TLE {
 
     }
     public static void propagation(){
+        Visulations.create_CSV_files("TLE");
         Propagator_1.propagator_TLE(satelliteList);
 
     }
@@ -263,7 +264,12 @@ public class My_TLE {
                     }
                 } else {
                     // This is the satellite name (appears before TLE lines)
-                    objectName = line;
+                    if (line.contains("/")){
+                        objectName = line.replaceAll("/","_");
+                    }else{
+                        objectName = line;
+                    }
+
                 }
             }
         }

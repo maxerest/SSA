@@ -70,37 +70,62 @@ public class Patera_detection extends Patera2005 {
     }
     public void verification_post_propagation(Satellite s, List<Satellite> list_sat) {
         double percentage_collision;
+        double last_percentage_collision;
+        boolean first_risk = false;
         for (Satellite sat2 : list_sat) {
+            last_percentage_collision=0.0;
+            first_risk=true;
             if (!sat2.equals(s)) {
+                s.add_map_percentage_collison(sat2.get_Name(),s.get_liste_state_propa().getFirst().getDate(),0);
                 for (int k = 0; k < s.get_liste_state_propa().size(); k++) {
                     // Only compare with the state at the same index
                     percentage_collision=check_collision(s.get_liste_state_propa().get(k), sat2.get_liste_state_propa().get(k));
-                    s.add_map_percentage_collison(sat2.get_Name(),s.get_liste_state_propa().get(k).getDate(),percentage_collision);
-
+                    if(first_risk&percentage_collision!=0){
+                        if (k>=1)
+                            s.add_map_percentage_collison(sat2.get_Name(),s.get_liste_state_propa().get(k-1).getDate(),check_collision(s.get_liste_state_propa().get(k-1), sat2.get_liste_state_propa().get(k-1)));
+                        s.add_map_percentage_collison(sat2.get_Name(),s.get_liste_state_propa().get(k).getDate(),percentage_collision);
+                        first_risk=false;
+                    }else if (percentage_collision!=0){
+                        s.add_map_percentage_collison(sat2.get_Name(),s.get_liste_state_propa().get(k).getDate(),percentage_collision);
+                    }else if (!first_risk &percentage_collision==0){
+                        s.add_map_percentage_collison(sat2.get_Name(),s.get_liste_state_propa().get(k).getDate(),percentage_collision);
+                        first_risk=true;
+                    }
+                        last_percentage_collision=percentage_collision;
                 }
             }
         }
     }
+
     public void print_csv_detection(Satellite s){
-        File csvFile = new File("src/main/java/com/example/SSA/CSV_per_sat/" + s.get_Name() + "_collision.csv");
-        try (PrintWriter writer = new PrintWriter(csvFile)) {
-            writer.println("t,nom_autre_sat,% collision");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        File csvFile = new File("src/main/java/com/example/SSA/CSV_per_sat/collision.csv");
+
+        // Check if file exists, if not write header
+        boolean fileExists = csvFile.exists();
+
         try (FileWriter fw = new FileWriter(csvFile, true);
              PrintWriter writer = new PrintWriter(fw)) {
+
+            // Write header only if file doesn't exist
+            if (!fileExists) {
+                writer.println("nom_sat,t,nom_autre_sat,% collision");
+            }
+
+            // Write collision data
             s.getMap_pourcentage_collision().forEach((nomSat, mapCollisions) -> {
-            mapCollisions.forEach((l, percentage) -> {
-                writer.printf(Locale.US, "%.2f,%s,%.2f%n",
-                        (double) l.durationFrom(Parametres.date_orekit), nomSat, percentage);
+                mapCollisions.forEach((l, percentage) -> {
+                    writer.printf(Locale.US, "%s,%.2f,%s,%.2f%n",
+                            s.get_Name(),
+                            (double) l.durationFrom(Parametres.date_orekit),
+                            nomSat,
+                            percentage);
+                });
             });
-        });
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
+
 
     public static void check_per_sat_collision (List<Satellite> list_sat){
         Patera_detection pat =new Patera_detection();
