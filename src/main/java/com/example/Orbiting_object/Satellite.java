@@ -1,26 +1,10 @@
 package com.example.Orbiting_object;
 
 import com.example.Manoeuvre.Manoeuvre;
-import com.example.Parametres;
-import org.checkerframework.checker.units.qual.K;
-import org.hipparchus.geometry.Space;
-import org.hipparchus.geometry.euclidean.threed.Rotation;
-import org.hipparchus.geometry.euclidean.threed.Vector3D;
-import org.hipparchus.util.FastMath;
-import org.orekit.attitudes.AttitudeProvider;
-import org.orekit.attitudes.FrameAlignedProvider;
-import org.orekit.forces.maneuvers.ConstantThrustManeuver;
-import org.orekit.forces.maneuvers.Maneuver;
-import org.orekit.forces.maneuvers.propulsion.BasicConstantThrustPropulsionModel;
-import org.orekit.forces.maneuvers.propulsion.PropulsionModel;
-import org.orekit.forces.maneuvers.trigger.ManeuverTriggers;
-import org.orekit.orbits.CartesianOrbit;
-import org.orekit.orbits.KeplerianOrbit;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
-import org.orekit.utils.Constants;
 
 import java.util.*;
 
@@ -29,7 +13,7 @@ public class Satellite extends Orbiting_object {
     //Defintion manoeuvre
     private List<Manoeuvre> liste_manoeuvre_sat= new LinkedList<>();
     private List<SpacecraftState> liste_state_propa= new ArrayList<>();
-    private Map<String, Map<AbsoluteDate,Double>> map_pourcentage_collision= new LinkedHashMap<>();
+    private  Map<String, Map<AbsoluteDate,Double>> map_pourcentage_collision= new LinkedHashMap<>();
     private String motor_name="Moteur_1";
 
     // Parametres satellite
@@ -37,6 +21,9 @@ public class Satellite extends Orbiting_object {
     private double cd=0.85 ;
     private final double srpCrossSection;   // m²
     private final double srpCoeff;
+    private Map<String,AntennaParameters> map_parametres_antennes=new LinkedHashMap<>();
+    private double puissance_amplificateur;
+
 
     private Satellite(Builder builder) {
         super(builder);  // Initialize parent with its Builder
@@ -162,6 +149,61 @@ public class Satellite extends Orbiting_object {
         }catch (Exception e){
             System.out.println("Problème à l'ajout d'un % de collision pour un sat sur le sat : "+this.nom_sat);
             System.out.println(e);
+        }
+    }
+    public class AntennaParameters {
+        private double gain;           // dBi
+        private double noiseFigure;    // dB
+        private double frequency;      // GHz
+        private double bandwidth;      // MHz
+        private double efficiency;     // %
+
+        public AntennaParameters(double gain, double noiseFigure, double frequency,double bandwidth,double efficiency) {
+            this.gain = gain;
+            this.noiseFigure = noiseFigure;
+            this.frequency = frequency;
+            this.bandwidth=bandwidth;
+            this.efficiency=efficiency;
+        }
+
+        public double getGain() {
+            return gain;
+        }
+
+        public double getNoiseFigure() {
+            return noiseFigure;
+        }
+
+        public double getFrequency() {
+            return frequency;
+        }
+
+        public double getBandwidth() {
+            return bandwidth;
+        }
+
+        public double getEfficiency() {
+            return efficiency;
+        }
+
+        public void setGain(double gain) {
+            this.gain = gain;
+        }
+
+        public void setNoiseFigure(double noiseFigure) {
+            this.noiseFigure = noiseFigure;
+        }
+
+        public void setFrequency(double frequency) {
+            this.frequency = frequency;
+        }
+
+        public void setBandwidth(double bandwidth) {
+            this.bandwidth = bandwidth;
+        }
+
+        public void setEfficiency(double efficiency) {
+            this.efficiency = efficiency;
         }
     }
 }
