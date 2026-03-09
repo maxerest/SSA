@@ -20,8 +20,8 @@ def plot_csv_data(file_path,sample_rate=3):
         df = df.iloc[::sample_rate]
 
         # Get first 3 columns as values and 4th as time
-        value_cols = df.columns[:3].tolist()
-        time_col = df.columns[3] if len(df.columns) > 3 else df.index
+        value_cols = df.columns[1:4].tolist()
+        time_col = df.columns[4] if len(df.columns) > 3 else df.index
 
         # Create a figure with 3 subplots (one for each value column)
         fig, axes = plt.subplots(3, 1, figsize=(12, 10))

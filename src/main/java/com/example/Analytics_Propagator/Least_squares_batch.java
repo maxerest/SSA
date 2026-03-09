@@ -1,11 +1,15 @@
 package com.example.Analytics_Propagator;
 
+import java.util.List;
 import java.util.SortedSet;
+
+import com.example.Ground_stations.Ground_station;
 import com.example.Parametres;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Orbiting_object.*;
 
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
+import org.jetbrains.annotations.UnknownNullability;
 import org.orekit.estimation.measurements.generation.GatheringSubscriber;
 import org.orekit.estimation.measurements.generation.Generator;
 import org.orekit.estimation.measurements.generation.RangeBuilder;
@@ -53,7 +57,7 @@ public class Least_squares_batch {
     
     public static SortedSet<EstimatedMeasurementBase<?>> least_squares_estimation(
             Satellite p,
-            java.util.List<GroundStation> groundStations,
+            @UnknownNullability List<Ground_station.GroundStation_physical> groundStations,
             double measurementStep) {
 
         // Création du propagateur spécifique en reprenant les mêmes paramètres que pour

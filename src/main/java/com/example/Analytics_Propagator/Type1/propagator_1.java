@@ -1,14 +1,19 @@
 package com.example.Analytics_Propagator.Type1;
 import com.example.Ground_stations.*;
 import com.example.Orbiting_object.*;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
 import org.hipparchus.linear.RealMatrix;
+import org.hipparchus.ode.events.Action;
 import org.hipparchus.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
+import org.hipparchus.optim.nonlinear.scalar.GoalType;
 import org.orekit.attitudes.LofOffset;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
@@ -36,6 +41,9 @@ import org.orekit.propagation.ToleranceProvider;
 import org.orekit.propagation.conversion.DormandPrince853IntegratorBuilder;
 import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
 import org.orekit.propagation.events.AltitudeDetector;
+import org.orekit.propagation.events.ElevationDetector;
+import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.events.GroundAtNightDetector;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.utils.Constants;
@@ -72,26 +80,28 @@ public class Propagator_1
     * @param liste_par_sats_real_orbit : liste des paramètres des satellites avec orbites réelles (sans bruit)
     **/
 
-   public static void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit){
+   public static void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit,boolean satcom_link){
        String name_file="real_sats";
        Visulations.create_CSV_files(name_file);
     // Paramétrage du propagateur numérique
         for  (Satellite p : liste_par_sats_real_orbit){
             NumericalPropagator propagator = generic_propagator(name_file,p);
             p.launch_manoeuvre(propagator);
+
             propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
         }
        Visulations.closeCSV();
         
     }
 
+
     public static void propagator_TLE (List<Satellite> listSatellite){
        for (Satellite sat : listSatellite){
            generic_propagator("TLE",sat).propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
-
        }
         Visulations.closeCSV();
    }
+
     public static NumericalPropagator generic_propagator(String type_propa,Satellite satellite){
         NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(satellite));
         propagator.setOrbitType(OrbitType.CARTESIAN);
@@ -99,12 +109,13 @@ public class Propagator_1
         propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
         //Ajout des forces au propagateur
         Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
-        // Ajout du détecteur d'altitude
-        AltitudeDetector altitudeDetector = new AltitudeDetector(satellite.get_Detectionaltitude(),Parametres.earth);
-        propagator.addEventDetector(altitudeDetector);
-        propagator.getMultiplexer().add(60, new Propagator_1.step_handler(type_propa,satellite));
+        Propagator_1.step_handler stepHandler = new Propagator_1.step_handler(type_propa, satellite);
+        // If satcom activated, we start the sequence to deal with everything linked
+        if (Ground_station.satcom_activated) Ground_station.satcom_station_link(propagator,stepHandler);;
+        propagator.getMultiplexer().add(60, stepHandler);
        return propagator;
     }
+
     
     /** 
     *@param liste_par_sats_noisy_orbit : liste des paramètres des satellites avec orbites bruitées
@@ -305,16 +316,23 @@ public class Propagator_1
             this.p = p;
             this.type_propa= typepropa;
         }
- 
-    
+
         public void handleStep(SpacecraftState currentState) {
             boolean trigger = p.is_firing(currentState);
             Vector3D pos = currentState.getPVCoordinates().getPosition();
             p.add_state(currentState);
+
+            //For each ground station visible during this propagation step, calculate the link budget between the GS and the sat
+            if (Ground_station.satcom_activated){
+                List<Ground_station.GroundStation_physical> list_GS_visible=Ground_station.get_list_visible_GS(currentState);
+
+            };
+
             Visulations.update_CSV_xyz_realsat(type_propa,p.get_Name(),pos,currentState.getDate(),trigger);
             Visulations.update_csv_orbital_realsat(type_propa,p.get_Name(),currentState.getOrbit(), currentState.getDate(),trigger);
+
         }
-       
+
     }
         
 }

@@ -1,19 +1,23 @@
 package com.example.Ground_stations;
+import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Parametres;
 import com.example.Orbiting_object.*;
 
+import org.hipparchus.ode.events.Action;
 import org.orekit.bodies.GeodeticPoint;
 import org.orekit.frames.TopocentricFrame;
 import org.orekit.orbits.Orbit;
 import org.hipparchus.util.FastMath;
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import org.orekit.propagation.SpacecraftState;
+import org.orekit.propagation.events.ElevationDetector;
+import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
+import org.orekit.time.TimeScalesFactory;
 import org.orekit.utils.PVCoordinates;
 import org.orekit.estimation.iod.IodGauss;
 import org.orekit.estimation.measurements.AngularAzEl;
@@ -23,8 +27,22 @@ import org.orekit.estimation.measurements.ObservableSatellite;
 
 
 public class Ground_station {
-    public static List<GroundStation> liste_GS=new ArrayList<>();
-    
+    public static List<GroundStation_physical> liste_GS=new ArrayList<>();
+    public static boolean satcom_activated=false;
+
+    public static class GroundStation_physical extends GroundStation {
+        double antenna_size;
+        double antenna_gain;
+        public Map <SpacecraftState,Boolean> map_visibility_from_sat=new HashMap<>();
+        public GroundStation_physical(TopocentricFrame baseFrame) {
+            super(baseFrame);
+            this.antenna_gain=10; //dB
+            this.antenna_size=10; //m
+        }
+        public void get_visibility(SpacecraftState s){
+
+        }
+    }
     // Call this method at program initialization to load ground stations from CSV within the public static list liste_GS
     public static void loadStationsFromCSV() {
         String filename = "src/main/java/com/example/Ground_stations/GS_coordinates.csv";
@@ -55,7 +73,7 @@ public class Ground_station {
                         ),
                         name
                 );
-                GroundStation station_gs = new GroundStation(station);
+                GroundStation_physical station_gs = new GroundStation_physical(station);
                 
                 liste_GS.add(station_gs);
             }
@@ -71,8 +89,8 @@ public class Ground_station {
      * @param current_date : Time of check
      * @return boolean : true if visible, false otherwise
      */
-    private static boolean isVisibleFromStation(GroundStation station, SpacecraftState s, AbsoluteDate current_date){
-        
+    private static boolean isVisibleFromStation(GroundStation_physical station, SpacecraftState s, AbsoluteDate current_date){
+
         TopocentricFrame topo = station.getBaseFrame();
         double elevation = topo.getElevation(
                 s.getPVCoordinates().getPosition(), // satellite position
@@ -80,6 +98,15 @@ public class Ground_station {
                 current_date                         // observation time
         );
         return elevation > Parametres.elevation;
+    }
+    public static List<GroundStation_physical> get_list_visible_GS(SpacecraftState s){
+        List<GroundStation_physical> list_visible_station=new ArrayList<>();
+        for (GroundStation_physical GS : liste_GS){
+            if (isVisibleFromStation(GS,s,s.getDate())){
+                list_visible_station.add(GS);
+            }
+        }
+        return list_visible_station;
     }
 
     /**
@@ -90,7 +117,7 @@ public class Ground_station {
      */
 
     public static boolean hasVisibleStations(SpacecraftState s, AbsoluteDate current_date) {
-        for (GroundStation station : liste_GS) {
+        for (GroundStation_physical station : liste_GS) {
             if (isVisibleFromStation(station, s,current_date)) {
                 return true;
             }
@@ -104,7 +131,7 @@ public class Ground_station {
      * @return GroundStation : first station that can see the satellite, null if none can see it
      */
     public static GroundStation which_station_visible(SpacecraftState s, AbsoluteDate current_date) {
-        for (GroundStation station : liste_GS) {
+        for (GroundStation_physical station : liste_GS) {
             if (isVisibleFromStation(station, s,current_date)) {
                 return station;
             }
@@ -169,4 +196,19 @@ public class Ground_station {
 
         return pvG;
     }
+    public static void satcom_station_link(NumericalPropagator propagator, Propagator_1.step_handler stepHandler){
+        final double maxcheck  = 60.0;
+        final double threshold =  0.001;
+        for (GroundStation_physical GS : liste_GS ){
+             final EventDetector station_visibility =
+                     new ElevationDetector(maxcheck, threshold, GS.getBaseFrame())
+                             .withConstantElevation(Parametres.elevation)
+                             .withHandler((s, d, increasing) -> {
+                                 // Flip the boolean inside the map for the satellite and ground stations combo showing visibility or not
+                                 GS.map_visibility_from_sat.put(s,increasing);
+                                 return Action.CONTINUE;
+                             });propagator.addEventDetector(station_visibility);
+        }
+    }
+
 }

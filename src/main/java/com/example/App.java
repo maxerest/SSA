@@ -22,16 +22,17 @@ public class App
 {
     public static void main( String[] args )throws IOException 
     {
-        boolean propagate_real_orbit = false;
-        boolean propagate_kalman_filter = false;
-        boolean propagate_least_squares = false;
-        boolean TLE_visualisation = true;
-        boolean TLE_propagation=true;
-        boolean py_3d_visulations=true;
+        boolean propagate_real_orbit = true;
+        boolean propagate_kalman_filter = true;
+        boolean propagate_least_squares = true;
+        boolean TLE_visualisation = false;
+        boolean TLE_propagation=false;
+        boolean py_3d_visulations=false;
         boolean py_graphs_visulations=false;
         boolean check_collision = true;
+        boolean satcom_gs_communication =false;
         int nb_sat =1;
-        //Recuperation des données Orekit A FAIRE EN PREMIER
+        //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
@@ -50,10 +51,14 @@ public class App
         }
 
         if (propagate_real_orbit){
+            if (satcom_gs_communication){
+                Ground_station.satcom_activated=true;
+            }
             // Definition des satellites
             List<Satellite> liste_par_sats_real_orbit = real_orbit(nb_sat);
-            Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
+            Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit,satcom_gs_communication);
             List<Satellite> liste_par_sats_noisy_orbit;
+
             if (check_collision){
                 Patera_detection.check_per_sat_collision(liste_par_sats_real_orbit);
             }
@@ -67,7 +72,6 @@ public class App
                     //Creation of the estimated orbit through the least square batch method
                     Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
             }
-
         }
 
         if(py_3d_visulations){
@@ -118,6 +122,7 @@ public class App
                         .type_anomalie(PositionAngleType.TRUE)
                         .motor_name("Moteur_2")
                         .build());
+        /*
         liste_par_sats.add(
                 new Satellite.Builder()
                         .nom_sat("Sat_real_3")
@@ -134,7 +139,7 @@ public class App
 
 
 
-        /*
+
         liste_par_sats.add(
                 new Satellite.Builder()
                         .nom_sat("Sat_real GTO")
