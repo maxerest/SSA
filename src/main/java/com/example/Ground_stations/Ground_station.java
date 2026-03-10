@@ -31,14 +31,44 @@ public class Ground_station {
     public static boolean satcom_activated=false;
 
     public static class GroundStation_physical extends GroundStation {
+        String name;
         double antenna_size;
         double antenna_gain;
+        double noiseFigureDb = 3.0;
+        double noiseBandwidthMhz = 50.0;
+        double temperatureK = 290.0;
         public Map <SpacecraftState,Boolean> map_visibility_from_sat=new HashMap<>();
-        public GroundStation_physical(TopocentricFrame baseFrame) {
+        public GroundStation_physical(TopocentricFrame baseFrame,String name) {
             super(baseFrame);
             this.antenna_gain=10; //dB
             this.antenna_size=10; //m
+            this.name=name;
         }
+
+        public String getName() {
+            return name;
+        }
+
+        public double getAntenna_size() {
+            return antenna_size;
+        }
+
+        public double getAntenna_gain() {
+            return antenna_gain;
+        }
+
+        public double getNoiseFigureDb() {
+            return noiseFigureDb;
+        }
+
+        public double getNoiseBandwidthMhz() {
+            return noiseBandwidthMhz;
+        }
+
+        public double getTemperatureK() {
+            return temperatureK;
+        }
+
         public void get_visibility(SpacecraftState s){
 
         }
@@ -73,7 +103,7 @@ public class Ground_station {
                         ),
                         name
                 );
-                GroundStation_physical station_gs = new GroundStation_physical(station);
+                GroundStation_physical station_gs = new GroundStation_physical(station,name);
                 
                 liste_GS.add(station_gs);
             }

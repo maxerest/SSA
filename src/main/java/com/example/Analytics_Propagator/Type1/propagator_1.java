@@ -321,11 +321,12 @@ public class Propagator_1
             boolean trigger = p.is_firing(currentState);
             Vector3D pos = currentState.getPVCoordinates().getPosition();
             p.add_state(currentState);
-
             //For each ground station visible during this propagation step, calculate the link budget between the GS and the sat
             if (Ground_station.satcom_activated){
                 List<Ground_station.GroundStation_physical> list_GS_visible=Ground_station.get_list_visible_GS(currentState);
-
+                for (Ground_station.GroundStation_physical GS:list_GS_visible ){
+                    System.out.println(GS.getName()+"Budget link at time "+currentState.getDate().toString() +" : "+ Satcom.calculate_budget_link(GS,p));
+                }
             };
 
             Visulations.update_CSV_xyz_realsat(type_propa,p.get_Name(),pos,currentState.getDate(),trigger);

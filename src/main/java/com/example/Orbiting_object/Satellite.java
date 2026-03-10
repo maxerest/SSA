@@ -32,6 +32,7 @@ public class Satellite extends Orbiting_object {
         this.cd = builder.cd;
         this.srpCrossSection = builder.srpCrossSection;
         this.srpCoeff = builder.srpCoeff;
+        this.map_parametres_antennes.put("Antenna 1",new AntennaParameters());
     }
 
     public boolean is_firing(SpacecraftState currentState) {
@@ -105,6 +106,10 @@ public class Satellite extends Orbiting_object {
     public double getSrpCrossSection() {
         return srpCrossSection;
     }
+    public Map<String,AntennaParameters> getMap_parametres_antennes() {
+        return map_parametres_antennes;
+    }
+
 
     public double getSrpCoeff() {return srpCoeff;}
     public List<Manoeuvre> getListe_manoeuvre_sat(){return liste_manoeuvre_sat;}
@@ -157,7 +162,16 @@ public class Satellite extends Orbiting_object {
         private double frequency;      // GHz
         private double bandwidth;      // MHz
         private double efficiency;     // %
+        private double txPowerDbm;     // dBm
 
+        public AntennaParameters() {
+            this.gain = 15.0;           // dBi (satellite TX antenna)
+            this.noiseFigure = 5.0;     // dB (satellite receiver, higher than ground station)
+            this.frequency = 12.0;      // GHz (Ku-band uplink/downlink)
+            this.bandwidth = 36.0;      // MHz (typical satellite transponder)
+            this.efficiency = 0.60;     // 60% (space-qualified antenna)
+            this.txPowerDbm = 20.0;
+        }
         public AntennaParameters(double gain, double noiseFigure, double frequency,double bandwidth,double efficiency) {
             this.gain = gain;
             this.noiseFigure = noiseFigure;
@@ -185,7 +199,7 @@ public class Satellite extends Orbiting_object {
         public double getEfficiency() {
             return efficiency;
         }
-
+        public double getTxPowerDbm(){return txPowerDbm;}
         public void setGain(double gain) {
             this.gain = gain;
         }

@@ -27,10 +27,10 @@ public class App
         boolean propagate_least_squares = true;
         boolean TLE_visualisation = false;
         boolean TLE_propagation=false;
-        boolean py_3d_visulations=false;
-        boolean py_graphs_visulations=false;
-        boolean check_collision = true;
-        boolean satcom_gs_communication =false;
+        boolean py_3d_visualizations=false;
+        boolean py_graphs_visualizations=false;
+        boolean check_collision = false;
+        boolean satcom_gs_communication =true;
         int nb_sat =1;
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
@@ -74,10 +74,10 @@ public class App
             }
         }
 
-        if(py_3d_visulations){
+        if(py_3d_visualizations){
         Visulations.RunPythonScript();
         }
-        if(py_graphs_visulations){
+        if(py_graphs_visualizations){
             Visulations.Python_graph_orbital_param();
         }
     }
@@ -97,8 +97,8 @@ public class App
             new Satellite.Builder()
                 .nom_sat("Sat_real_" + (i+1))
                 .mass(2500)
-                .semi_axis(24396159)
-                .eccentricity(0.5)
+                .semi_axis(7500000)
+                .eccentricity(0.005)
                 .inclinaison(Math.toRadians(0))
                 .long_noeud_ascendant(Math.toRadians(180))
                 .arg_periastre(Math.toRadians(180))
@@ -108,7 +108,7 @@ public class App
                 .build());        
         }
 
-
+        /*
         liste_par_sats.add(
                 new Satellite.Builder()
                         .nom_sat("Sat_real_2")
