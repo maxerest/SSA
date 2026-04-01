@@ -2,10 +2,7 @@ package com.example.Analytics_Propagator.Type1;
 import com.example.Ground_stations.*;
 import com.example.Orbiting_object.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
@@ -14,6 +11,7 @@ import org.hipparchus.ode.events.Action;
 import org.hipparchus.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
 import org.hipparchus.optim.nonlinear.scalar.GoalType;
+import org.orekit.attitudes.Attitude;
 import org.orekit.attitudes.LofOffset;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
@@ -30,8 +28,7 @@ import org.orekit.forces.gravity.potential.NormalizedSphericalHarmonicsProvider;
 import org.orekit.forces.radiation.IsotropicRadiationSingleCoefficient;
 import org.orekit.forces.radiation.RadiationSensitive;
 import org.orekit.forces.radiation.SolarRadiationPressure;
-import org.orekit.frames.FramesFactory;
-import org.orekit.frames.LOFType;
+import org.orekit.frames.*;
 import org.orekit.models.earth.atmosphere.Atmosphere;
 import org.orekit.models.earth.atmosphere.HarrisPriester;
 import org.orekit.orbits.Orbit;
@@ -44,6 +41,7 @@ import org.orekit.propagation.events.AltitudeDetector;
 import org.orekit.propagation.events.ElevationDetector;
 import org.orekit.propagation.events.EventDetector;
 import org.orekit.propagation.events.GroundAtNightDetector;
+import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.utils.Constants;
@@ -109,9 +107,11 @@ public class Propagator_1
         propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
         //Ajout des forces au propagateur
         Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
-        Propagator_1.step_handler stepHandler = new Propagator_1.step_handler(type_propa, satellite);
         // If satcom activated, we start the sequence to deal with everything linked
-        if (Ground_station.satcom_activated) Ground_station.satcom_station_link(propagator,stepHandler);;
+        if (Ground_station.satcom_activated) Ground_station.satcom_station_link(propagator);
+        if (Ground_station.EO_detection) Ground_station.EO_usage_detection(propagator);
+
+        Propagator_1.step_handler stepHandler = new Propagator_1.step_handler(type_propa, satellite);
         propagator.getMultiplexer().add(60, stepHandler);
        return propagator;
     }
@@ -319,19 +319,94 @@ public class Propagator_1
 
         public void handleStep(SpacecraftState currentState) {
             boolean trigger = p.is_firing(currentState);
-            Vector3D pos = currentState.getPVCoordinates().getPosition();
+            Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
+            Vector3D pos =currentState.getPVCoordinates(itrf).getPosition();
             p.add_state(currentState);
             //For each ground station visible during this propagation step, calculate the link budget between the GS and the sat
             if (Ground_station.satcom_activated){
                 List<Ground_station.GroundStation_physical> list_GS_visible=Ground_station.get_list_visible_GS(currentState);
                 for (Ground_station.GroundStation_physical GS:list_GS_visible ){
-                    System.out.println(GS.getName()+"Budget link at time "+currentState.getDate().toString() +" : "+ Satcom.calculate_budget_link(GS,p));
+                    System.out.println(GS.getName()+" - Budget link at time "+currentState.getDate().toString() +" : "+ Satcom.calculate_budget_link(GS,p));
                 }
             };
 
-            Visulations.update_CSV_xyz_realsat(type_propa,p.get_Name(),pos,currentState.getDate(),trigger);
+
+            Visulations.update_CSV_xyz_realsat(type_propa,p.get_Name(),pos,currentState.getDate(),trigger,Ground_station.hasVisibleStations(currentState,currentState.getDate()), Optional.ofNullable(Ground_station.which_station_visible(currentState, currentState.getDate()))
+                    .map(Ground_station.GroundStation_physical::getName)
+                    .orElse(""));
+
             Visulations.update_csv_orbital_realsat(type_propa,p.get_Name(),currentState.getOrbit(), currentState.getDate(),trigger);
 
+        }
+
+    }
+    public static class SlewComputingHandler
+            implements EventHandler {
+
+        private final Frame inertialFrame;
+        private final TopocentricFrame stationFrame;
+        private final Vector3D      boresightInBody; // sensor axis in body frame
+        private final String station_name;
+        public SlewComputingHandler(Frame inertialFrame,
+                                    TopocentricFrame stationFrame,
+                                    Vector3D boresightInBody,String station_name) {
+            this.inertialFrame   = inertialFrame;
+            this.stationFrame    = stationFrame;
+            this.boresightInBody = boresightInBody.normalize();
+            this.station_name=station_name;
+        }
+
+        @Override
+        public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
+
+            if (!increasing) {
+                // Station going below horizon — ignore
+                return Action.CONTINUE;
+            }
+
+            //System.out.println("=== Station "+station_name+" visibility start ===");
+            //System.out.println("Date: " + s.getDate());
+
+
+            // ── Step 1: current boresight in inertial frame ──────────────────
+            // Attitude gives us the rotation: body → inertial
+            Attitude attitude = s.getAttitude();
+            Vector3D boresightInertial = attitude.getRotation()
+                    .applyInverseTo(boresightInBody);
+
+            // ── Step 2: direction from satellite to station (inertial) ────────
+            Vector3D satPosition = s.getPosition(inertialFrame);
+
+            // Get station position in inertial frame at current date
+            Transform bodyToInertial = stationFrame.getParentShape()
+                    .getBodyFrame()
+                    .getTransformTo(inertialFrame, s.getDate());
+
+            Vector3D stationInertial = bodyToInertial.transformPosition(
+                    stationFrame.getCartesianPoint());   // ECEF → inertial
+
+            Vector3D toStation = stationInertial
+                    .subtract(satPosition)
+                    .normalize();
+
+            // ── Step 3: slew angle = angle between boresight and target dir ───
+            double slewAngleRad = Vector3D.angle(boresightInertial, toStation);
+            double slewAngleDeg = Math.toDegrees(slewAngleRad);
+
+//            System.out.printf("Slew angle required: %.4f deg%n", slewAngleDeg);
+
+            // ── Step 4 (bonus): rotation axis for the slew ───────────────────
+            // Cross product gives the axis around which to rotate
+            Vector3D slewAxis = Vector3D.crossProduct(boresightInertial, toStation);
+            if (slewAxis.getNorm() > 1e-10) {
+                slewAxis = slewAxis.normalize();
+                //System.out.printf("Slew axis (inertial): [%.4f, %.4f, %.4f]%n",
+              //          slewAxis.getX(), slewAxis.getY(), slewAxis.getZ());
+            } else {
+                //System.out.println("Already pointing at station!");
+            }
+
+            return Action.CONTINUE;
         }
 
     }

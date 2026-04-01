@@ -1,5 +1,6 @@
 package com.example.View;
 
+import com.example.Ground_stations.Ground_station;
 import com.example.TLE.My_TLE;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Orbiting_object.*;
@@ -46,11 +47,11 @@ public class Visulations {
 
 
     }
-    public static void update_CSV_xyz_realsat(String name,String name_sat,Vector3D pos, AbsoluteDate currentdate,boolean trigger) {
+    public static void update_CSV_xyz_realsat(String name,String name_sat,Vector3D pos, AbsoluteDate currentdate,boolean trigger,boolean station_visible,String name_station) {
 
         try {
             PrintWriter v = csvWriters.get(name);
-            v.printf(Locale.US,"%s,%f,%f,%f,%f,%d,%d%n",name_sat, pos.getX(), pos.getY(), pos.getZ(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
+            v.printf(Locale.US,"%s,%f,%f,%f,%f,%d,%b,%s%n",name_sat, pos.getX(), pos.getY(), pos.getZ(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, station_visible,name_station);
             v.flush();
 
         } catch (Exception e) {
@@ -69,9 +70,9 @@ public class Visulations {
             currentFileName = "src/main/java/com/example/View/" + name_temp + ".csv";
             PrintWriter csvWriter = new PrintWriter(new FileWriter(currentFileName));
             if (name_temp.contains("_Orbital_param")){
-                csvWriter.println("name_sat,a,e,i,t,firing,detected_by_GS");
+                csvWriter.println("name_sat,a,e,i,t,firing,detected_by_GS,nom_station");
             }else{
-                csvWriter.println("name_sat,x,y,z,t,firing,detected_by_GS");
+                csvWriter.println("name_sat,x,y,z,t,firing,detected_by_GS,nom_station");
             }
             csvWriters.put(name_temp, csvWriter);
             csvWriter.flush();

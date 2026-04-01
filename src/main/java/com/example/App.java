@@ -2,6 +2,7 @@ package com.example;
 
 import com.example.Analytics_Propagator.Least_squares_batch;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.Ground_stations.Satcom;
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
@@ -23,14 +24,15 @@ public class App
     public static void main( String[] args )throws IOException 
     {
         boolean propagate_real_orbit = true;
-        boolean propagate_kalman_filter = true;
-        boolean propagate_least_squares = true;
+        boolean propagate_kalman_filter = false;
+        boolean propagate_least_squares = false;
         boolean TLE_visualisation = false;
         boolean TLE_propagation=false;
-        boolean py_3d_visualizations=false;
+        boolean py_3d_visualizations=true;
         boolean py_graphs_visualizations=false;
         boolean check_collision = false;
-        boolean satcom_gs_communication =true;
+        boolean satcom_gs_communication =false;
+        boolean EO_detection=true;
         int nb_sat =1;
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
@@ -49,7 +51,8 @@ public class App
                 My_TLE.collision_TLE();
             }
         }
-
+        Satcom.SignalCoding coding = new Satcom.SignalCoding();
+        System.out.println(coding.getBandwidth());
         if (propagate_real_orbit){
             if (satcom_gs_communication){
                 Ground_station.satcom_activated=true;
@@ -99,8 +102,8 @@ public class App
                 .mass(2500)
                 .semi_axis(7500000)
                 .eccentricity(0.005)
-                .inclinaison(Math.toRadians(0))
-                .long_noeud_ascendant(Math.toRadians(180))
+                .inclinaison(Math.toRadians(33))
+                .long_noeud_ascendant(Math.toRadians(90))
                 .arg_periastre(Math.toRadians(180))
                 .anomalie(Math.toRadians(180))
                 .type_anomalie(PositionAngleType.TRUE)

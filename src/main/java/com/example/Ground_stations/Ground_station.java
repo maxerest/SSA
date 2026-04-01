@@ -3,6 +3,7 @@ import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Parametres;
 import com.example.Orbiting_object.*;
 
+import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.ode.events.Action;
 import org.orekit.bodies.GeodeticPoint;
 import org.orekit.frames.TopocentricFrame;
@@ -28,16 +29,19 @@ import org.orekit.estimation.measurements.ObservableSatellite;
 
 public class Ground_station {
     public static List<GroundStation_physical> liste_GS=new ArrayList<>();
-    public static boolean satcom_activated=false;
+    public static boolean satcom_activated=false; // false on default but gets change if needed from main
+    public static boolean EO_detection=true; // false on default but gets change if needed from main
 
     public static class GroundStation_physical extends GroundStation {
         String name;
         double antenna_size;
         double antenna_gain;
+        double teta3dB=2;       //degrees
         double noiseFigureDb = 3.0;
         double noiseBandwidthMhz = 50.0;
         double temperatureK = 290.0;
         public Map <SpacecraftState,Boolean> map_visibility_from_sat=new HashMap<>();
+
         public GroundStation_physical(TopocentricFrame baseFrame,String name) {
             super(baseFrame);
             this.antenna_gain=10; //dB
@@ -68,7 +72,9 @@ public class Ground_station {
         public double getTemperatureK() {
             return temperatureK;
         }
-
+        public double getteta3dB(){
+            return teta3dB;
+        }
         public void get_visibility(SpacecraftState s){
 
         }
@@ -160,7 +166,7 @@ public class Ground_station {
      * @param current_date : Time of check
      * @return GroundStation : first station that can see the satellite, null if none can see it
      */
-    public static GroundStation which_station_visible(SpacecraftState s, AbsoluteDate current_date) {
+    public static GroundStation_physical which_station_visible(SpacecraftState s, AbsoluteDate current_date) {
         for (GroundStation_physical station : liste_GS) {
             if (isVisibleFromStation(station, s,current_date)) {
                 return station;
@@ -226,7 +232,7 @@ public class Ground_station {
 
         return pvG;
     }
-    public static void satcom_station_link(NumericalPropagator propagator, Propagator_1.step_handler stepHandler){
+    public static void satcom_station_link(NumericalPropagator propagator){
         final double maxcheck  = 60.0;
         final double threshold =  0.001;
         for (GroundStation_physical GS : liste_GS ){
@@ -240,5 +246,18 @@ public class Ground_station {
                              });propagator.addEventDetector(station_visibility);
         }
     }
+    public static void EO_usage_detection(NumericalPropagator propagator){
+        Vector3D Orientation_sensor= new Vector3D(0,0,-1);
+        for (GroundStation_physical GS : liste_GS ){
+        ElevationDetector elevationDetector = new ElevationDetector(
+                60.0,    // max check interval (s)
+                1e-3,    // convergence (s)
+                GS.getBaseFrame())
+                .withConstantElevation(Math.toRadians(Parametres.elevation))
+                .withHandler(new Propagator_1.SlewComputingHandler(
+                        Parametres.frame,  GS.getBaseFrame(), Orientation_sensor,GS.getName()));
 
+        propagator.addEventDetector(elevationDetector);
+    }
+   }
 }
