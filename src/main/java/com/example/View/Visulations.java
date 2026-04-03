@@ -9,10 +9,15 @@ import com.example.Parametres;
 
 import java.io.*;
 
+import org.hipparchus.geometry.euclidean.threed.RotationConvention;
+import org.orekit.frames.Frame;
+import org.orekit.frames.Transform;
+import org.orekit.models.earth.GeoMagneticField;
 import org.orekit.orbits.Orbit;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
+import org.orekit.utils.IERSConventions;
 import org.orekit.utils.PVCoordinates;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.RealVector;
@@ -290,11 +295,27 @@ public class Visulations {
      * 
      */
     public static void RunPythonScript() {
-            // Build up the full command
-            List<String> cmd = new ArrayList<>();
-            cmd.add("python");
-            cmd.add("src/main/java/com/example/View/Visualisation.py");
-            process_builder(cmd);
+
+        // Compute the rotation angle between ITRF and EME2000 at epoch
+        // This gives the Earth's orientation (GAST) at the start of propagation
+        Frame itrf    = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
+        Frame eme2000 = FramesFactory.getEME2000();
+
+        Transform t           = itrf.getTransformTo(eme2000, Parametres.date_orekit);
+        double[] axis         = t.getRotation().getAxis(RotationConvention.VECTOR_OPERATOR).toArray();
+        double   gastAngleDeg = Math.toDegrees(t.getRotation().getAngle());
+
+        // The Z-component of the axis tells us if the rotation is positive or negative
+        if (axis[2] < 0) gastAngleDeg = -gastAngleDeg;
+
+        System.out.println("GAST at epoch: " + gastAngleDeg + " deg");
+        // Build up the full command
+        List<String> cmd = new ArrayList<>();
+        cmd.add("python");
+        cmd.add("src/main/java/com/example/View/Visualisation.py");
+        cmd.add(String.valueOf(gastAngleDeg));   // argv[1]
+        cmd.add(String.valueOf(Parametres.date_orekit.durationFrom(AbsoluteDate.J2000_EPOCH))); // argv[2] — optional, for reference
+        process_builder(cmd);
 
 
     }

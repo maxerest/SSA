@@ -320,7 +320,8 @@ public class Propagator_1
         public void handleStep(SpacecraftState currentState) {
             boolean trigger = p.is_firing(currentState);
             Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
-            Vector3D pos =currentState.getPVCoordinates(itrf).getPosition();
+            //Vector3D pos =currentState.getPVCoordinates(itrf).getPosition();
+            Vector3D pos =currentState.getPVCoordinates().getPosition();
             p.add_state(currentState);
             //For each ground station visible during this propagation step, calculate the link budget between the GS and the sat
             if (Ground_station.satcom_activated){

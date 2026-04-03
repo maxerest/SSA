@@ -4,20 +4,30 @@ import pandas as pd
 import numpy as np
 import time
 import os
+import sys
 
+# ---------------------------------------------------------------------------
+# Initial Earth angle from Java (GAST at epoch) — argv[1]
+# ---------------------------------------------------------------------------
+initial_earth_angle = float(sys.argv[1]) if len(sys.argv) > 1 else 180.0
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 def latlon_to_ecef(lat_deg, lon_deg, alt_km=0, R=6378100):
-    """Convert latitude/longitude to ECEF coordinates"""
+    """Convert latitude/longitude to ECEF coordinates (no rotation applied here)"""
     lat = np.radians(lat_deg)
     lon = np.radians(lon_deg)
-    r = R + alt_km
-    x = r * np.cos(lat) * np.cos(lon)
-    y = r * np.cos(lat) * np.sin(lon)
-    z = r * np.sin(lat)
+    r   = R + alt_km
+    x   = r * np.cos(lat) * np.cos(lon)
+    y   = r * np.cos(lat) * np.sin(lon)
+    z   = r * np.sin(lat)
     return np.array([x, y, z])
 
 def build_cone_points(base_center, half_angle_deg=45.0, cone_height_m=2_000_000.0, resolution=60):
     """
     Returns (points, faces) for a cone with apex on Earth surface, opening outward.
+    Points are in raw ECEF — rotation is applied each frame via rotation_matrix_z.
     """
     base_center = np.array(base_center, dtype=float)
     outward     = base_center / np.linalg.norm(base_center)
@@ -31,7 +41,7 @@ def build_cone_points(base_center, half_angle_deg=45.0, cone_height_m=2_000_000.
     angles = np.linspace(0, 2 * np.pi, resolution, endpoint=False)
     circle = np.array([top + radius * (np.cos(a) * u + np.sin(a) * v) for a in angles])
 
-    points = np.vstack([base_center, circle])
+    points = np.vstack([base_center, circle])   # index 0 = apex = station position
     n      = len(circle)
     faces  = []
     for i in range(n):
@@ -41,6 +51,7 @@ def build_cone_points(base_center, half_angle_deg=45.0, cone_height_m=2_000_000.
     return points, np.array(faces)
 
 def rotation_matrix_z(angle_deg):
+    """3x3 rotation matrix around Z axis."""
     a   = np.radians(angle_deg)
     cos = np.cos(a)
     sin = np.sin(a)
@@ -95,16 +106,19 @@ plotter.enable_depth_peeling(number_of_peels=4)
 texture = examples.load_globe_texture()
 Earth   = examples.planets.load_earth(radius=6378.1)
 Earth.scale([1000, 1000, 1000], inplace=True)
-Earth.rotate_z(180, inplace=True)
+Earth.rotate_z(0, inplace=True)   # ✅ GAST at epoch, not hardcoded 180
 
 plotter.add_background_image(examples.planets.download_stars_sky_background(load=False))
 plotter.add_mesh(Earth, texture=texture, smooth_shading=True)
 
 # ---------------------------------------------------------------------------
 # Ground stations + cones
+# All stored in raw ECEF — a single R_mat handles ALL rotation each frame
+# including the initial_earth_angle offset, so there is zero drift possible
+# listGS: (name, gs_sphere, cone_mesh, orig_pts, orig_center, activation)
 # ---------------------------------------------------------------------------
-listGS               = []   # (name, gs_sphere, cone_mesh, orig_pts, activation)
-total_earth_rotation = 0.0
+listGS               = []
+total_earth_rotation = 0.0   # cumulative rotation AFTER the initial angle
 
 try:
     gs_file = select_gs_csv_file()
@@ -118,20 +132,33 @@ try:
             alt        = float(row["alt"]) if "alt" in row else 0
             activation = bool(row["activated"]) if "activated" in row else True
 
+            # Raw ECEF — no rotation applied here
             gs_pos   = latlon_to_ecef(lat, lon, alt)
             gs_color = "green" if activation else "red"
 
-            gs_sphere = pv.Sphere(radius=1.5e5, center=gs_pos)
-            plotter.add_mesh(gs_sphere, color=gs_color, smooth_shading=True,
-                             name=f"gs_{name}")
-
+            # Build cone in raw ECEF
             orig_pts, faces = build_cone_points(
                 base_center    = gs_pos,
                 half_angle_deg = 75.0,
-                cone_height_m  = 2000_000.0,
+                cone_height_m  = 2_000_000.0,
                 resolution     = 60
             )
+            orig_center = orig_pts[0].copy()   # index 0 = apex = station position
+            R_init = rotation_matrix_z(180)
+            init_center = R_init @ orig_center
+            init_pts    = (R_init @ orig_pts.T).T
 
+
+            # Ground station sphere — placed at initial rotated position
+            gs_sphere = pv.Sphere(radius=1.5e5, center=init_center)
+            plotter.add_mesh(gs_sphere, color=gs_color, smooth_shading=True, name=f"gs_{name}")
+
+            cone_mesh = pv.PolyData(init_pts.copy(), faces)
+            plotter.add_mesh(cone_mesh, color=gs_color, opacity=0.25,
+                 smooth_shading=False, show_edges=False, name=f"cone_{name}")
+
+
+            # Cone mesh — placed at initial rotated position
             cone_mesh = pv.PolyData(orig_pts.copy(), faces)
             plotter.add_mesh(
                 cone_mesh,
@@ -142,7 +169,8 @@ try:
                 name           = f"cone_{name}",
             )
 
-            listGS.append((name, gs_sphere, cone_mesh, orig_pts, activation))
+            # Store raw ECEF originals — the animation loop applies total rotation
+            listGS.append((name, gs_sphere, cone_mesh, orig_pts, orig_center, activation))
             print(f"Added ground station: {name}")
 
 except Exception as e:
@@ -168,7 +196,6 @@ trail_length = 1
 satellites   = []
 
 for sat_name in sat_names:
-    # Skip NaN satellite names from empty rows
     if not isinstance(sat_name, str):
         continue
 
@@ -176,7 +203,6 @@ for sat_name in sat_names:
     is_noisy   = 'noisy' in sat_name.lower()
     base_color = base_colors.get(sat_name, [0.5, 0.5, 0.5])
 
-    # detected_by_GS: convert true/false strings to 0/1
     if "detected_by_GS" in sat_data.columns:
         detected_col = (
             sat_data["detected_by_GS"]
@@ -197,7 +223,6 @@ for sat_name in sat_names:
         detected_col
     ))
 
-    # Station names stored as a separate string array (index-aligned with points)
     if "nom_station" in sat_data.columns:
         station_names = sat_data["nom_station"].fillna("").astype(str).values
     else:
@@ -218,26 +243,16 @@ for sat_name in sat_names:
         trail_actors.append(actor)
         trail_meshes.append(sphere)
 
-    # One text label per satellite — shows detected station name
-    label_actor = plotter.add_text(
-        "",
-        position="upper_right",
-        font_size=11,
-        color="yellow",
-        name=f"label_{sat_name}"
-    )
-
     satellites.append({
         'name'          : sat_name,
         'points'        : points,
-        'station_names' : station_names,   # ← string array, index-aligned
+        'station_names' : station_names,
         'mesh'          : satellite_mesh,
         'actor'         : satellite_actor,
         'trail_meshes'  : trail_meshes,
         'trail_actors'  : trail_actors,
         'base_color'    : base_color,
         'is_noisy'      : is_noisy,
-        'label_actor'   : label_actor,
     })
 
     print(f"Added satellite {sat_name} with {len(points)} points")
@@ -282,20 +297,29 @@ else:
                          position="upper_left", font_size=12, color="white",
                          name="time_display")
 
-        # ── Earth + cone rotation ──────────────────────────────────
-        delta_angle           = (delta_t / 86400.0) * 360.0
+        # ── Earth rotation ─────────────────────────────────────────
+        # ✅ sidereal day (86164.1 s), not solar day (86400 s)
+        delta_angle           = (delta_t / 86164.1) * 360.0
         total_earth_rotation += delta_angle
         Earth.rotate_z(delta_angle, inplace=True)
 
-        R_mat = rotation_matrix_z(total_earth_rotation)
+        # ── Single rotation matrix: initial angle + all accumulated rotation
+        # This is applied to raw ECEF points — zero drift possible
+        R_mat = rotation_matrix_z(initial_earth_angle + total_earth_rotation)
+
         for gs in listGS:
-            gs_name, gs_sphere, cone_mesh, orig_pts, activation = gs
-            gs_sphere.rotate_z(delta_angle, inplace=True)
+            gs_name, gs_sphere, cone_mesh, orig_pts, orig_center, activation = gs
+
+            # Recompute cone from raw ECEF original points
             rotated_pts         = (R_mat @ orig_pts.T).T
             cone_mesh.points[:] = rotated_pts
 
-        # ── Build the station label text for this frame ────────────
-        # Collect all detected station names across all satellites
+            # Recompute sphere center from raw ECEF original center
+            rotated_center = R_mat @ orig_center
+            translation    = rotated_center - np.array(gs_sphere.center)
+            gs_sphere.translate(translation, inplace=True)
+
+        # ── Station label ──────────────────────────────────────────
         label_lines = []
         for sat, indices in zip(satellites, frame_indices):
             if len(indices) == 0:
@@ -305,15 +329,14 @@ else:
             if detected:
                 station = sat['station_names'][idx]
                 if station and station not in ("", "NA", "nan", "None"):
-                    label_lines.append(f"{sat['name']} → {station}")
+                    label_lines.append(f"{sat['name']} -> {station}")
 
-        station_text = "\n".join(label_lines) if label_lines else ""
         plotter.add_text(
-            station_text,
+            "\n".join(label_lines) if label_lines else "",
             position="upper_right",
             font_size=11,
             color="yellow",
-            name="station_label"    # single actor, overwritten each frame
+            name="station_label"
         )
 
         # ── Satellites ─────────────────────────────────────────────
