@@ -370,4 +370,26 @@ public class Visulations {
             }
         }
     }
+    public static void export_observation_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration) {
+        String filename = "src/main/java/com/example/RevisitFrequency/observations.csv";
+        try (FileWriter fw = new FileWriter(filename, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+
+            bw.write(name + ";" + start.toString() + ";" + end.toString() + ";" + duration);
+            bw.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void init_observation_csv() {
+        String filename = "src/main/java/com/example/RevisitFrequency/observations.csv";
+        try (FileWriter fw = new FileWriter(filename, false);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            bw.write("zone_name;start_time;end_time;duration_s");
+            bw.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

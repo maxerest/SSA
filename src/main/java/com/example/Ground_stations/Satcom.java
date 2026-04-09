@@ -33,7 +33,6 @@ public class Satcom {
 
         // Noise power (separate calculation, in dBm)
         //double noisePowerDbm = Noise_power_calculation(GS);
-
         // SNR (signal minus noise)
         return calculateSNR(GS,receivedPowerDbm);
 

@@ -1,4 +1,5 @@
 package com.example.Ground_stations;
+import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Parametres;
 import com.example.Orbiting_object.*;
@@ -30,7 +31,6 @@ import org.orekit.estimation.measurements.ObservableSatellite;
 public class Ground_station {
     public static List<GroundStation_physical> liste_GS=new ArrayList<>();
     public static boolean satcom_activated=false; // false on default but gets change if needed from main
-    public static boolean EO_detection=true; // false on default but gets change if needed from main
 
     public static class GroundStation_physical extends GroundStation {
         String name;
@@ -240,24 +240,13 @@ public class Ground_station {
                      new ElevationDetector(maxcheck, threshold, GS.getBaseFrame())
                              .withConstantElevation(Parametres.elevation)
                              .withHandler((s, d, increasing) -> {
+
                                  // Flip the boolean inside the map for the satellite and ground stations combo showing visibility or not
                                  GS.map_visibility_from_sat.put(s,increasing);
                                  return Action.CONTINUE;
-                             });propagator.addEventDetector(station_visibility);
+                             });
+             propagator.addEventDetector(station_visibility);
         }
     }
-    public static void EO_usage_detection(NumericalPropagator propagator){
-        Vector3D Orientation_sensor= new Vector3D(0,0,-1);
-        for (GroundStation_physical GS : liste_GS ){
-        ElevationDetector elevationDetector = new ElevationDetector(
-                60.0,    // max check interval (s)
-                1e-3,    // convergence (s)
-                GS.getBaseFrame())
-                .withConstantElevation(Math.toRadians(Parametres.elevation))
-                .withHandler(new Propagator_1.SlewComputingHandler(
-                        Parametres.frame,  GS.getBaseFrame(), Orientation_sensor,GS.getName()));
 
-        propagator.addEventDetector(elevationDetector);
-    }
    }
-}

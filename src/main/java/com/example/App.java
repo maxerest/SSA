@@ -1,7 +1,9 @@
 package com.example;
 
 import com.example.Analytics_Propagator.Least_squares_batch;
+import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Satcom;
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.*;
@@ -28,7 +30,7 @@ public class App
         boolean propagate_least_squares = false;
         boolean TLE_visualisation = false;
         boolean TLE_propagation=false;
-        boolean py_3d_visualizations=true;
+        boolean py_3d_visualizations=false;
         boolean py_graphs_visualizations=false;
         boolean check_collision = false;
         boolean satcom_gs_communication =false;
@@ -51,11 +53,12 @@ public class App
                 My_TLE.collision_TLE();
             }
         }
-        Satcom.SignalCoding coding = new Satcom.SignalCoding();
-        System.out.println(coding.getBandwidth());
         if (propagate_real_orbit){
             if (satcom_gs_communication){
                 Ground_station.satcom_activated=true;
+            }
+            if (EO_detection){
+                new EO_detection();
             }
             // Definition des satellites
             List<Satellite> liste_par_sats_real_orbit = real_orbit(nb_sat);
