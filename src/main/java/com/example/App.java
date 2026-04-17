@@ -114,7 +114,61 @@ public class App
                 .anomalie(Math.toRadians(180))
                 .type_anomalie(PositionAngleType.TRUE)
                 .motor_name("Moteur_2")
-                .build());        
+                .build());
+            liste_par_sats.add(
+                    new Satellite.Builder()
+                            .nom_sat("Sat_real_" + (2))
+                            .mass(2500)
+                            .semi_axis(26600000)
+                            .eccentricity(0.74)
+                            .inclinaison(Math.toRadians(63.435))
+                            .long_noeud_ascendant(Math.toRadians(0))
+                            .arg_periastre(Math.toRadians(270))
+                            .anomalie(Math.toRadians(0))
+                            .type_anomalie(PositionAngleType.TRUE)
+                            .motor_name("Moteur_2")
+                            .build());
+            liste_par_sats.add(
+                    new Satellite.Builder()
+                            .nom_sat("Sat_real_" + (3))
+                            .mass(2500)
+                            .semi_axis(26600000)
+                            .eccentricity(0.74)
+                            .inclinaison(Math.toRadians(63.435))
+                            .long_noeud_ascendant(Math.toRadians(90))
+                            .arg_periastre(Math.toRadians(270))
+                            .anomalie(Math.toRadians(0))
+                            .type_anomalie(PositionAngleType.TRUE)
+                            .motor_name("Moteur_2")
+                            .build());
+            liste_par_sats.add(
+                    new Satellite.Builder()
+                            .nom_sat("Sat_real_" + (4))
+                            .mass(2500)
+                            .semi_axis(26600000)
+                            .eccentricity(0.74)
+                            .inclinaison(Math.toRadians(63.435))
+                            .long_noeud_ascendant(Math.toRadians(180))
+                            .arg_periastre(Math.toRadians(270))
+                            .anomalie(Math.toRadians(0))
+                            .type_anomalie(PositionAngleType.TRUE)
+                            .motor_name("Moteur_2")
+                            .build());
+            liste_par_sats.add(
+                    new Satellite.Builder()
+                            .nom_sat("Sat_real_" + (5))
+                            .mass(2500)
+                            .semi_axis(26600000)
+                            .eccentricity(0.74)
+                            .inclinaison(Math.toRadians(63.435))
+                            .long_noeud_ascendant(Math.toRadians(270))
+                            .arg_periastre(Math.toRadians(270))
+                            .anomalie(Math.toRadians(240))
+                            .type_anomalie(PositionAngleType.TRUE)
+                            .motor_name("Moteur_2")
+                            .build());
+
+
         }
 
         /*

@@ -78,13 +78,15 @@ public class Propagator_1
    public static void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit,boolean satcom_link){
        String name_file="real_sats";
        Visulations.create_CSV_files(name_file);
+       if (EO_detection.EO_detection){
+           Visulations.init_observation_csv(); // ← moved here, called only once
+       }
     // Paramétrage du propagateur numérique
         for  (Satellite p : liste_par_sats_real_orbit){
             NumericalPropagator propagator = generic_propagator(name_file,p);
             if (EO_detection.EO_detection){
                 NadirPointing nadirLaw = new NadirPointing(Parametres.frame, Parametres.earth);
                 propagator.setAttitudeProvider(nadirLaw);
-                Visulations.init_observation_csv();
                 EO_detection.EO_usage_detection(propagator,p);
             }
             p.launch_manoeuvre(propagator);

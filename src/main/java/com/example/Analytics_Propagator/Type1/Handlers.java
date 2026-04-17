@@ -121,104 +121,104 @@ public class Handlers {
 
     }
     public static class ZoneObservationContext {
-        public boolean currently_observing = false;
-        public AbsoluteDate start_date_observation = null;
-        public int currentPointIndex = 0;
+        public Map<Integer, AbsoluteDate> pointEntryTimes = new HashMap<>();
+        public Map<Integer, AbsoluteDate> pointExitTimes  = new HashMap<>();
+
+        public ZoneObservationContext(int size) {
+            // size no longer needed but kept for API compatibility
+        }
+
+        public void resetPass() {
+            pointEntryTimes.clear();
+            pointExitTimes.clear();
+        }
     }
 
-    public static class Area_revisit_Handler implements EventHandler{
-        private String name;
-        private final Frame inertialFrame;
-        private final List<SpacecraftState> list_spacecraftStates;
-        private  AbsoluteDate start_date_observation;
-        private int point_number_in_zone;
+    public static class Area_revisit_Handler implements EventHandler {
+        private final String name;
+        private final int pointIndex;
         private final ZoneObservationContext context;
+        private final List<SpacecraftState> list_spacecraftStates;
+        private final Frame inertialFrame;
 
-        public Area_revisit_Handler(String name, List<SpacecraftState> list_spacecraftStates, Frame inertialFrame, int number_in_zone, ZoneObservationContext context) {
-            this.name=name;
+        public Area_revisit_Handler(String name, List<SpacecraftState> list_spacecraftStates,
+                                    Frame inertialFrame, int pointIndex, ZoneObservationContext context) {
+            this.name = name;
+            this.pointIndex = pointIndex;
+            this.context = context;
             this.list_spacecraftStates = list_spacecraftStates;
             this.inertialFrame = inertialFrame;
-            this.point_number_in_zone=number_in_zone;
-            this.context = context;
         }
+
         @Override
         public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
-            if (increasing && !context.currently_observing) {
-                return this.increasing(s);
-            } else if (!increasing && context.currently_observing) {
+            if (increasing) {
+                SpacecraftState nearest = list_spacecraftStates.stream()
+                        .min(Comparator.comparingDouble(st ->
+                                Math.abs(st.getDate().durationFrom(s.getDate()))))
+                        .orElse(s);
 
-                return this.decreasing(s);
+                Vector3D boresightInBody = (Vector3D) nearest.getAdditionalData("angle");
+                Attitude attitude = nearest.getAttitude();
+                Vector3D boresightInertial = attitude.getRotation().applyInverseTo(boresightInBody);
+                Vector3D satPosition = nearest.getPosition(inertialFrame);
+
+                // Convert this point to inertial frame
+                Transform itrfToInertial = Parametres.earth.getBodyFrame()
+                        .getTransformTo(inertialFrame, nearest.getDate());
+                GeodeticPoint point = EO_detection.Map_area_positions.get(name).get(pointIndex);
+                Vector3D pointITRF = Parametres.earth.transform(point);
+                Vector3D pointInertial = itrfToInertial.transformPosition(pointITRF);
+
+                Vector3D toPoint = pointInertial.subtract(satPosition).normalize();
+                double slewAngleRad = Vector3D.angle(boresightInertial, toPoint);
+
+                if (slewAngleRad > Parametres.elevation) {
+                    return Action.CONTINUE; // point not reachable, don't record entry
+                }
+
+                context.pointEntryTimes.put(pointIndex, s.getDate());
+
+            } else {
+                context.pointExitTimes.put(pointIndex, s.getDate());
+                tryFinalizePass(s);
             }
             return Action.CONTINUE;
         }
-        private Action increasing (SpacecraftState s) {
-            SpacecraftState currentstate = list_spacecraftStates.stream()
-                    .min(Comparator.comparingDouble(st ->
-                            Math.abs(st.getDate().durationFrom(s.getDate()))))
-                    .orElse(s);  // fallback to raw state if list is empty
-            Vector3D boresightInBody= (Vector3D) currentstate.getAdditionalData("angle");
-            Attitude attitude = currentstate.getAttitude();
-            Vector3D boresightInertial = attitude.getRotation()
-                    .applyInverseTo(boresightInBody);
 
-            Vector3D satPosition = currentstate.getPosition(inertialFrame);
+        private void tryFinalizePass(SpacecraftState s) {
+            int total = EO_detection.Map_area_positions.get(name).size();
 
-            // Convert Earth body frame → inertial once for all points
-            Transform bodyToInertial = Parametres.earth.getBodyFrame()
-                    .getTransformTo(inertialFrame, currentstate.getDate());
-            for (GeodeticPoint point : EO_detection.Map_area_positions.get(name)) {
-                // Convert geodetic point to inertial frame
-                Frame itrf = Parametres.earth.getBodyFrame(); // this IS your ITRF
+            // Not all points have exited yet
+            if (context.pointExitTimes.size() < total) return;
+            // Not all points were ever visible this pass
+            if (context.pointEntryTimes.size() < total) return;
 
-                Transform itrfToInertial = itrf.getTransformTo(inertialFrame, currentstate.getDate());
+            // Latest entry = when the LAST point became visible
+            AbsoluteDate windowStart = context.pointEntryTimes.values().stream()
+                    .max(Comparator.naturalOrder())
+                    .orElseThrow();
 
-                Vector3D pointITRF = Parametres.earth.transform(point); // geodetic → Cartesian in ITRF
-                Vector3D pointInertial = itrfToInertial.transformPosition(pointITRF);   // geodetic → Cartesian ECEF → inertial
+            // Earliest exit = when the FIRST point leaves visibility
+            AbsoluteDate windowEnd = context.pointExitTimes.values().stream()
+                    .min(Comparator.naturalOrder())
+                    .orElseThrow();
 
-                Vector3D toPoint = pointInertial
-                        .subtract(satPosition)
-                        .normalize();
+            double duration = windowEnd.durationFrom(windowStart);
 
-                double slewAngleRad = Vector3D.angle(boresightInertial, toPoint);
-                double slewAngleDeg = Math.toDegrees(slewAngleRad);
-
-                if (slewAngleRad > Math.toRadians(60)) {
-                    return  Action.CONTINUE;
-                }
-            }
-            context.currently_observing = true;
-            EO_detection.Map_area_history.get(name).get(point_number_in_zone).put(s.getDate(), null);
-            context.start_date_observation=s.getDate();
-            return  Action.CONTINUE;
-        }
-        private Action decreasing(SpacecraftState s) {
-
-            if (context.start_date_observation == null) {
-                return Action.CONTINUE;
-            }
-            // Get the enriched state closest in time, just like in increasing()
-            SpacecraftState currentstate = list_spacecraftStates.stream()
+            SpacecraftState nearest = list_spacecraftStates.stream()
                     .min(Comparator.comparingDouble(st ->
                             Math.abs(st.getDate().durationFrom(s.getDate()))))
                     .orElse(s);
-            List<TreeMap<AbsoluteDate, AbsoluteDate>> pointHistories = EO_detection.Map_area_history.get(name);
-            pointHistories.get(context.currentPointIndex).put(context.start_date_observation, s.getDate());
-            context.currentPointIndex++;
-            boolean allComplete = pointHistories.stream()
-                    .allMatch(ph -> !ph.isEmpty() && ph.get(ph.lastKey()) != null);
 
-            if (allComplete) {
-                double minDuration = pointHistories.stream()
-                        .mapToDouble(ph -> ph.get(ph.lastKey()).durationFrom(ph.lastKey()))
-                        .min()
-                        .orElse(0.0);
-
-                Visulations.export_observation_to_csv(name, context.start_date_observation, s.getDate(), minDuration, (String) currentstate.getAdditionalData("name"));
-                context.currentPointIndex = 0;
-                context.currently_observing = false;
-                context.start_date_observation = null;
+            if (duration > 0) {
+                Visulations.export_observation_to_csv(
+                        name, windowStart, windowEnd, duration,
+                        (String) nearest.getAdditionalData("name")
+                );
             }
-            return Action.CONTINUE;
+
+            context.resetPass();
         }
         }
     }

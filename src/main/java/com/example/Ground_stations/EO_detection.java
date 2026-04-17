@@ -24,7 +24,7 @@ public class EO_detection {
     }
     public static void EO_usage_detection(NumericalPropagator propagator, Satellite sat) {
         for (String name : Map_area_positions.keySet()) {
-            Handlers.ZoneObservationContext context = new Handlers.ZoneObservationContext();
+            Handlers.ZoneObservationContext context = new Handlers.ZoneObservationContext(Map_area_positions.get(name).size());
             int i = 0;
             for (GeodeticPoint point : Map_area_positions.get(name)) {
                 TopocentricFrame topoFrame = new TopocentricFrame(Parametres.earth, point, name + "_" + i);
@@ -73,7 +73,6 @@ public class EO_detection {
                 Map_area_positions.put(name, geodeticPoints);
                 Map_area_history.put(name, perPointHistory);
             }
-            System.out.println(Map_area_positions.keySet());
         } catch (Exception e) {
             e.printStackTrace();
         }
