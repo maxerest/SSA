@@ -106,8 +106,7 @@ plotter.enable_depth_peeling(number_of_peels=4)
 texture = examples.load_globe_texture()
 Earth   = examples.planets.load_earth(radius=6378.1)
 Earth.scale([1000, 1000, 1000], inplace=True)
-Earth.rotate_z(0, inplace=True)   # ✅ GAST at epoch, not hardcoded 180
-
+Earth.rotate_z(0, inplace=True)
 plotter.add_background_image(examples.planets.download_stars_sky_background(load=False))
 plotter.add_mesh(Earth, texture=texture, smooth_shading=True)
 
@@ -155,7 +154,7 @@ try:
 
             cone_mesh = pv.PolyData(init_pts.copy(), faces)
             plotter.add_mesh(cone_mesh, color=gs_color, opacity=0.25,
-                 smooth_shading=False, show_edges=False, name=f"cone_{name}")
+                             smooth_shading=False, show_edges=False, name=f"cone_{name}")
 
 
             # Cone mesh — placed at initial rotated position

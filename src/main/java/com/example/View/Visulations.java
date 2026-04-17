@@ -308,7 +308,6 @@ public class Visulations {
         // The Z-component of the axis tells us if the rotation is positive or negative
         if (axis[2] < 0) gastAngleDeg = -gastAngleDeg;
 
-        System.out.println("GAST at epoch: " + gastAngleDeg + " deg");
         // Build up the full command
         List<String> cmd = new ArrayList<>();
         cmd.add("python");
