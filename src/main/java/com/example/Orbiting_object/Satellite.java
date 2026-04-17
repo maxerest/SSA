@@ -1,6 +1,7 @@
 package com.example.Orbiting_object;
 
 import com.example.Manoeuvre.Manoeuvre;
+import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.attitudes.NadirPointing;
 import org.orekit.attitudes.TargetPointing;
 import org.orekit.orbits.PositionAngleType;
@@ -25,7 +26,8 @@ public class Satellite extends Orbiting_object {
     private final double srpCoeff;
     private Map<String,AntennaParameters> map_parametres_antennes=new LinkedHashMap<>();
     private double puissance_amplificateur;
-
+    private Vector3D boresight = new Vector3D(0,0,1);
+    private double agility = Math.toRadians(30); // Capability of the satellite to look of Nadir to point
 
     private Satellite(Builder builder) {
         super(builder);  // Initialize parent with its Builder
@@ -96,7 +98,7 @@ public class Satellite extends Orbiting_object {
     public double getCd() {
         return cd;
     }
-
+    public Vector3D getBoresight() {return  boresight;}
     public String get_Motor_name() {
         return motor_name;
     }
@@ -117,6 +119,7 @@ public class Satellite extends Orbiting_object {
     public List<Manoeuvre> getListe_manoeuvre_sat(){return liste_manoeuvre_sat;}
     public List<SpacecraftState> get_liste_state_propa(){return liste_state_propa;}
     public Map<String, Map<AbsoluteDate,Double>> getMap_pourcentage_collision() {return map_pourcentage_collision;}
+    public double getAgility() {return agility;}
     public void add_manoeuvre (double start_date_manoeuvre, double duration_manoeuvre){
         try{
         liste_manoeuvre_sat.add( new Manoeuvre(start_date_manoeuvre,duration_manoeuvre));
