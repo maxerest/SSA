@@ -98,12 +98,14 @@ public class Handlers {
         }
 
         public void handleStep(SpacecraftState currentState) {
-            SpacecraftState updated_currentState= currentState.addAdditionalData("angle",p.getBoresight());
+            // add the needed information to SpacecraftState for EO observation
+            SpacecraftState updated_currentState= currentState.addAdditionalData("angle",p.getBoresight()).addAdditionalData("name",p.get_Name());
+            p.add_state(updated_currentState);
+
             boolean trigger = p.is_firing(updated_currentState);
             Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
             //Vector3D pos =updated_currentState.getPVCoordinates(itrf).getPosition();
             Vector3D pos =updated_currentState.getPVCoordinates().getPosition();
-            p.add_state(updated_currentState);
             //For each ground station visible during this propagation step, calculate the link budget between the GS and the sat
             if (Ground_station.satcom_activated){
                 List<Ground_station.GroundStation_physical> list_GS_visible=Ground_station.get_list_visible_GS(updated_currentState);
@@ -144,6 +146,7 @@ public class Handlers {
             if (increasing && !context.currently_observing) {
                 return this.increasing(s);
             } else if (!increasing && context.currently_observing) {
+
                 return this.decreasing(s);
             }
             return Action.CONTINUE;
@@ -153,7 +156,6 @@ public class Handlers {
                     .min(Comparator.comparingDouble(st ->
                             Math.abs(st.getDate().durationFrom(s.getDate()))))
                     .orElse(s);  // fallback to raw state if list is empty
-
             Vector3D boresightInBody= (Vector3D) currentstate.getAdditionalData("angle");
             Attitude attitude = currentstate.getAttitude();
             Vector3D boresightInertial = attitude.getRotation()
@@ -191,11 +193,17 @@ public class Handlers {
         }
         private Action decreasing(SpacecraftState s) {
 
-            if (context.start_date_observation == null) return Action.CONTINUE;
+            if (context.start_date_observation == null) {
+                return Action.CONTINUE;
+            }
+            // Get the enriched state closest in time, just like in increasing()
+            SpacecraftState currentstate = list_spacecraftStates.stream()
+                    .min(Comparator.comparingDouble(st ->
+                            Math.abs(st.getDate().durationFrom(s.getDate()))))
+                    .orElse(s);
             List<TreeMap<AbsoluteDate, AbsoluteDate>> pointHistories = EO_detection.Map_area_history.get(name);
             pointHistories.get(context.currentPointIndex).put(context.start_date_observation, s.getDate());
             context.currentPointIndex++;
-
             boolean allComplete = pointHistories.stream()
                     .allMatch(ph -> !ph.isEmpty() && ph.get(ph.lastKey()) != null);
 
@@ -204,7 +212,8 @@ public class Handlers {
                         .mapToDouble(ph -> ph.get(ph.lastKey()).durationFrom(ph.lastKey()))
                         .min()
                         .orElse(0.0);
-                Visulations.export_observation_to_csv(name, context.start_date_observation, s.getDate(), minDuration);
+
+                Visulations.export_observation_to_csv(name, context.start_date_observation, s.getDate(), minDuration, (String) currentstate.getAdditionalData("name"));
                 context.currentPointIndex = 0;
                 context.currently_observing = false;
                 context.start_date_observation = null;

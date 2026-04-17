@@ -369,12 +369,13 @@ public class Visulations {
             }
         }
     }
-    public static void export_observation_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration) {
+    public static void export_observation_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration, String sat_name ) {
+
         String filename = "src/main/java/com/example/RevisitFrequency/observations.csv";
         try (FileWriter fw = new FileWriter(filename, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
 
-            bw.write(name + ";" + start.toString() + ";" + end.toString() + ";" + duration);
+            bw.write(name + "," + start.toString() + "," + end.toString() + "," + duration+ "," + sat_name);
             bw.newLine();
 
         } catch (IOException e) {
@@ -385,10 +386,17 @@ public class Visulations {
         String filename = "src/main/java/com/example/RevisitFrequency/observations.csv";
         try (FileWriter fw = new FileWriter(filename, false);
              BufferedWriter bw = new BufferedWriter(fw)) {
-            bw.write("zone_name;start_time;end_time;duration_s");
+            bw.write("zone_name,start_time,end_time,duration_s,name_sat_doing_observation");
             bw.newLine();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    public static void Python_EO_detection(){
+        // Build up the full command
+        List<String> cmd = new ArrayList<>();
+        cmd.add("python");
+        cmd.add("src/main/java/com/example/RevisitFrequency/graphs_observations.py");
+        process_builder(cmd);
     }
 }

@@ -86,6 +86,9 @@ public class App
         if(py_graphs_visualizations){
             Visulations.Python_graph_orbital_param();
         }
+        if(EO_detection){
+            Visulations.Python_EO_detection();
+        }
     }
 
 

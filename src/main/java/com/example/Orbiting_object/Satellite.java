@@ -136,6 +136,7 @@ public class Satellite extends Orbiting_object {
     }
     public void add_state (SpacecraftState s){
         this.liste_state_propa.add(s);
+
     }
 
     public void add_map_percentage_collison(String nom_sat,AbsoluteDate date, double percentage_collision ){

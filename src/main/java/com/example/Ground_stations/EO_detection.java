@@ -24,10 +24,7 @@ public class EO_detection {
     }
     public static void EO_usage_detection(NumericalPropagator propagator, Satellite sat) {
         for (String name : Map_area_positions.keySet()) {
-
-            // One shared context for all points in this zone
             Handlers.ZoneObservationContext context = new Handlers.ZoneObservationContext();
-
             int i = 0;
             for (GeodeticPoint point : Map_area_positions.get(name)) {
                 TopocentricFrame topoFrame = new TopocentricFrame(Parametres.earth, point, name + "_" + i);
