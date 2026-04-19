@@ -10,7 +10,9 @@ import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
 import com.example.SSA.Patera_detection;
 import com.example.TLE.My_TLE;
+import com.example.View.SatelliteTrackerUI;
 import com.example.View.Visulations;
+import javafx.application.Application;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
@@ -25,6 +27,7 @@ public class App
 {
     public static void main( String[] args )throws IOException 
     {
+
         boolean propagate_real_orbit = true;
         boolean propagate_kalman_filter = false;
         boolean propagate_least_squares = false;
@@ -87,8 +90,10 @@ public class App
             Visulations.Python_graph_orbital_param();
         }
         if(EO_detection){
-            Visulations.Python_EO_detection();
+            //Visulations.Python_EO_detection();
         }
+        Application.launch(SatelliteTrackerUI.class, args);
+
     }
 
 

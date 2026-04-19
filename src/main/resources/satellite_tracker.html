@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Satellite Ground Track Tracker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: monospace; background: #0a1220; color: #ccc; padding: 1rem; }
+        #controls { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        label { font-size: 13px; color: #888; white-space: nowrap; }
+        input[type=range] { flex: 1; min-width: 120px; cursor: pointer; }
+        #tLabel { font-size: 13px; font-weight: 500; color: #fff; min-width: 60px; }
+        button { font-size: 12px; padding: 4px 12px; background: transparent; color: #ccc; border: 0.5px solid #444; border-radius: 6px; cursor: pointer; }
+        button:hover { background: #1a2a3a; }
+        #statsRow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .stat-card { background: #111e2e; border-radius: 8px; padding: 6px 10px; font-size: 12px; min-width: 130px; }
+        .stat-card .sat-name { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; font-weight: 500; color: #fff; }
+        .stat-card .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .stat-card .row { color: #888; }
+        .stat-card .val { color: #fff; }
+        #mapDiv { width: 100%; border-radius: 8px; overflow: hidden; border: 0.5px solid rgba(255,255,255,0.15); background: #0d1b2a; }
+        #legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px; color: #888; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        #status { font-size: 12px; color: #888; margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+    <label>Time</label>
+    <input type="range" id="tSlider" min="0" max="9" value="0" step="1" />
+    <span id="tLabel">0.0 s</span>
+    <button id="playBtn">Play</button>
+    <button id="uploadBtn">Load CSV</button>
+    <input type="file" id="csvFile" accept=".csv" style="display:none;" />
+</div>
+
+<div id="status">Waiting for data...</div>
+<div id="statsRow"></div>
+<div id="mapDiv"></div>
+<div id="legend"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+    const COLORS = ['#4fc3f7','#81c784','#ffb74d','#f48fb1','#ce93d8','#80cbc4','#fff176','#ff8a65'];
+    const EARTH_R = 6371000;
+
+    let sats = {}, times = [], idx = 0, playing = false, timer = null;
+    let svg, projection, pathGen, W, H;
+    let dotLayer, trackLayer;
+    window.mapInitialized = false;
+
+    function xyz2ll(x, y, z) {
+        const r = Math.sqrt(x*x + y*y + z*z);
+        return [Math.atan2(y, x) * 180 / Math.PI, Math.asin(z / r) * 180 / Math.PI];
+    }
+
+    function parseCSV(text) {
+        const lines = text.trim().split('\n');
+        const h = lines[0].split(',').map(s => s.trim());
+        const iN=h.indexOf('name_sat'), iX=h.indexOf('x'), iY=h.indexOf('y'),
+            iZ=h.indexOf('z'), iT=h.indexOf('t'), iF=h.indexOf('firing');
+        const out = {}, ts = new Set();
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const c = lines[i].split(',');
+            const name = c[iN]?.trim(), x = parseFloat(c[iX]), y = parseFloat(c[iY]),
+                z = parseFloat(c[iZ]), t = parseFloat(c[iT]), firing = parseInt(c[iF]) || 0;
+            if (!name || isNaN(x) || isNaN(t)) continue;
+            if (!out[name]) out[name] = [];
+            out[name].push({x, y, z, t, firing});
+            ts.add(t);
+        }
+        return { sats: out, times: Array.from(ts).sort((a,b) => a - b) };
+    }
+
+    function getBest(pts, t) {
+        let best = pts[0], bd = Infinity;
+        pts.forEach(p => { const d = Math.abs(p.t - t); if (d < bd) { bd = d; best = p; } });
+        return best;
+    }
+    function formatSecondsAsTime(secs, format) {
+        var hr  = Math.floor(secs / 3600);
+        var min = Math.floor((secs - (hr * 3600))/60);
+        var sec = Math.floor(secs - (hr * 3600) -  (min * 60));
+
+        if (hr < 10)   { hr    = "0" + hr; }
+        if (min < 10) { min = "0" + min; }
+        if (sec < 10)  { sec  = "0" + sec; }
+
+        if (format != null) {
+            var formatted_time = format.replace('hh', hr);
+            formatted_time = formatted_time.replace('h', hr*1+""); // check for single hour formatting
+            formatted_time = formatted_time.replace('mm', min);
+            formatted_time = formatted_time.replace('m', min*1+""); // check for single minute formatting
+            formatted_time = formatted_time.replace('ss', sec);
+            formatted_time = formatted_time.replace('s', sec*1+""); // check for single second formatting
+            return formatted_time;
+        } else {
+            return hr + ':' + min + ':' + sec;
+        }
+    }
+    function updateDots() {
+        if (!times.length) return;
+        const t = times[idx];
+        document.getElementById('tLabel').textContent =formatSecondsAsTime(t);
+        document.getElementById('tSlider').value = idx;
+        dotLayer.selectAll('*').remove();
+
+        Object.keys(sats).forEach((name, si) => {
+            const col = COLORS[si % COLORS.length];
+            const best = getBest(sats[name], t);
+            const ll = xyz2ll(best.x, best.y, best.z);
+            const pos = projection(ll);
+            if (!pos) return;
+
+            if (best.firing) {
+                dotLayer.append('circle')
+                    .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 11)
+                    .attr('fill', 'none').attr('stroke', '#ffb74d').attr('stroke-width', 2);
+            }
+            dotLayer.append('circle')
+                .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 6)
+                .attr('fill', col).attr('stroke', '#fff').attr('stroke-width', 0.5);
+            dotLayer.append('text')
+                .attr('x', pos[0] + 9).attr('y', pos[1] + 4)
+                .attr('fill', '#ffffff').attr('font-size', '11px').attr('font-family', 'monospace')
+                .text(name);
+            const alt = (Math.sqrt(best.x**2 + best.y**2 + best.z**2) - EARTH_R) / 1000;
+            dotLayer.append('text')
+                .attr('x', pos[0] + 9).attr('y', pos[1] + 15)
+                .attr('fill', 'rgba(255,255,255,0.5)').attr('font-size', '10px').attr('font-family', 'monospace')
+                .text(Math.round(alt) + ' km');
+        });
+        updateStats(t);
+    }
+
+    function drawTracks() {
+        trackLayer.selectAll('*').remove();
+        Object.keys(sats).forEach((name, si) => {
+            const col = COLORS[si % COLORS.length];
+            const pts = sats[name];
+            const chunks = [];
+            let chunk = [pts[0]];
+            for (let i = 1; i < pts.length; i++) {
+                const prev = xyz2ll(pts[i-1].x, pts[i-1].y, pts[i-1].z);
+                const curr = xyz2ll(pts[i].x, pts[i].y, pts[i].z);
+                if (Math.abs(curr[0] - prev[0]) > 180) { chunks.push(chunk); chunk = []; }
+                chunk.push(pts[i]);
+            }
+            chunks.push(chunk);
+            const lineGen = d3.line()
+                .x(d => { const p = projection(xyz2ll(d.x, d.y, d.z)); return p ? p[0] : null; })
+                .y(d => { const p = projection(xyz2ll(d.x, d.y, d.z)); return p ? p[1] : null; })
+                .defined(d => projection(xyz2ll(d.x, d.y, d.z)) !== null);
+            chunks.forEach(ch => {
+                trackLayer.append('path').datum(ch)
+                    .attr('d', lineGen)
+                    .attr('fill', 'none')
+                    .attr('stroke', col)
+                    .attr('stroke-width', 1.2)
+                    .attr('opacity', 0.5);
+            });
+        });
+    }
+
+    function buildLegend() {
+        const leg = document.getElementById('legend');
+        leg.innerHTML = '';
+        Object.keys(sats).forEach((name, si) => {
+            const col = COLORS[si % COLORS.length];
+            leg.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${col};"></span>${name}</span>`;
+        });
+    }
+
+    function updateStats(t) {
+        const row = document.getElementById('statsRow');
+        row.innerHTML = '';
+        Object.keys(sats).forEach((name, si) => {
+            const col = COLORS[si % COLORS.length];
+            const best = getBest(sats[name], t);
+            const ll = xyz2ll(best.x, best.y, best.z);
+            const alt = (Math.sqrt(best.x**2 + best.y**2 + best.z**2) - EARTH_R) / 1000;
+            row.innerHTML += `
+            <div class="stat-card">
+                <div class="sat-name"><span class="dot" style="background:${col};"></span>${name}</div>
+                <div class="row">Lat <span class="val">${ll[1].toFixed(2)}°</span> &nbsp;Lon <span class="val">${ll[0].toFixed(2)}°</span></div>
+                <div class="row">Alt <span class="val">${Math.round(alt)} km</span></div>
+            </div>`;
+        });
+    }
+
+    function applyData(parsed) {
+        sats = parsed.sats;
+        times = parsed.times;
+        idx = 0;
+        const sl = document.getElementById('tSlider');
+        sl.min = 0; sl.max = times.length - 1; sl.value = 0;
+        document.getElementById('status').textContent =
+            Object.keys(sats).length + ' satellite(s), ' + times.length + ' time steps loaded.';
+        buildLegend();
+        drawTracks();
+        updateDots();
+    }
+
+    function initMap() {
+        const container = document.getElementById('mapDiv');
+        W = container.clientWidth || 900;
+        H = Math.round(W * 0.5);
+
+        svg = d3.select('#mapDiv').append('svg').attr('width', W).attr('height', H);
+        projection = d3.geoEquirectangular().scale(W / 6.28).translate([W/2, H/2]);
+        pathGen = d3.geoPath().projection(projection);
+
+        svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#0d1b2a');
+
+        const graticule = d3.geoGraticule()();
+        svg.append('g').append('path').datum(graticule)
+            .attr('d', pathGen)
+            .attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.08)').attr('stroke-width', 0.5);
+
+        const landLayer = svg.append('g');
+        trackLayer = svg.append('g');
+        dotLayer = svg.append('g');
+
+        d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
+            landLayer.selectAll('path')
+                .data(topojson.feature(world, world.objects.countries).features)
+                .join('path')
+                .attr('d', pathGen)
+                .attr('fill', '#1a3a5c')
+                .attr('stroke', 'rgba(255,255,255,0.15)')
+                .attr('stroke-width', 0.4);
+            // Map is ready — Java can now inject CSV data via applyData()
+            window.mapInitialized = true;
+        }).catch(() => {
+            // No world atlas but map still works
+            window.mapInitialized = true;
+        });
+    }
+
+    document.getElementById('tSlider').addEventListener('input', e => {
+        idx = parseInt(e.target.value); updateDots();
+    });
+    document.getElementById('playBtn').addEventListener('click', () => {
+        playing = !playing;
+        document.getElementById('playBtn').textContent = playing ? 'Pause' : 'Play';
+        if (playing) { timer = setInterval(() => { idx = (idx+1) % times.length; updateDots(); }, 120); }
+        else { clearInterval(timer); }
+    });
+    document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('csvFile').click());
+    document.getElementById('csvFile').addEventListener('change', e => {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = ev => { applyData(parseCSV(ev.target.result)); };
+        r.readAsText(f);
+    });
+    window.addEventListener('resize', () => {
+        d3.select('#mapDiv svg').remove();
+        initMap();
+    });
+
+    initMap();
+</script>
+</body>
+</html>

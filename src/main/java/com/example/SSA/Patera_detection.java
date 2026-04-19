@@ -98,7 +98,7 @@ public class Patera_detection extends Patera2005 {
     }
 
     public void print_csv_detection(Satellite s){
-        File csvFile = new File("src/main/java/com/example/SSA/CSV_per_sat/collision.csv");
+        File csvFile = new File("src/main/resources/CSV_per_sat/collision.csv");
 
         // Check if file exists, if not write header
         boolean fileExists = csvFile.exists();

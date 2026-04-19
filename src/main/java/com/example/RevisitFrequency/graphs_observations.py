@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
-df = pd.read_csv("src/main/java/com/example/RevisitFrequency/observations.csv")
+df = pd.read_csv("src/main/resources/EO detection/observations.csv")
 
 df["start_time"] = pd.to_datetime(df["start_time"])
 df["end_time"] = pd.to_datetime(df["end_time"])

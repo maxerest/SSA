@@ -46,7 +46,7 @@ public class EO_detection {
         }
     }
     public static void init_observable_zones(){
-        String filename = "src/main/java/com/example/RevisitFrequency/Coordinates_area_to_observe.csv";
+        String filename = "src/main/resources/EO detection/Coordinates_area_to_observe.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             String line;
             boolean firstLine = true;

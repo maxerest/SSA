@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-folder_path = 'src/main/java/com/example/SSA/CSV_per_sat'  # Change to your folder path
+folder_path = 'src/main/resources/CSV_per_sat'  # Change to your folder path
 
 # Get all CSV files in the folder
 csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]

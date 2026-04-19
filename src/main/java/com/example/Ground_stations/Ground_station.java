@@ -81,7 +81,7 @@ public class Ground_station {
     }
     // Call this method at program initialization to load ground stations from CSV within the public static list liste_GS
     public static void loadStationsFromCSV() {
-        String filename = "src/main/java/com/example/Ground_stations/GS_coordinates.csv";
+        String filename = "src/main/resources/GS_coordinates.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             String line;
             boolean firstLine = true;

@@ -81,13 +81,13 @@ def get_time_based_frames(satellites, frame_interval=60.0):
     return frames
 
 def select_csv_file():
-    file_path = "src/main/java/com/example/View/real_sats.csv"
+    file_path = "src/main/resources/CSV_exports/real_sats.csv"
     if os.path.exists(file_path):
         return file_path
     return "src/main/java/com/example/View/TLE.csv"
 
 def select_gs_csv_file():
-    return "src/main/java/com/example/Ground_stations/GS_coordinates.csv"
+    return "src/main/resources/CSV_exports/real_sat/GS_coordinates.csv"
 
 # ---------------------------------------------------------------------------
 # Initialize

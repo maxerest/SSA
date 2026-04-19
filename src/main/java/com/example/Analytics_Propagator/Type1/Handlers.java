@@ -6,6 +6,7 @@ import com.example.Ground_stations.Satcom;
 import com.example.Orbiting_object.Satellite;
 import com.example.Parametres;
 import com.example.View.Visulations;
+import org.hipparchus.geometry.Space;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.ode.events.Action;
 import org.hipparchus.util.FastMath;
@@ -149,15 +150,16 @@ public class Handlers {
             this.list_spacecraftStates = list_spacecraftStates;
             this.inertialFrame = inertialFrame;
         }
-
+        public SpacecraftState getfull_Spacecraftstate (SpacecraftState spacecraftState) {
+            return list_spacecraftStates.stream()
+                    .min(Comparator.comparingDouble(st ->
+                            Math.abs(st.getDate().durationFrom(spacecraftState.getDate()))))
+                    .orElse(spacecraftState);
+        }
         @Override
         public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
             if (increasing) {
-                SpacecraftState nearest = list_spacecraftStates.stream()
-                        .min(Comparator.comparingDouble(st ->
-                                Math.abs(st.getDate().durationFrom(s.getDate()))))
-                        .orElse(s);
-
+                SpacecraftState nearest = getfull_Spacecraftstate(s);
                 Vector3D boresightInBody = (Vector3D) nearest.getAdditionalData("angle");
                 Attitude attitude = nearest.getAttitude();
                 Vector3D boresightInertial = attitude.getRotation().applyInverseTo(boresightInBody);
@@ -205,11 +207,7 @@ public class Handlers {
                     .orElseThrow();
 
             double duration = windowEnd.durationFrom(windowStart);
-
-            SpacecraftState nearest = list_spacecraftStates.stream()
-                    .min(Comparator.comparingDouble(st ->
-                            Math.abs(st.getDate().durationFrom(s.getDate()))))
-                    .orElse(s);
+            SpacecraftState nearest = getfull_Spacecraftstate(s);
 
             if (duration > 0) {
                 Visulations.export_observation_to_csv(

@@ -23,7 +23,7 @@ import java.util.*;
 
 public class My_TLE {
 
-    private static final String TLE_DATA_DIR = "src\\main\\java\\com\\example\\TLE";
+    private static final String TLE_DATA_DIR = "src/main/resources/TLE";
     private static final String CELESTRAK_BASE = "https://celestrak.org/NORAD/elements/gp.php";
     public static String format = "TLE";
     public static List<Satellite> satelliteList= new ArrayList<>();
@@ -220,7 +220,7 @@ public class My_TLE {
     private static Map<String,TLE> create_OREKIT_Statecraft_state(String filename) throws IOException {
         List<TLE> tleList = new LinkedList<>();
         Map<String,TLE> states = new HashMap<>();
-        String final_filename = "src\\main\\java\\com\\example\\TLE\\" + filename + format;
+        String final_filename = "src/main/resources/TLE" + filename + format;
         try (BufferedReader reader = new BufferedReader(new FileReader(final_filename))) {
             String line;
             String objectName = null;

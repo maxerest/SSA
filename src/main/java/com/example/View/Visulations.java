@@ -72,7 +72,7 @@ public class Visulations {
                 csvWriters.get(name_temp).close();
 
             }
-            currentFileName = "src/main/java/com/example/View/" + name_temp + ".csv";
+            currentFileName = "src/main/resources/CSV_exports/real_sat/" + name_temp + ".csv";
             PrintWriter csvWriter = new PrintWriter(new FileWriter(currentFileName));
             if (name_temp.contains("_Orbital_param")){
                 csvWriter.println("name_sat,a,e,i,t,firing,detected_by_GS,nom_station");
@@ -142,7 +142,7 @@ public class Visulations {
         // station output un CSV avec l'ensemble de ses mesures
         for (String stationKey : azElByStationDate.keySet()) {
 
-            File csvFile = new File("src/main/java/com/example/View/" + sat + "_" + stationKey + "_LSB.csv");
+            File csvFile = new File("src/main/resources/CSV_exports/LBS/" + sat + "_" + stationKey + "_LSB.csv");
             if (csvFile.exists()) {
                 csvFile.delete();
             }
@@ -215,7 +215,7 @@ public class Visulations {
      * @param selectedType : Type de TLE sélectionné dans Celestrak
      */
     public static void export_TLE_intial_position(Collection<SpacecraftState> states, My_TLE.TLEType selectedType) {
-        String filename = "src/main/java/com/example/View/TLE_sat_" + selectedType + ".csv";
+        String filename = "src/main/resources/CSV_exports/TLE/TLE_sat_" + selectedType + ".csv";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             // Ecrire l'entête
             writer.write("x,y,z,t,firing,detected_by_GS\n");
@@ -239,7 +239,7 @@ public class Visulations {
     public static void export_csv_kalman_init(List<Satellite> pList) {
         for (Orbiting_object p : pList) {
             String sat = p.get_Name();
-            File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
+            File csvFile = new File("src/main/resources/CSV_exports/Kalman/" + sat + ".csv");
             if (csvFile.exists()) {
                 csvFile.delete();
             }
@@ -257,7 +257,7 @@ public class Visulations {
      */
     public static void write_csv_before_detection(Satellite p) {
         String sat = p.get_Name();
-        File csvFile = new File("src/main/java/com/example/View/" + sat + ".csv");
+        File csvFile = new File("src/main/resources/CSV_exports/Kalman/" + sat + ".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);
                 PrintWriter writer = new PrintWriter(fw)) {
             writer.printf(Locale.US, "0,0,0,0,0,0%n");
@@ -280,7 +280,7 @@ public class Visulations {
         // Velocity
         Vector3D pos = new Vector3D(x, y, z);
         boolean trigger = p.is_firing(Parametres.date_orekit.shiftedBy(t));
-        File csvFile = new File("C:\\Users\\maxen\\Desktop\\Java\\ssa\\temp\\SSA\\src\\main\\java\\com\\example\\View\\"
+        File csvFile = new File("src/main/resources/CSV_exports/Kalman/"
                 + p.get_Name() + ".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);
                 PrintWriter writer = new PrintWriter(fw)) {
@@ -353,8 +353,7 @@ public class Visulations {
     }
     public static void deleteAllCsvFiles() throws IOException  {
         List<String> list_folder_to_clear=new ArrayList<>();
-        list_folder_to_clear.add("src/main/java/com/example/View");
-        list_folder_to_clear.add("src/main/java/com/example/SSA/CSV_per_sat");
+        list_folder_to_clear.add("src/main/resources/CSV_exports");
         for (String folderPath:list_folder_to_clear){
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folderPath), "*.csv")) {
                 stream.forEach(file -> {
@@ -371,7 +370,7 @@ public class Visulations {
     }
     public static void export_observation_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration, String sat_name ) {
 
-        String filename = "src/main/java/com/example/RevisitFrequency/observations.csv";
+        String filename = "src/main/resources/EO detection/observations.csv";
         try (FileWriter fw = new FileWriter(filename, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
 
@@ -383,7 +382,7 @@ public class Visulations {
         }
     }
     public static void init_observation_csv() {
-        String filename = "src/main/java/com/example/RevisitFrequency/observations.csv";
+        String filename = "src/main/resources/EO detection/observations.csv";
         try (FileWriter fw = new FileWriter(filename, false);
              BufferedWriter bw = new BufferedWriter(fw)) {
             bw.write("zone_name,start_time,end_time,duration_s,name_sat_doing_observation");
