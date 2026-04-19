@@ -1,4 +1,5 @@
 package com.example.View;
+import com.example.Ground_stations.EO_detection;
 import javafx.application.Application;
 import javafx.concurrent.Worker;
 import javafx.scene.Scene;
@@ -22,19 +23,47 @@ public class SatelliteTrackerUI extends Application {
         // Once page is loaded, inject your CSV
         engine.getLoadWorker().stateProperty().addListener((obs, old, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
-                try {
-                    // Read CSV in Java, pass content directly to JS — no fetch needed
-                    String csvPath = Paths.get("src/main/resources/CSV_exports/real_sat/real_sats.csv")
-                            .toAbsolutePath().toString();
-                    String csvContent = new String(java.nio.file.Files.readAllBytes(Paths.get(csvPath)));
+                new Thread(() -> {
+                    // Poll mapInitialized on the FX thread
+                    for (int i = 0; i < 50; i++) {
+                        try { Thread.sleep(100); } catch (Exception ignored) {}
+                        final boolean[] ready = {false};
+                        javafx.application.Platform.runLater(() -> {
+                            ready[0] = Boolean.TRUE.equals(engine.executeScript("window.mapInitialized"));
+                        });
+                        try { Thread.sleep(50); } catch (Exception ignored) {}
+                        if (ready[0]) break;
+                    }
 
-                    // Escape for JS string injection
-                    csvContent = csvContent.replace("\\", "\\\\").replace("`", "\\`");
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            String csvPath = Paths.get("src/main/resources/CSV_exports/real_sat/real_sats.csv")
+                                    .toAbsolutePath().toString();
+                            String csvContent = new String(java.nio.file.Files.readAllBytes(Paths.get(csvPath)));
+                            csvContent = csvContent.replace("\\", "\\\\").replace("`", "\\`");
+                            engine.executeScript("applyData(parseCSV(`" + csvContent + "`));");
 
-                    engine.executeScript("applyData(parseCSV(`" + csvContent + "`));");
-                } catch (Exception e) {
-                    System.out.println("Failed to read CSV: " + e.getMessage());
-                }
+                            String gsPath = Paths.get("src/main/resources/GS_coordinates.csv")
+                                    .toAbsolutePath().toString();
+                            String gsContent = new String(java.nio.file.Files.readAllBytes(Paths.get(gsPath)));
+                            gsContent = gsContent.replace("\\", "\\\\").replace("`", "\\`");
+                            engine.executeScript("loadGSFromText(`" + gsContent + "`);");
+
+                            if (EO_detection.EO_detection){
+                                String EOPath = Paths.get("src/main/resources/EO detection/Coordinates_area_to_observe.csv")
+                                        .toAbsolutePath().toString();
+                                String EOContent = new String(java.nio.file.Files.readAllBytes(Paths.get(EOPath)));
+                                EOContent = EOContent.replace("\\", "\\\\").replace("`", "\\`");
+                                engine.executeScript("loadEOFromText(`" + EOContent + "`);");
+                            }
+
+
+                        } catch (Exception e) {
+                            System.out.println("ERROR: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    });
+                }).start();
             }
         });
 

@@ -105,8 +105,8 @@ public class Handlers {
 
             boolean trigger = p.is_firing(updated_currentState);
             Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
-            //Vector3D pos =updated_currentState.getPVCoordinates(itrf).getPosition();
-            Vector3D pos =updated_currentState.getPVCoordinates().getPosition();
+            Vector3D pos =updated_currentState.getPVCoordinates(itrf).getPosition();
+            //Vector3D pos =updated_currentState.getPVCoordinates().getPosition();
             //For each ground station visible during this propagation step, calculate the link budget between the GS and the sat
             if (Ground_station.satcom_activated){
                 List<Ground_station.GroundStation_physical> list_GS_visible=Ground_station.get_list_visible_GS(updated_currentState);
