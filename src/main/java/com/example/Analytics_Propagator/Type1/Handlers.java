@@ -57,7 +57,7 @@ public class Handlers {
                             Math.abs(st.getDate().durationFrom(s.getDate()))))
                     .orElse(s);  // fallback to raw state if list is empty
 
-            Vector3D boresightInBody= (Vector3D) currentstate.getAdditionalData("angle");
+            Vector3D boresightInBody= (Vector3D) currentstate.getAdditionalData("Boresight");
             System.out.println(boresightInBody);
             Attitude attitude = currentstate.getAttitude();
             Vector3D boresightInertial = attitude.getRotation()
@@ -100,7 +100,7 @@ public class Handlers {
 
         public void handleStep(SpacecraftState currentState) {
             // add the needed information to SpacecraftState for EO observation
-            SpacecraftState updated_currentState= currentState.addAdditionalData("angle",p.getBoresight()).addAdditionalData("name",p.get_Name());
+            SpacecraftState updated_currentState= currentState.addAdditionalData("Boresight",p.getBoresight()).addAdditionalData("name",p.get_Name()).addAdditionalData("agility",p.getAgility());
             p.add_state(updated_currentState);
 
             boolean trigger = p.is_firing(updated_currentState);
@@ -160,7 +160,7 @@ public class Handlers {
         public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
             if (increasing) {
                 SpacecraftState nearest = getfull_Spacecraftstate(s);
-                Vector3D boresightInBody = (Vector3D) nearest.getAdditionalData("angle");
+                Vector3D boresightInBody = (Vector3D) nearest.getAdditionalData("Boresight");
                 Attitude attitude = nearest.getAttitude();
                 Vector3D boresightInertial = attitude.getRotation().applyInverseTo(boresightInBody);
                 Vector3D satPosition = nearest.getPosition(inertialFrame);
@@ -174,8 +174,9 @@ public class Handlers {
 
                 Vector3D toPoint = pointInertial.subtract(satPosition).normalize();
                 double slewAngleRad = Vector3D.angle(boresightInertial, toPoint);
-
-                if (slewAngleRad > Parametres.elevation) {
+                double agility = ((double[]) nearest.getAdditionalData("agility"))[0];
+                System.out.println(agility);
+                if (slewAngleRad > agility) {
                     return Action.CONTINUE; // point not reachable, don't record entry
                 }
 

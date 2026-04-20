@@ -16,7 +16,9 @@ import javafx.application.Application;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
+import org.orekit.models.earth.EarthShape;
 import org.orekit.orbits.PositionAngleType;
+import org.orekit.utils.Constants;
 
 import java.util.*;
 import java.io.File;
@@ -90,9 +92,10 @@ public class App
             Visulations.Python_graph_orbital_param();
         }
         if(EO_detection){
-            //Visulations.Python_EO_detection();
+            Visulations.Python_EO_detection();
+            //Application.launch(SatelliteTrackerUI.class, args);
         }
-        Application.launch(SatelliteTrackerUI.class, args);
+
 
     }
 
@@ -109,14 +112,14 @@ public class App
         for (int i = 0; i<nb_sat; i++){
         liste_par_sats.add(
             new Satellite.Builder()
-                .nom_sat("Sat_real_" + (i+1))
+                .nom_sat("ISS" + (i+1))
                 .mass(2500)
-                .semi_axis(7500000)
-                .eccentricity(0.005)
-                .inclinaison(Math.toRadians(33))
+                .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS+420000)
+                .eccentricity(0.0002267)
+                .inclinaison(Math.toRadians(51.64))
                 .long_noeud_ascendant(Math.toRadians(90))
-                .arg_periastre(Math.toRadians(180))
-                .anomalie(Math.toRadians(180))
+                .arg_periastre(Math.toRadians(0))
+                .anomalie(Math.toRadians(0))
                 .type_anomalie(PositionAngleType.TRUE)
                 .motor_name("Moteur_2")
                 .build());

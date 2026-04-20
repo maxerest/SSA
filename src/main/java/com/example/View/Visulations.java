@@ -66,6 +66,7 @@ public class Visulations {
 
     public static void create_CSV_files(String s){
         List<String> names = List.of(s, s+"_Orbital_param");
+
         for ( String name_temp :names){
         try {
             if (csvWriters.containsKey(name_temp)) {
@@ -88,6 +89,7 @@ public class Visulations {
 
     }
     public static void closeCSV() {
+
         for (Map.Entry<String , PrintWriter> entry : csvWriters.entrySet()) {
             PrintWriter v = entry.getValue();
             v.close();
@@ -215,7 +217,7 @@ public class Visulations {
      * @param selectedType : Type de TLE sélectionné dans Celestrak
      */
     public static void export_TLE_intial_position(Collection<SpacecraftState> states, My_TLE.TLEType selectedType) {
-        String filename = "src/main/resources/CSV_exports/TLE/TLE_sat_" + selectedType + ".csv";
+        String filename = "src/main/resources/CSV_exports/real_sat/TLE.csv";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             // Ecrire l'entête
             writer.write("x,y,z,t,firing,detected_by_GS\n");
@@ -353,7 +355,7 @@ public class Visulations {
     }
     public static void deleteAllCsvFiles() throws IOException  {
         List<String> list_folder_to_clear=new ArrayList<>();
-        list_folder_to_clear.add("src/main/resources/CSV_exports");
+        list_folder_to_clear.add("src/main/resources/CSV_exports/real_sat/");
         for (String folderPath:list_folder_to_clear){
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folderPath), "*.csv")) {
                 stream.forEach(file -> {
@@ -381,6 +383,7 @@ public class Visulations {
             e.printStackTrace();
         }
     }
+
     public static void init_observation_csv() {
         String filename = "src/main/resources/EO detection/observations.csv";
         try (FileWriter fw = new FileWriter(filename, false);
@@ -391,6 +394,7 @@ public class Visulations {
             e.printStackTrace();
         }
     }
+
     public static void Python_EO_detection(){
         // Build up the full command
         List<String> cmd = new ArrayList<>();

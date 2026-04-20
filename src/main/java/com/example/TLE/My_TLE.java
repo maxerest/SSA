@@ -1,14 +1,18 @@
 package com.example.TLE;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
+import com.example.Ground_stations.EO_detection;
 import com.example.Orbiting_object.Satellite;
+import com.example.Parametres;
 import com.example.SSA.Patera_detection;
 import com.example.View.Visulations;
 import org.apache.commons.collections4.multiset.SynchronizedMultiSet;
+import org.orekit.attitudes.NadirPointing;
 import org.orekit.forces.gravity.LenseThirringRelativity;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.analytical.tle.TLE;
 import org.orekit.propagation.analytical.tle.TLEPropagator;
+import org.orekit.propagation.numerical.NumericalPropagator;
 
 import javax.sound.midi.SysexMessage;
 import java.io.*;
@@ -97,8 +101,6 @@ public class My_TLE {
 
         // Choix du type de TLE
         Scanner scanner = new Scanner(System.in);
-
-        System.out.print("Choisissez le numéro du type de TLE: \n");
         int choice = -1;
 
         // Vérifier que le choix est valide
@@ -122,6 +124,7 @@ public class My_TLE {
             e.printStackTrace();
         }
         try {
+
             Name_state_TLE= create_OREKIT_Statecraft_state(selectedType.getFilename());
             double MU = 3.986004418e14;;
             double mu_2_3 = Math.pow(MU, 1.0 / 3.0);
@@ -160,6 +163,10 @@ public class My_TLE {
     }
     public static void propagation(){
         Visulations.create_CSV_files("TLE");
+        if (EO_detection.EO_detection){
+            Visulations.init_observation_csv(); // ← moved here, called only once
+        }
+
         Propagator_1.propagator_TLE(satelliteList);
 
     }
@@ -220,7 +227,7 @@ public class My_TLE {
     private static Map<String,TLE> create_OREKIT_Statecraft_state(String filename) throws IOException {
         List<TLE> tleList = new LinkedList<>();
         Map<String,TLE> states = new HashMap<>();
-        String final_filename = "src/main/resources/TLE" + filename + format;
+        String final_filename = "src/main/resources/TLE/" + filename + format;
         try (BufferedReader reader = new BufferedReader(new FileReader(final_filename))) {
             String line;
             String objectName = null;

@@ -1,76 +1,141 @@
 package com.example.View;
 import com.example.Ground_stations.EO_detection;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.Scene;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
+import netscape.javascript.JSObject;
+
+import java.io.File;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class SatelliteTrackerUI extends Application {
+
+    // Root folder containing subfolders of CSV exports
+    private static final String CSV_ROOT = "src/main/resources/CSV_exports";
 
     @Override
     public void start(Stage stage) {
         WebView webView = new WebView();
         WebEngine engine = webView.getEngine();
 
-        // Load the HTML from resources
         URL url = getClass().getResource("/satellite_tracker.html");
         engine.load(url.toExternalForm());
 
-        // Once page is loaded, inject your CSV
+        // Keep a strong reference to the bridge — WebEngine only holds a weak ref
+        JavaBridge bridge = new JavaBridge(engine);
+
         engine.getLoadWorker().stateProperty().addListener((obs, old, newState) -> {
-            if (newState == Worker.State.SUCCEEDED) {
-                new Thread(() -> {
-                    // Poll mapInitialized on the FX thread
-                    for (int i = 0; i < 50; i++) {
-                        try { Thread.sleep(100); } catch (Exception ignored) {}
-                        final boolean[] ready = {false};
-                        javafx.application.Platform.runLater(() -> {
-                            ready[0] = Boolean.TRUE.equals(engine.executeScript("window.mapInitialized"));
-                        });
-                        try { Thread.sleep(50); } catch (Exception ignored) {}
-                        if (ready[0]) break;
-                    }
+            if (newState != Worker.State.SUCCEEDED) return;
 
-                    javafx.application.Platform.runLater(() -> {
-                        try {
-                            String csvPath = Paths.get("src/main/resources/CSV_exports/real_sat/real_sats.csv")
+            // 1. Register the Java bridge on window
+            JSObject window = (JSObject) engine.executeScript("window");
+            window.setMember("javaBridge", bridge);
+
+            // 2. Scan CSV_exports folder tree and send it to the explorer
+            injectFolderTree(engine);
+
+            // 3. Load GS and (optionally) EO data as before
+            new Thread(() -> {
+                waitForMap(engine);
+                Platform.runLater(() -> {
+                    try {
+                        String gsPath = Paths.get("src/main/resources/GS_coordinates.csv")
+                                .toAbsolutePath().toString();
+                        String gsContent = new String(Files.readAllBytes(Paths.get(gsPath)));
+                        gsContent = gsContent.replace("\\", "\\\\").replace("`", "\\`");
+                        engine.executeScript("loadGSFromText(`" + gsContent + "`);");
+
+                        if (EO_detection.EO_detection) {
+                            String eoPath = Paths.get("src/main/resources/EO detection/Coordinates_area_to_observe.csv")
                                     .toAbsolutePath().toString();
-                            String csvContent = new String(java.nio.file.Files.readAllBytes(Paths.get(csvPath)));
-                            csvContent = csvContent.replace("\\", "\\\\").replace("`", "\\`");
-                            engine.executeScript("applyData(parseCSV(`" + csvContent + "`));");
-
-                            String gsPath = Paths.get("src/main/resources/GS_coordinates.csv")
-                                    .toAbsolutePath().toString();
-                            String gsContent = new String(java.nio.file.Files.readAllBytes(Paths.get(gsPath)));
-                            gsContent = gsContent.replace("\\", "\\\\").replace("`", "\\`");
-                            engine.executeScript("loadGSFromText(`" + gsContent + "`);");
-
-                            if (EO_detection.EO_detection){
-                                String EOPath = Paths.get("src/main/resources/EO detection/Coordinates_area_to_observe.csv")
-                                        .toAbsolutePath().toString();
-                                String EOContent = new String(java.nio.file.Files.readAllBytes(Paths.get(EOPath)));
-                                EOContent = EOContent.replace("\\", "\\\\").replace("`", "\\`");
-                                engine.executeScript("loadEOFromText(`" + EOContent + "`);");
-                            }
-
-
-                        } catch (Exception e) {
-                            System.out.println("ERROR: " + e.getMessage());
-                            e.printStackTrace();
+                            String eoContent = new String(Files.readAllBytes(Paths.get(eoPath)));
+                            eoContent = eoContent.replace("\\", "\\\\").replace("`", "\\`");
+                            engine.executeScript("loadEOFromText(`" + eoContent + "`);");
                         }
-                    });
-                }).start();
-            }
+                    } catch (Exception e) {
+                        System.err.println("Error loading GS/EO data: " + e.getMessage());
+                    }
+                });
+            }).start();
         });
 
         Scene scene = new Scene(webView, 1200, 700);
         stage.setTitle("Satellite Ground Track");
         stage.setScene(scene);
         stage.show();
+    }
+
+    /**
+     * Scans CSV_exports recursively (one level deep) and pushes the tree
+     * to the HTML explorer via window.populateExplorer(json).
+     *
+     * JSON format sent to JS:
+     * [
+     *   { "folder": "real_sat", "path": "/abs/path/CSV_exports/real_sat", "files": ["a.csv","b.csv"] },
+     *   ...
+     * ]
+     */
+    private void injectFolderTree(WebEngine engine) {
+        File root = Paths.get(CSV_ROOT).toAbsolutePath().toFile();
+        List<String> entries = new ArrayList<>();
+
+        if (root.exists() && root.isDirectory()) {
+            File[] subDirs = root.listFiles(File::isDirectory);
+            if (subDirs != null) {
+                Arrays.sort(subDirs);
+                for (File dir : subDirs) {
+                    File[] csvFiles = dir.listFiles(f -> f.isFile() && f.getName().endsWith(".csv"));
+                    if (csvFiles == null || csvFiles.length == 0) continue;
+                    Arrays.sort(csvFiles);
+                    List<String> fileNames = new ArrayList<>();
+                    for (File f : csvFiles) fileNames.add(f.getName());
+                    String filesJson = "[" + String.join(",", fileNames.stream()
+                            .map(n -> "\"" + n.replace("\"", "\\\"") + "\"")
+                            .toArray(String[]::new)) + "]";
+                    String absPath = dir.getAbsolutePath().replace("\\", "/");
+                    entries.add("{\"folder\":\"" + dir.getName() + "\","
+                            + "\"path\":\"" + absPath + "\","
+                            + "\"files\":" + filesJson + "}");
+                }
+            }
+            // Also include CSVs directly in the root
+            File[] rootCsvs = root.listFiles(f -> f.isFile() && f.getName().endsWith(".csv"));
+            if (rootCsvs != null && rootCsvs.length > 0) {
+                Arrays.sort(rootCsvs);
+                List<String> fileNames = new ArrayList<>();
+                for (File f : rootCsvs) fileNames.add(f.getName());
+                String filesJson = "[" + String.join(",", fileNames.stream()
+                        .map(n -> "\"" + n.replace("\"", "\\\"") + "\"")
+                        .toArray(String[]::new)) + "]";
+                String absPath = root.getAbsolutePath().replace("\\", "/");
+                entries.add("{\"folder\":\"CSV_exports\","
+                        + "\"path\":\"" + absPath + "\","
+                        + "\"files\":" + filesJson + "}");
+            }
+        }
+
+        final String json = "[" + String.join(",", entries) + "]";
+        Platform.runLater(() -> engine.executeScript("window.populateExplorer('" + json + "');"));
+    }
+
+    /** Blocks (off FX thread) until window.mapInitialized is true. */
+    private void waitForMap(WebEngine engine) {
+        for (int i = 0; i < 50; i++) {
+            try { Thread.sleep(100); } catch (Exception ignored) {}
+            final boolean[] ready = {false};
+            Platform.runLater(() -> ready[0] = Boolean.TRUE.equals(engine.executeScript("window.mapInitialized")));
+            try { Thread.sleep(50); } catch (Exception ignored) {}
+            if (ready[0]) break;
+        }
     }
 
     public static void main(String[] args) {

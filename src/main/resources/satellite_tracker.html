@@ -6,7 +6,7 @@
     <title>Satellite Ground Track Tracker</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: monospace; background: #0a1220; color: #ccc; padding: 1rem; }
+        body { font-family: monospace; background: #0a1220; color: #ccc; padding: 1rem; position: relative; min-height: 100vh; }
         #controls { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
         label { font-size: 13px; color: #888; white-space: nowrap; }
         input[type=range] { flex: 1; min-width: 120px; cursor: pointer; }
@@ -14,12 +14,41 @@
         #speedLabel { font-size: 13px; font-weight: 500; color: #fff; min-width: 40px; }
         button { font-size: 12px; padding: 4px 12px; background: transparent; color: #ccc; border: 0.5px solid #444; border-radius: 6px; cursor: pointer; }
         button:hover { background: #1a2a3a; }
-        #statsRow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-        .stat-card { background: #111e2e; border-radius: 8px; padding: 6px 10px; font-size: 12px; min-width: 130px; }
+        #statsRow {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            max-height: calc(2 * (56px + 8px));
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 4px;
+        }
+        #statsRow::-webkit-scrollbar { width: 6px; }
+        #statsRow::-webkit-scrollbar-track { background: transparent; }
+        #statsRow::-webkit-scrollbar-thumb { background: #2a3a4a; border-radius: 3px; }
+        #statsRow::-webkit-scrollbar-thumb:hover { background: #3a5a6a; }
+        .stat-card {
+            background: #111e2e;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            min-width: 130px;
+            height: 56px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: border-color 0.15s, opacity 0.15s;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .stat-card:hover { border-color: rgba(255,255,255,0.2); }
+        .stat-card.hidden-sat { opacity: 0.35; border-color: rgba(255,255,255,0.08); }
         .stat-card .sat-name { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; font-weight: 500; color: #fff; }
         .stat-card .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .stat-card .row { color: #888; }
         .stat-card .val { color: #fff; }
+        .stat-card .eye-icon { margin-left: auto; font-size: 11px; color: #555; }
+        .stat-card:not(.hidden-sat) .eye-icon { color: #888; }
         #mapDiv { width: 100%; border-radius: 8px; overflow: hidden; border: 0.5px solid rgba(255,255,255,0.15); background: #0d1b2a; }
         #legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px; color: #888; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
@@ -27,9 +56,85 @@
         #status { font-size: 12px; color: #888; margin-bottom: 6px; }
         .ctrl-group { display: flex; align-items: center; gap: 6px; }
         .ctrl-sep { width: 1px; height: 20px; background: #333; margin: 0 4px; }
+
+        #explorerOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 10, 20, 0.88);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        #explorerOverlay.hidden { display: none; }
+        #explorerBox {
+            background: #0d1b2a; border: 0.5px solid #2a4a6a;
+            border-radius: 10px; width: 520px; max-height: 480px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        #explorerHeader {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-bottom: 0.5px solid #1a3a5a;
+            font-size: 13px; color: #aaa;
+        }
+        #explorerHeader span { color: #fff; font-weight: 500; font-size: 14px; }
+        #explorerSkip {
+            font-size: 11px; color: #556; background: transparent;
+            border: 0.5px solid #334; padding: 3px 8px; border-radius: 4px; cursor: pointer;
+        }
+        #explorerSkip:hover { color: #aaa; border-color: #556; }
+        #explorerSearch {
+            margin: 10px 14px 6px; background: #0a1520; border: 0.5px solid #2a4a6a;
+            border-radius: 6px; color: #ccc; font-size: 12px; font-family: monospace;
+            padding: 6px 10px; outline: none; width: calc(100% - 28px);
+        }
+        #explorerSearch:focus { border-color: #4fc3f7; }
+        #explorerTree {
+            overflow-y: auto; flex: 1; padding: 6px 0;
+        }
+        #explorerTree::-webkit-scrollbar { width: 5px; }
+        #explorerTree::-webkit-scrollbar-thumb { background: #1a3a5a; border-radius: 3px; }
+        .ex-folder {
+            display: flex; align-items: center; gap: 7px;
+            padding: 5px 16px; font-size: 12px; color: #7aa; cursor: pointer;
+            user-select: none;
+        }
+        .ex-folder:hover { background: #112030; }
+        .ex-folder .icon { font-size: 12px; color: #4fc3f7; width: 14px; text-align: center; }
+        .ex-file {
+            display: flex; align-items: center; gap: 7px;
+            padding: 5px 16px 5px 32px; font-size: 12px; color: #ccc; cursor: pointer;
+            user-select: none; border-radius: 4px;
+        }
+        .ex-file:hover { background: #112a3a; color: #fff; }
+        .ex-file.selected { background: #0e2a40; color: #4fc3f7; border-left: 2px solid #4fc3f7; }
+        .ex-file .icon { font-size: 11px; color: #4fc3f7; width: 14px; text-align: center; }
+        #explorerFooter {
+            padding: 10px 14px; border-top: 0.5px solid #1a3a5a;
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        }
+        #explorerSelectedLabel { font-size: 11px; color: #556; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #explorerLoadBtn {
+            font-size: 12px; padding: 5px 18px; background: #1a4a7a;
+            color: #7fc8f8; border: 0.5px solid #2a6aaa; border-radius: 6px; cursor: pointer;
+        }
+        #explorerLoadBtn:hover { background: #1e5a8a; }
+        #explorerLoadBtn:disabled { opacity: 0.3; cursor: default; }
     </style>
 </head>
 <body>
+
+<div id="explorerOverlay">
+    <div id="explorerBox">
+        <div id="explorerHeader">
+            <span>Select satellite CSV</span>
+            <button id="explorerSkip">Skip</button>
+        </div>
+        <input id="explorerSearch" type="text" placeholder="Filter files..." autocomplete="off" />
+        <div id="explorerTree"></div>
+        <div id="explorerFooter">
+            <span id="explorerSelectedLabel">No file selected</span>
+            <button id="explorerLoadBtn" disabled>Load</button>
+        </div>
+    </div>
+</div>
 
 <div id="controls">
     <label>Time</label>
@@ -97,6 +202,7 @@
     let svg, projection, pathGen, W, H;
     let dotLayer, trackLayer, gsLayer, eoLayer;
     let speedMultiplier = 1.0;
+    let hiddenSats = new Set(); // Track which satellites are hidden
     window.mapInitialized = false;
 
     function xyz2ll(x, y, z) {
@@ -142,7 +248,6 @@
         return out;
     }
 
-    // Parse EO area CSV: name,lat1,long1,alt1,lat2,long2,alt2,lat3,long3,alt3,lat4,long4,alt4
     function parseEOCSV(text) {
         const lines = text.trim().split('\n');
         const out = [];
@@ -151,12 +256,11 @@
             const c = lines[i].split(',');
             const name = c[0]?.trim();
             const points = [];
-            // Read groups of 3: lat, lon, alt
             for (let j = 1; j + 2 <= c.length; j += 3) {
                 const lat = parseFloat(c[j]);
                 const lon = parseFloat(c[j+1]);
                 if (!isNaN(lat) && !isNaN(lon)) {
-                    points.push([lon, lat]); // D3 uses [lon, lat]
+                    points.push([lon, lat]);
                 }
             }
             if (name && points.length >= 3) {
@@ -188,20 +292,10 @@
     }
 
     function loadEOAreas() {
-
         eoLayer.selectAll('*').remove();
-
         EOzones.forEach(area => {
-            // Close the polygon by repeating the first point
-            const closed = [...area.points, area.points[0]];
-
-            // Project all points
             const projected = area.points.map(p => projection(p)).filter(p => p !== null);
             if (projected.length < 3) return;
-
-            const closedProjected = [...projected, projected[0]];
-
-            // Filled polygon — light blue semi-transparent
             const polyPath = 'M' + projected.map(p => p[0]+','+p[1]).join('L') + 'Z';
             eoLayer.append('path')
                 .attr('d', polyPath)
@@ -210,8 +304,6 @@
                 .attr('stroke', '#29b6f6')
                 .attr('stroke-width', 1.2)
                 .attr('stroke-opacity', 0.7);
-
-            // Area name label at centroid
             const cx = projected.reduce((s, p) => s + p[0], 0) / projected.length;
             const cy = projected.reduce((s, p) => s + p[1], 0) / projected.length;
             eoLayer.append('text')
@@ -222,7 +314,6 @@
                 .attr('text-anchor', 'middle')
                 .text(area.name);
         });
-
         buildLegend(EOzones.length > 0);
     }
 
@@ -236,12 +327,8 @@
         loadEOAreas();
     }
 
-    function loadGSFromText(text) {
-        applyGSData(parseGSCSV(text));
-    }
-    function loadEOFromText(text) {
-        applyEOData(parseEOCSV(text));
-    }
+    function loadGSFromText(text) { applyGSData(parseGSCSV(text)); }
+    function loadEOFromText(text) { applyEOData(parseEOCSV(text)); }
 
     function getBest(pts, t) {
         let best = pts[0], bd = Infinity;
@@ -257,6 +344,8 @@
         dotLayer.selectAll('*').remove();
 
         Object.keys(sats).forEach((name, si) => {
+            if (hiddenSats.has(name)) return; // Skip hidden satellites
+
             const col = COLORS[si % COLORS.length];
             const best = getBest(sats[name], t);
             const ll = xyz2ll(best.x, best.y, best.z);
@@ -287,6 +376,8 @@
     function drawTracks() {
         trackLayer.selectAll('*').remove();
         Object.keys(sats).forEach((name, si) => {
+            if (hiddenSats.has(name)) return; // Skip hidden satellites
+
             const col = COLORS[si % COLORS.length];
             const pts = sats[name];
             const chunks = [];
@@ -318,7 +409,9 @@
         leg.innerHTML = '';
         Object.keys(sats).forEach((name, si) => {
             const col = COLORS[si % COLORS.length];
-            leg.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${col};"></span>${name}</span>`;
+            const hidden = hiddenSats.has(name);
+            leg.innerHTML += `<span class="legend-item" style="opacity:${hidden ? 0.35 : 1}">`
+                + `<span class="legend-dot" style="background:${col};"></span>${name}</span>`;
         });
         if (groundStations.length > 0) {
             leg.innerHTML += `<span class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#4caf50;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"></span>GS active</span>`;
@@ -337,12 +430,30 @@
             const best = getBest(sats[name], t);
             const ll = xyz2ll(best.x, best.y, best.z);
             const alt = (Math.sqrt(best.x**2 + best.y**2 + best.z**2) - EARTH_R) / 1000;
-            row.innerHTML += `
-            <div class="stat-card">
-                <div class="sat-name"><span class="dot" style="background:${col};"></span>${name}</div>
+            const hidden = hiddenSats.has(name);
+            const eyeSymbol = hidden ? '&#9673;' : '&#9673;'; // always show dot, style handles it
+            const card = document.createElement('div');
+            card.className = 'stat-card' + (hidden ? ' hidden-sat' : '');
+            card.title = hidden ? 'Click to show ' + name : 'Click to hide ' + name;
+            card.innerHTML = `
+                <div class="sat-name">
+                    <span class="dot" style="background:${col};"></span>
+                    ${name}
+                    <span class="eye-icon" style="margin-left:auto;font-size:10px;">${hidden ? 'show' : 'hide'}</span>
+                </div>
                 <div class="row">Lat <span class="val">${ll[1].toFixed(2)}°</span> &nbsp;Lon <span class="val">${ll[0].toFixed(2)}°</span></div>
-                <div class="row">Alt <span class="val">${Math.round(alt)} km</span></div>
-            </div>`;
+                <div class="row">Alt <span class="val">${Math.round(alt)} km</span></div>`;
+            card.addEventListener('click', () => {
+                if (hiddenSats.has(name)) {
+                    hiddenSats.delete(name);
+                } else {
+                    hiddenSats.add(name);
+                }
+                drawTracks();
+                updateDots();
+                buildLegend(EOzones.length > 0);
+            });
+            row.appendChild(card);
         });
     }
 
@@ -350,6 +461,7 @@
         sats = parsed.sats;
         times = parsed.times;
         idx = 0;
+        hiddenSats.clear();
         const sl = document.getElementById('tSlider');
         sl.min = 0; sl.max = times.length - 1; sl.value = 0;
         document.getElementById('status').textContent =
@@ -372,7 +484,7 @@
 
     function initMap() {
         const container = document.getElementById('mapDiv');
-        W = container.clientWidth ;
+        W = container.clientWidth;
         H = Math.round(W * 0.45);
 
         svg = d3.select('#mapDiv').append('svg').attr('width', W).attr('height', H);
@@ -387,7 +499,7 @@
             .attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.08)').attr('stroke-width', 0.5);
 
         const landLayer = svg.append('g');
-        eoLayer  = svg.append('g');  // EO zones — above land, below everything else
+        eoLayer    = svg.append('g');
         trackLayer = svg.append('g');
         gsLayer    = svg.append('g');
         dotLayer   = svg.append('g');
@@ -405,8 +517,9 @@
             window.mapInitialized = true;
         });
     }
+
     function resetmap() {
-        svg = d3.select('#mapDiv').selectAll('*').remove();
+        d3.select('#mapDiv').selectAll('*').remove();
         initMap();
     }
 
@@ -443,11 +556,10 @@
     document.getElementById('eoFile').addEventListener('change', e => {
         const f = e.target.files[0]; if (!f) return;
         const r = new FileReader();
-        r.onload = ev => { loadEOAreas(ev.target.result); };
+        r.onload = ev => { loadEOFromText(ev.target.result); };
         r.readAsText(f);
     });
     window.addEventListener('resize', () => {
-        // Wait until map is ready (async world load)
         const wait = setInterval(() => {
             if (!window.mapInitialized) return;
             clearInterval(wait);
@@ -456,15 +568,82 @@
             loadEOAreas();
             drawGroundStations();
             updateDots();
-            // EO zones need to be redrawn too if loaded
-            // (they depend on projection)
-            if (eoLayer && eoLayer.selectAll('*').size() === 0) {
-                // you may want to store EO data globally instead
-            }
         }, 50);
     });
 
     initMap();
+
+    // ── Folder Explorer ──────────────────────────────────────────────
+    // Java populates the tree via: window.populateExplorer(jsonString)
+    // JSON format: [ { folder: "real_sat", path: "/abs/path/to/folder", files: ["a.csv","b.csv"] }, ... ]
+    // On load, JS calls: window.javaBridge.loadSatCSV(absoluteFilePath)
+    // Java then reads the file and calls: window.receiveCSVContent(csvString)
+
+    let explorerSelected = null;
+    let explorerData = [];
+
+    window.populateExplorer = function(jsonStr) {
+        explorerData = JSON.parse(jsonStr);
+        renderTree('');
+    };
+
+    function renderTree(filter) {
+        const tree = document.getElementById('explorerTree');
+        tree.innerHTML = '';
+        const q = filter.toLowerCase().trim();
+        explorerData.forEach(folder => {
+            const files = folder.files.filter(f =>
+                !q || f.toLowerCase().includes(q) || folder.folder.toLowerCase().includes(q)
+            );
+            if (files.length === 0) return;
+            const folderEl = document.createElement('div');
+            folderEl.className = 'ex-folder';
+            folderEl.innerHTML = `<span class="icon">&#9656;</span><span>${folder.folder}</span>`;
+            tree.appendChild(folderEl);
+            files.forEach(file => {
+                const absPath = folder.path + '/' + file;
+                const fileEl = document.createElement('div');
+                fileEl.className = 'ex-file' + (explorerSelected && explorerSelected.absPath === absPath ? ' selected' : '');
+                fileEl.innerHTML = `<span class="icon">&#9632;</span><span>${file}</span>`;
+                fileEl.addEventListener('click', () => {
+                    explorerSelected = { folder: folder.folder, file, absPath };
+                    document.getElementById('explorerSelectedLabel').textContent = folder.folder + ' / ' + file;
+                    document.getElementById('explorerLoadBtn').disabled = false;
+                    tree.querySelectorAll('.ex-file').forEach(el => el.classList.remove('selected'));
+                    fileEl.classList.add('selected');
+                });
+                tree.appendChild(fileEl);
+            });
+        });
+        if (!tree.children.length) {
+            tree.innerHTML = '<div style="padding:16px;color:#445;font-size:12px;">No files match</div>';
+        }
+    }
+
+    document.getElementById('explorerSearch').addEventListener('input', e => renderTree(e.target.value));
+
+    document.getElementById('explorerLoadBtn').addEventListener('click', () => {
+        if (!explorerSelected) return;
+        if (window.javaBridge) {
+            window.javaBridge.loadSatCSV(explorerSelected.absPath);
+        }
+        document.getElementById('explorerOverlay').classList.add('hidden');
+    });
+
+    document.getElementById('explorerSkip').addEventListener('click', () => {
+        document.getElementById('explorerOverlay').classList.add('hidden');
+    });
+
+    window.receiveCSVContent = function(content) {
+        applyData(parseCSV(content));
+    };
+
+    setTimeout(() => {
+        if (explorerData.length === 0) {
+            document.getElementById('explorerTree').innerHTML =
+                '<div style="padding:16px;color:#445;font-size:12px;">Waiting for Java bridge...<br>Use the Load CSV button instead.</div>';
+        }
+    }, 800);
 </script>
 </body>
 </html>

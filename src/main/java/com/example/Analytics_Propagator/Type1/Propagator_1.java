@@ -84,13 +84,7 @@ public class Propagator_1
     // Paramétrage du propagateur numérique
         for  (Satellite p : liste_par_sats_real_orbit){
             NumericalPropagator propagator = generic_propagator(name_file,p);
-            if (EO_detection.EO_detection){
-                NadirPointing nadirLaw = new NadirPointing(Parametres.frame, Parametres.earth);
-                propagator.setAttitudeProvider(nadirLaw);
-                EO_detection.EO_usage_detection(propagator,p);
-            }
-            p.launch_manoeuvre(propagator);
-            propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
+            EO_setup(p, propagator);
         }
        Visulations.closeCSV();
         
@@ -99,10 +93,21 @@ public class Propagator_1
 
     public static void propagator_TLE (List<Satellite> listSatellite){
        for (Satellite sat : listSatellite){
-           generic_propagator("TLE",sat).propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
+               NumericalPropagator propagator = generic_propagator("TLE",sat);
+               EO_setup(sat, propagator);
        }
         Visulations.closeCSV();
    }
+
+    private static void EO_setup(Satellite sat, NumericalPropagator propagator) {
+        if (EO_detection.EO_detection){
+            NadirPointing nadirLaw = new NadirPointing(Parametres.frame, Parametres.earth);
+            propagator.setAttitudeProvider(nadirLaw);
+            EO_detection.EO_usage_detection(propagator,sat);
+        }
+        sat.launch_manoeuvre(propagator);
+        propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
+    }
 
     public static NumericalPropagator generic_propagator(String type_propa,Satellite satellite){
         NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(satellite));
@@ -113,7 +118,7 @@ public class Propagator_1
         Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
         // If satcom activated, we start the sequence to deal with everything linked
         if (Ground_station.satcom_activated) Ground_station.satcom_station_link(propagator);
-        SpacecraftState initialState = satellite.get_s_initialState().addAdditionalData("angle", satellite.getBoresight());
+        SpacecraftState initialState = satellite.get_s_initialState().addAdditionalData("Boresight", satellite.getBoresight());
         satellite.add_state(initialState);
         Handlers.step_handler stepHandler = new Handlers.step_handler(type_propa, satellite);
 
