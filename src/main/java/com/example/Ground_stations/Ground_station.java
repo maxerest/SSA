@@ -94,6 +94,7 @@ public class Ground_station {
                 String name = parts[0].trim();
                 double lat = Double.parseDouble(parts[1].trim());
                 double lon = Double.parseDouble(parts[2].trim());
+                double lonNorm = lon > 180 ? lon - 360 : lon;
                 double alt = Double.parseDouble(parts[3].trim());
                 double station_activation= Double.parseDouble(parts[4].trim());
                 if (station_activation==0){
@@ -104,7 +105,7 @@ public class Ground_station {
                         Parametres.earth,
                         new GeodeticPoint(
                                 FastMath.toRadians(lat),
-                                FastMath.toRadians(lon),
+                                FastMath.toRadians(lonNorm),
                                 alt
                         ),
                         name

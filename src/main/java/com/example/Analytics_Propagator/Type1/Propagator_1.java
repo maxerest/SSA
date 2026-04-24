@@ -79,7 +79,7 @@ public class Propagator_1
        String name_file="real_sats";
        Visulations.create_CSV_files(name_file);
        if (EO_detection.EO_detection){
-           Visulations.init_observation_csv(); // ← moved here, called only once
+           Visulations.init_observation_csv();
        }
     // Paramétrage du propagateur numérique
         for  (Satellite p : liste_par_sats_real_orbit){
@@ -113,7 +113,7 @@ public class Propagator_1
         NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(satellite));
         propagator.setOrbitType(OrbitType.CARTESIAN);
         propagator.setInitialState(satellite.get_s_initialState());
-        propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
+        if (!EO_detection.EO_detection) propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
         //Ajout des forces au propagateur
         Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
         // If satcom activated, we start the sequence to deal with everything linked
@@ -123,7 +123,7 @@ public class Propagator_1
         Handlers.step_handler stepHandler = new Handlers.step_handler(type_propa, satellite);
 
 
-        propagator.getMultiplexer().add(60, stepHandler);
+        propagator.getMultiplexer().add(10, stepHandler);
        return propagator;
     }
 
@@ -302,7 +302,7 @@ public class Propagator_1
         RadiationSensitive srpSurface = new IsotropicRadiationSingleCoefficient(srpCrossSection, srpCoeff);
         SolarRadiationPressure srp = new SolarRadiationPressure(sun,one_axis_earth,srpSurface);
         propagator.addForceModel(srp);
-        propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
+        if (! EO_detection.EO_detection)propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
         return propagator;
     }
 

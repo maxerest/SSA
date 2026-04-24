@@ -1,32 +1,32 @@
 package com.example.Analytics_Propagator.Type1;
 
+import com.example.App;
 import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Ground_station;
 import com.example.Ground_stations.Satcom;
 import com.example.Orbiting_object.Satellite;
 import com.example.Parametres;
 import com.example.View.Visulations;
-import org.hipparchus.geometry.Space;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.ode.events.Action;
-import org.hipparchus.util.FastMath;
 import org.orekit.attitudes.Attitude;
 import org.orekit.bodies.GeodeticPoint;
-import org.orekit.files.ccsds.utils.lexical.ParseToken;
+import org.orekit.errors.OrekitException;
 import org.orekit.frames.Frame;
 import org.orekit.frames.FramesFactory;
 import org.orekit.frames.TopocentricFrame;
 import org.orekit.frames.Transform;
+import org.orekit.geometry.fov.FieldOfView;
 import org.orekit.propagation.SpacecraftState;
+import org.orekit.propagation.events.BooleanDetector;
+import org.orekit.propagation.events.ElevationDetector;
 import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.events.FieldOfViewDetector;
 import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.IERSConventions;
 
-import javax.sound.midi.SysexMessage;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.util.*;
 
 public class Handlers {
@@ -122,103 +122,124 @@ public class Handlers {
 
     }
     public static class ZoneObservationContext {
-        public Map<Integer, AbsoluteDate> pointEntryTimes = new HashMap<>();
-        public Map<Integer, AbsoluteDate> pointExitTimes  = new HashMap<>();
 
-        public ZoneObservationContext(int size) {
-            // size no longer needed but kept for API compatibility
-        }
+        public final Map<Integer, AbsoluteDate> pointEntryTimes = new HashMap<>();
+        public final Set<Integer> visiblePoints = new HashSet<>();
+
+        public AbsoluteDate currentWindowStart = null;
 
         public void resetPass() {
             pointEntryTimes.clear();
-            pointExitTimes.clear();
+            visiblePoints.clear();
+            currentWindowStart = null;
         }
     }
+    public static EventDetector buildAreaRevisitDetector(
+            TopocentricFrame tcf,
+            FieldOfView fov,
+            double maxCheckingInterval,
+            String name,
+            int pointIndex,
+            ZoneObservationContext context,
+            Satellite sat,
+            Frame inertialFrame) {
 
+        final FieldOfViewDetector fd = new FieldOfViewDetector(tcf, fov);
+        final ElevationDetector ed = new ElevationDetector(tcf).withConstantElevation(Parametres.elevation);
+
+        return BooleanDetector.andCombine(
+                        ed,
+                        BooleanDetector.notCombine(fd)
+                )
+                .withMaxCheck(maxCheckingInterval)
+                .withHandler(new Area_revisit_Handler(
+                        name,
+                        sat,
+                        inertialFrame,
+                        pointIndex,
+                        context
+                ));
+    }
     public static class Area_revisit_Handler implements EventHandler {
+
         private final String name;
+        private final Satellite sat;
+        private final Frame inertialFrame;
         private final int pointIndex;
         private final ZoneObservationContext context;
-        private final List<SpacecraftState> list_spacecraftStates;
-        private final Frame inertialFrame;
 
-        public Area_revisit_Handler(String name, List<SpacecraftState> list_spacecraftStates,
-                                    Frame inertialFrame, int pointIndex, ZoneObservationContext context) {
+        public Area_revisit_Handler(
+                String name,
+                Satellite sat,
+                Frame inertialFrame,
+                int pointIndex,
+                ZoneObservationContext context) {
+
             this.name = name;
+            this.sat = sat;
+            this.inertialFrame = inertialFrame;
             this.pointIndex = pointIndex;
             this.context = context;
-            this.list_spacecraftStates = list_spacecraftStates;
-            this.inertialFrame = inertialFrame;
         }
-        public SpacecraftState getfull_Spacecraftstate (SpacecraftState spacecraftState) {
-            return list_spacecraftStates.stream()
-                    .min(Comparator.comparingDouble(st ->
-                            Math.abs(st.getDate().durationFrom(spacecraftState.getDate()))))
-                    .orElse(spacecraftState);
+
+        private int getTotalPoints() {
+            return EO_detection.Map_area_positions.get(name).size();
         }
+
         @Override
-        public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
+        public Action eventOccurred(
+                SpacecraftState s,
+                EventDetector detector,
+                boolean increasing) {
+
+            AbsoluteDate date = s.getDate();
+            int total = getTotalPoints();
+
             if (increasing) {
-                SpacecraftState nearest = getfull_Spacecraftstate(s);
-                Vector3D boresightInBody = (Vector3D) nearest.getAdditionalData("Boresight");
-                Attitude attitude = nearest.getAttitude();
-                Vector3D boresightInertial = attitude.getRotation().applyInverseTo(boresightInBody);
-                Vector3D satPosition = nearest.getPosition(inertialFrame);
+                // Point enters FOV
+                context.visiblePoints.add(pointIndex);
+                context.pointEntryTimes.put(pointIndex, date);
 
-                // Convert this point to inertial frame
-                Transform itrfToInertial = Parametres.earth.getBodyFrame()
-                        .getTransformTo(inertialFrame, nearest.getDate());
-                GeodeticPoint point = EO_detection.Map_area_positions.get(name).get(pointIndex);
-                Vector3D pointITRF = Parametres.earth.transform(point);
-                Vector3D pointInertial = itrfToInertial.transformPosition(pointITRF);
+                // Full area just became visible
+                if (context.visiblePoints.size() == total
+                        && context.currentWindowStart == null) {
 
-                Vector3D toPoint = pointInertial.subtract(satPosition).normalize();
-                double slewAngleRad = Vector3D.angle(boresightInertial, toPoint);
-                double agility = ((double[]) nearest.getAdditionalData("agility"))[0];
-                System.out.println(agility);
-                if (slewAngleRad > agility) {
-                    return Action.CONTINUE; // point not reachable, don't record entry
+                    context.currentWindowStart = context.pointEntryTimes.values()
+                            .stream()
+                            .max(Comparator.naturalOrder())
+                            .orElse(date);
+
+                    sat.setCurrently_observing(name);
                 }
 
-                context.pointEntryTimes.put(pointIndex, s.getDate());
-
             } else {
-                context.pointExitTimes.put(pointIndex, s.getDate());
-                tryFinalizePass(s);
+                // Point exits FOV
+
+                // If full area was visible, this exit ends the observation
+                if (context.currentWindowStart != null) {
+                    AbsoluteDate windowEnd = date;
+                    double duration = windowEnd.durationFrom(context.currentWindowStart);
+
+                    if (duration > 0) {
+                        Visulations.export_observation_to_csv(
+                                name,
+                                context.currentWindowStart,
+                                windowEnd,
+                                duration,
+                                sat.get_Name()
+                        );
+                    }
+
+                    sat.setCurrently_observing(null);
+                    context.currentWindowStart = null;
+                }
+
+                context.visiblePoints.remove(pointIndex);
+                context.pointEntryTimes.remove(pointIndex);
             }
+
             return Action.CONTINUE;
         }
-
-        private void tryFinalizePass(SpacecraftState s) {
-            int total = EO_detection.Map_area_positions.get(name).size();
-
-            // Not all points have exited yet
-            if (context.pointExitTimes.size() < total) return;
-            // Not all points were ever visible this pass
-            if (context.pointEntryTimes.size() < total) return;
-
-            // Latest entry = when the LAST point became visible
-            AbsoluteDate windowStart = context.pointEntryTimes.values().stream()
-                    .max(Comparator.naturalOrder())
-                    .orElseThrow();
-
-            // Earliest exit = when the FIRST point leaves visibility
-            AbsoluteDate windowEnd = context.pointExitTimes.values().stream()
-                    .min(Comparator.naturalOrder())
-                    .orElseThrow();
-
-            double duration = windowEnd.durationFrom(windowStart);
-            SpacecraftState nearest = getfull_Spacecraftstate(s);
-
-            if (duration > 0) {
-                Visulations.export_observation_to_csv(
-                        name, windowStart, windowEnd, duration,
-                        (String) nearest.getAdditionalData("name")
-                );
-            }
-
-            context.resetPass();
-        }
-        }
     }
+}
 

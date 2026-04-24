@@ -27,6 +27,7 @@ import java.io.IOException;
 
 public class App 
 {
+    public static List<Satellite> liste_par_sats_real_orbit;
     public static void main( String[] args )throws IOException 
     {
 
@@ -40,6 +41,7 @@ public class App
         boolean check_collision = false;
         boolean satcom_gs_communication =false;
         boolean EO_detection=true;
+        boolean python_map = true;
         int nb_sat =1;
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
@@ -66,7 +68,7 @@ public class App
                 new EO_detection();
             }
             // Definition des satellites
-            List<Satellite> liste_par_sats_real_orbit = real_orbit(nb_sat);
+            liste_par_sats_real_orbit = real_orbit(nb_sat);
             Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit,satcom_gs_communication);
             List<Satellite> liste_par_sats_noisy_orbit;
 
@@ -92,8 +94,10 @@ public class App
             Visulations.Python_graph_orbital_param();
         }
         if(EO_detection){
-            Visulations.Python_EO_detection();
-            //Application.launch(SatelliteTrackerUI.class, args);
+            //Visulations.Python_EO_detection();
+        }
+        if (python_map){
+            Application.launch(SatelliteTrackerUI.class, args);
         }
 
 
@@ -110,71 +114,21 @@ public class App
         List<Satellite> liste_par_sats = new ArrayList<>();
 
         for (int i = 0; i<nb_sat; i++){
-        liste_par_sats.add(
-            new Satellite.Builder()
-                .nom_sat("ISS" + (i+1))
-                .mass(2500)
-                .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS+420000)
-                .eccentricity(0.0002267)
-                .inclinaison(Math.toRadians(51.64))
-                .long_noeud_ascendant(Math.toRadians(90))
-                .arg_periastre(Math.toRadians(0))
-                .anomalie(Math.toRadians(0))
-                .type_anomalie(PositionAngleType.TRUE)
-                .motor_name("Moteur_2")
-                .build());
-            liste_par_sats.add(
-                    new Satellite.Builder()
-                            .nom_sat("Sat_real_" + (2))
-                            .mass(2500)
-                            .semi_axis(26600000)
-                            .eccentricity(0.74)
-                            .inclinaison(Math.toRadians(63.435))
-                            .long_noeud_ascendant(Math.toRadians(0))
-                            .arg_periastre(Math.toRadians(270))
-                            .anomalie(Math.toRadians(0))
-                            .type_anomalie(PositionAngleType.TRUE)
-                            .motor_name("Moteur_2")
-                            .build());
-            liste_par_sats.add(
-                    new Satellite.Builder()
-                            .nom_sat("Sat_real_" + (3))
-                            .mass(2500)
-                            .semi_axis(26600000)
-                            .eccentricity(0.74)
-                            .inclinaison(Math.toRadians(63.435))
-                            .long_noeud_ascendant(Math.toRadians(90))
-                            .arg_periastre(Math.toRadians(270))
-                            .anomalie(Math.toRadians(0))
-                            .type_anomalie(PositionAngleType.TRUE)
-                            .motor_name("Moteur_2")
-                            .build());
-            liste_par_sats.add(
-                    new Satellite.Builder()
-                            .nom_sat("Sat_real_" + (4))
-                            .mass(2500)
-                            .semi_axis(26600000)
-                            .eccentricity(0.74)
-                            .inclinaison(Math.toRadians(63.435))
-                            .long_noeud_ascendant(Math.toRadians(180))
-                            .arg_periastre(Math.toRadians(270))
-                            .anomalie(Math.toRadians(0))
-                            .type_anomalie(PositionAngleType.TRUE)
-                            .motor_name("Moteur_2")
-                            .build());
-            liste_par_sats.add(
-                    new Satellite.Builder()
-                            .nom_sat("Sat_real_" + (5))
-                            .mass(2500)
-                            .semi_axis(26600000)
-                            .eccentricity(0.74)
-                            .inclinaison(Math.toRadians(63.435))
-                            .long_noeud_ascendant(Math.toRadians(270))
-                            .arg_periastre(Math.toRadians(270))
-                            .anomalie(Math.toRadians(240))
-                            .type_anomalie(PositionAngleType.TRUE)
-                            .motor_name("Moteur_2")
-                            .build());
+            // Plane A — 3 satellites, RAAN 0°
+            liste_par_sats.add(new Satellite.Builder()
+                    .nom_sat("EO_Sat_1")
+                    .mass(800)
+                    .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 5000000)
+                    .eccentricity(0.001)
+                    .inclinaison(Math.toRadians(97.4))       // sun-synchronous
+                    .long_noeud_ascendant(Math.toRadians(0))
+                    .arg_periastre(Math.toRadians(0))
+                    .anomalie(Math.toRadians(0))
+                    .type_anomalie(PositionAngleType.TRUE)
+                    .motor_name("Moteur_2")
+                    .build());
+
+
 
 
         }

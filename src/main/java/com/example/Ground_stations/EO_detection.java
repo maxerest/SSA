@@ -3,16 +3,29 @@ package com.example.Ground_stations;
 import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Orbiting_object.Satellite;
 import com.example.Parametres;
+import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.util.FastMath;
 import org.orekit.bodies.GeodeticPoint;
+import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.frames.TopocentricFrame;
+import org.orekit.frames.Transform;
+import org.orekit.geometry.fov.CircularFieldOfView;
+import org.orekit.geometry.fov.DoubleDihedraFieldOfView;
+import org.orekit.geometry.fov.FieldOfView;
 import org.orekit.propagation.events.ElevationDetector;
+import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.events.FieldOfViewDetector;
+import org.orekit.propagation.events.VisibilityTrigger;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
+import org.orekit.utils.PVCoordinates;
+import org.orekit.utils.PVCoordinatesProvider;
+import org.orekit.utils.TimeStampedPVCoordinates;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EO_detection {
     public static boolean EO_detection=true; // false on default but gets change if needed from main
@@ -24,23 +37,31 @@ public class EO_detection {
     }
     public static void EO_usage_detection(NumericalPropagator propagator, Satellite sat) {
         for (String name : Map_area_positions.keySet()) {
-            Handlers.ZoneObservationContext context = new Handlers.ZoneObservationContext(Map_area_positions.get(name).size());
+            Handlers.ZoneObservationContext context = new Handlers.ZoneObservationContext();
             int i = 0;
+            final double viewAngle = 15.0;
+
+            final FieldOfView fov = new DoubleDihedraFieldOfView(
+                    Vector3D.PLUS_K,
+                    Vector3D.PLUS_I, FastMath.toRadians(viewAngle / 2.0),
+                    Vector3D.PLUS_J, FastMath.toRadians(viewAngle / 2.0),
+                    0.0
+            );
             for (GeodeticPoint point : Map_area_positions.get(name)) {
-                TopocentricFrame topoFrame = new TopocentricFrame(Parametres.earth, point, name + "_" + i);
-                ElevationDetector elevationDetector = new ElevationDetector(
+                TopocentricFrame tcf = new TopocentricFrame(Parametres.earth, point, name + "_" + i);
+
+                EventDetector detector = Handlers.buildAreaRevisitDetector(
+                        tcf,
+                        fov,
                         60.0,
-                        1e-3,
-                        topoFrame)
-                        .withConstantElevation(Math.toRadians(Parametres.elevation))
-                        .withHandler(new Handlers.Area_revisit_Handler(
-                                name,
-                                sat.get_liste_state_propa(),
-                                Parametres.frame,
-                                i,
-                                context  // shared across all points in this zone
-                        ));
-                propagator.addEventDetector(elevationDetector);
+                        name,
+                        i,
+                        context,
+                        sat,
+                        Parametres.frame
+                );
+
+                propagator.addEventDetector(detector);
                 i++;
             }
         }
@@ -63,10 +84,15 @@ public class EO_detection {
                 List<TreeMap<AbsoluteDate, AbsoluteDate>> perPointHistory = new ArrayList<>();
 
                 for (int i = 1; i < parts.length; i = i + 3) {
-                    double lat = Math.toRadians(Double.parseDouble(parts[i].trim()));  // CSV is degrees
-                    double lon = Math.toRadians(Double.parseDouble(parts[i + 1].trim()));
+                    double lat = Double.parseDouble(parts[i].trim());
+                    double lonDeg = Double.parseDouble(parts[i + 1].trim());
                     double alt = Double.parseDouble(parts[i + 2].trim());
-                    geodeticPoints.add(new GeodeticPoint(lat, lon, alt));
+                    double lonNorm = lonDeg > 180 ? lonDeg - 360 : lonDeg;
+                    geodeticPoints.add(new GeodeticPoint(
+                            Math.toRadians(lat),
+                            Math.toRadians(lonNorm),
+                            alt
+                    ));
                     perPointHistory.add(new TreeMap<>());
                 }
 

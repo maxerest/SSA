@@ -122,7 +122,7 @@ public class Orbiting_object {
         }
 
         public Builder s_initialState(SpacecraftState s) {
-            this.s_initialState = s;
+            this.s_initialState = s.addAdditionalData("name",this.nom_sat);
             return this;
         }
 

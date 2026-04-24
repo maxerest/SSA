@@ -55,11 +55,19 @@ public class SatelliteTrackerUI extends Application {
                         engine.executeScript("loadGSFromText(`" + gsContent + "`);");
 
                         if (EO_detection.EO_detection) {
+                            //Coordinates to observe
                             String eoPath = Paths.get("src/main/resources/EO detection/Coordinates_area_to_observe.csv")
                                     .toAbsolutePath().toString();
                             String eoContent = new String(Files.readAllBytes(Paths.get(eoPath)));
                             eoContent = eoContent.replace("\\", "\\\\").replace("`", "\\`");
                             engine.executeScript("loadEOFromText(`" + eoContent + "`);");
+                            //Observation file
+                            String OBSPath = Paths.get("src/main/resources/EO detection/observations.csv")
+                                    .toAbsolutePath().toString();
+                            String OBSContent = new String(Files.readAllBytes(Paths.get(OBSPath)));
+                            OBSContent = OBSContent.replace("\\", "\\\\").replace("`", "\\`");
+                            engine.executeScript("loadObsFromText(`" + OBSContent + "`);");
+
                         }
                     } catch (Exception e) {
                         System.err.println("Error loading GS/EO data: " + e.getMessage());

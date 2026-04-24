@@ -151,9 +151,11 @@
     <button id="uploadBtn">Load CSV</button>
     <button id="uploadGSBtn">Load GS CSV</button>
     <button id="uploadEOBtn">Load EO CSV</button>
-    <input type="file" id="csvFile" accept=".csv" style="display:none;" />
-    <input type="file" id="gsFile" accept=".csv" style="display:none;" />
-    <input type="file" id="eoFile" accept=".csv" style="display:none;" />
+    <button id="uploadObsBtn">Load Obs CSV</button>
+    <input type="file" id="csvFile"  accept=".csv" style="display:none;" />
+    <input type="file" id="gsFile"   accept=".csv" style="display:none;" />
+    <input type="file" id="eoFile"   accept=".csv" style="display:none;" />
+    <input type="file" id="obsFile"  accept=".csv" style="display:none;" />
 </div>
 
 <div id="status">Waiting for data...</div>
@@ -199,17 +201,23 @@
     let sats = {}, times = [], idx = 0, playing = false, timer = null;
     let groundStations = [];
     let EOzones = [];
+    let observations = [];   // parsed observation windows
     let svg, projection, pathGen, W, H;
-    let dotLayer, trackLayer, gsLayer, eoLayer;
+    let dotLayer, trackLayer, gsLayer, eoLayer, obsLayer;
     let speedMultiplier = 1.0;
-    let hiddenSats = new Set(); // Track which satellites are hidden
+    let hiddenSats = new Set();
     window.mapInitialized = false;
+
+    // Reference epoch: the first time-step value is treated as t=0 offset
+    // For satellite data t is in seconds; for observations we compute seconds from the same epoch.
+    let obsEpoch = null;   // Unix ms of t=0 in the satellite timeline
 
     function xyz2ll(x, y, z) {
         const r = Math.sqrt(x*x + y*y + z*z);
         return [Math.atan2(y, x) * 180 / Math.PI, Math.asin(z / r) * 180 / Math.PI];
     }
 
+    // ── Satellite CSV ────────────────────────────────────────────────
     function parseCSV(text) {
         const lines = text.trim().split('\n');
         const h = lines[0].split(',').map(s => s.trim());
@@ -229,6 +237,7 @@
         return { sats: out, times: Array.from(ts).sort((a,b) => a - b) };
     }
 
+    // ── Ground-station CSV ───────────────────────────────────────────
     function parseGSCSV(text) {
         const lines = text.trim().split('\n');
         const h = lines[0].split(',').map(s => s.trim());
@@ -248,6 +257,7 @@
         return out;
     }
 
+    // ── EO-area CSV ──────────────────────────────────────────────────
     function parseEOCSV(text) {
         const lines = text.trim().split('\n');
         const out = [];
@@ -260,16 +270,119 @@
                 const lat = parseFloat(c[j]);
                 const lon = parseFloat(c[j+1]);
                 if (!isNaN(lat) && !isNaN(lon)) {
-                    points.push([lon, lat]);
+                    // Coordinates_area_to_observe uses lon values > 180 (e.g. 270 = -90)
+                    // normalise to [-180, 180]
+                    const normLon = ((lon + 180) % 360) - 180;
+                    points.push([normLon, lat]);
                 }
             }
             if (name && points.length >= 3) {
-                out.push({ name, points });
+                // Compute centroid for observation-line anchor
+                const cx = points.reduce((s,p) => s + p[0], 0) / points.length;
+                const cy = points.reduce((s,p) => s + p[1], 0) / points.length;
+                out.push({ name, points, centroid: [cx, cy] });
             }
         }
         return out;
     }
 
+    // ── Observations CSV ─────────────────────────────────────────────
+    // Columns: zone_name, start_time, end_time, duration_s, name_sat_doing_observation
+    // Timestamps are ISO-8601 strings like 2026-04-23T16:08:25.009285247521242112Z
+    function parseObsCSV(text) {
+        const lines = text.trim().split('\n');
+        const h = lines[0].split(',').map(s => s.trim());
+        const iZone  = h.indexOf('zone_name');
+        const iStart = h.indexOf('start_time');
+        const iEnd   = h.indexOf('end_time');
+        const iSat   = h.indexOf('name_sat_doing_observation');
+        if (iZone < 0 || iStart < 0 || iEnd < 0 || iSat < 0) {
+            console.warn('Observations CSV: missing expected columns', h);
+            return [];
+        }
+        const out = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const c = lines[i].split(',');
+            const zone  = c[iZone]?.trim();
+            const satName = c[iSat]?.trim();
+            // Truncate sub-second precision to what Date.parse can handle (ms only)
+            const startMs = isoToMs(c[iStart]?.trim());
+            const endMs   = isoToMs(c[iEnd]?.trim());
+            if (!zone || !satName || isNaN(startMs) || isNaN(endMs)) continue;
+            out.push({ zone, satName, startMs, endMs });
+        }
+        return out;
+    }
+
+    // Parse an ISO-8601 string that may have nano/picosecond precision into Unix ms.
+    // JavaScript's Date.parse only handles up to milliseconds, so we trim the fractional
+    // part to 3 digits before parsing.
+    function isoToMs(isoStr) {
+        if (!isoStr) return NaN;
+        // Replace the fractional seconds part (any length) with at most 3 digits
+        const fixed = isoStr.replace(/(\.\d{1,3})\d*/, '$1');
+        return Date.parse(fixed);
+    }
+
+    // ── Zone centroid lookup ─────────────────────────────────────────
+    function getZoneCentroid(zoneName) {
+        const z = EOzones.find(z => z.name === zoneName);
+        return z ? z.centroid : null;
+    }
+
+    // ── Draw observation lines ───────────────────────────────────────
+    // Called every frame; draws a light-yellow dashed line from the satellite
+    // to the centroid of its observed zone for every active observation window.
+    function drawObservationLines(currentUnixMs) {
+        obsLayer.selectAll('*').remove();
+        if (!observations.length || !EOzones.length) return;
+
+        observations.forEach(obs => {
+            if (currentUnixMs < obs.startMs || currentUnixMs > obs.endMs) return;
+            if (hiddenSats.has(obs.satName)) return;
+            if (!sats[obs.satName]) return;
+
+            // Find current satellite position
+            const satPts = sats[obs.satName];
+            const t = times[idx];
+            const best = getBest(satPts, t);
+            const satLL = xyz2ll(best.x, best.y, best.z);
+            const satPos = projection(satLL);
+            if (!satPos) return;
+
+            // Find zone centroid in projected space
+            const centroid = getZoneCentroid(obs.zone);
+            if (!centroid) return;
+            const zonePos = projection(centroid);
+            if (!zonePos) return;
+
+            // Dashed light-yellow line
+            obsLayer.append('line')
+                .attr('x1', satPos[0]).attr('y1', satPos[1])
+                .attr('x2', zonePos[0]).attr('y2', zonePos[1])
+                .attr('stroke', '#ffffaa')
+                .attr('stroke-width', 1.4)
+                .attr('stroke-dasharray', '5,3')
+                .attr('opacity', 0.75);
+
+        });
+    }
+
+    // ── Convert current slider time to Unix ms ───────────────────────
+    // obsEpoch is the Unix-ms timestamp that corresponds to t=0 in the satellite data.
+    // It is set when observations are loaded (we use the earliest observation start as anchor
+    // if the satellite data has not been loaded yet, or we derive it from a user-provided epoch).
+    //
+    // Strategy: when both satellite CSV and observations CSV are available, we assume the
+    // satellite t values are seconds elapsed since obsEpoch.  obsEpoch is taken as the
+    // Unix-ms of the very first ISO timestamp found in the observations file.
+    function currentUnixMs() {
+        if (obsEpoch === null || !times.length) return NaN;
+        return obsEpoch + times[idx] * 1000;
+    }
+
+    // ── Map drawing helpers ──────────────────────────────────────────
     function drawGroundStations() {
         gsLayer.selectAll('*').remove();
         groundStations.forEach(gs => {
@@ -329,6 +442,24 @@
 
     function loadGSFromText(text) { applyGSData(parseGSCSV(text)); }
     function loadEOFromText(text) { applyEOData(parseEOCSV(text)); }
+    // ── Apply observation data ────────────────────────────────────────
+    function loadObsFromText(text) {
+        const parsed = parseObsCSV(text);
+        observations = parsed;
+        // Derive obsEpoch as the minimum start timestamp in the observations.
+        // This means t=0 in satellite data corresponds to the earliest observation start.
+        // If the satellite data is already loaded and has a natural epoch you should adjust
+        // obsEpoch here accordingly; for now we use the minimum start time.
+        if (parsed.length > 0) {
+            const minMs = Math.min(...parsed.map(o => o.startMs));
+            obsEpoch = minMs - (times.length > 0 ? times[0] * 1000 : 0);
+        }
+        const status = document.getElementById('status');
+        status.textContent = status.textContent.replace(/ \| \d+ obs.*/, '') +
+            ' | ' + observations.length + ' observation window(s) loaded.';
+        updateDots();
+        buildLegend(EOzones.length > 0);
+    }
 
     function getBest(pts, t) {
         let best = pts[0], bd = Infinity;
@@ -344,7 +475,7 @@
         dotLayer.selectAll('*').remove();
 
         Object.keys(sats).forEach((name, si) => {
-            if (hiddenSats.has(name)) return; // Skip hidden satellites
+            if (hiddenSats.has(name)) return;
 
             const col = COLORS[si % COLORS.length];
             const best = getBest(sats[name], t);
@@ -370,13 +501,16 @@
                 .attr('fill', 'rgba(255,255,255,0.5)').attr('font-size', '10px').attr('font-family', 'monospace')
                 .text(Math.round(alt) + ' km');
         });
+
+        // Draw observation lines for the current moment
+        drawObservationLines(currentUnixMs());
         updateStats(t);
     }
 
     function drawTracks() {
         trackLayer.selectAll('*').remove();
         Object.keys(sats).forEach((name, si) => {
-            if (hiddenSats.has(name)) return; // Skip hidden satellites
+            if (hiddenSats.has(name)) return;
 
             const col = COLORS[si % COLORS.length];
             const pts = sats[name];
@@ -420,6 +554,9 @@
         if (hasEO) {
             leg.innerHTML += `<span class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#1a2a3a;opacity:0.5;border:1px solid #15b1f9;"></span>EO observation zone</span>`;
         }
+        if (observations.length > 0) {
+            leg.innerHTML += `<span class="legend-item"><span style="display:inline-block;width:18px;height:2px;background:#ffffaa;opacity:0.8;border-top:2px dashed #ffffaa;margin-bottom:3px;"></span>Active observation</span>`;
+        }
     }
 
     function updateStats(t) {
@@ -431,7 +568,6 @@
             const ll = xyz2ll(best.x, best.y, best.z);
             const alt = (Math.sqrt(best.x**2 + best.y**2 + best.z**2) - EARTH_R) / 1000;
             const hidden = hiddenSats.has(name);
-            const eyeSymbol = hidden ? '&#9673;' : '&#9673;'; // always show dot, style handles it
             const card = document.createElement('div');
             card.className = 'stat-card' + (hidden ? ' hidden-sat' : '');
             card.title = hidden ? 'Click to show ' + name : 'Click to hide ' + name;
@@ -444,11 +580,7 @@
                 <div class="row">Lat <span class="val">${ll[1].toFixed(2)}°</span> &nbsp;Lon <span class="val">${ll[0].toFixed(2)}°</span></div>
                 <div class="row">Alt <span class="val">${Math.round(alt)} km</span></div>`;
             card.addEventListener('click', () => {
-                if (hiddenSats.has(name)) {
-                    hiddenSats.delete(name);
-                } else {
-                    hiddenSats.add(name);
-                }
+                if (hiddenSats.has(name)) { hiddenSats.delete(name); } else { hiddenSats.add(name); }
                 drawTracks();
                 updateDots();
                 buildLegend(EOzones.length > 0);
@@ -462,11 +594,17 @@
         times = parsed.times;
         idx = 0;
         hiddenSats.clear();
+        // Re-compute obsEpoch when new satellite data is loaded
+        if (observations.length > 0) {
+            const minMs = Math.min(...observations.map(o => o.startMs));
+            obsEpoch = minMs - times[0] * 1000;
+        }
         const sl = document.getElementById('tSlider');
         sl.min = 0; sl.max = times.length - 1; sl.value = 0;
         document.getElementById('status').textContent =
-            Object.keys(sats).length + ' satellite(s), ' + times.length + ' time steps loaded.';
-        buildLegend(false);
+            Object.keys(sats).length + ' satellite(s), ' + times.length + ' time steps loaded.' +
+            (observations.length ? ' | ' + observations.length + ' observation window(s) loaded.' : '');
+        buildLegend(EOzones.length > 0);
         drawTracks();
         updateDots();
     }
@@ -502,6 +640,7 @@
         eoLayer    = svg.append('g');
         trackLayer = svg.append('g');
         gsLayer    = svg.append('g');
+        obsLayer   = svg.append('g');   // observation lines — above GS, below dots
         dotLayer   = svg.append('g');
 
         d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
@@ -523,6 +662,7 @@
         initMap();
     }
 
+    // ── Event listeners ──────────────────────────────────────────────
     document.getElementById('tSlider').addEventListener('input', e => {
         idx = parseInt(e.target.value); updateDots();
     });
@@ -559,6 +699,14 @@
         r.onload = ev => { loadEOFromText(ev.target.result); };
         r.readAsText(f);
     });
+    document.getElementById('uploadObsBtn').addEventListener('click', () => document.getElementById('obsFile').click());
+    document.getElementById('obsFile').addEventListener('change', e => {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = ev => { loadObsFromText(ev.target.result); };
+        r.readAsText(f);
+    });
+
     window.addEventListener('resize', () => {
         const wait = setInterval(() => {
             if (!window.mapInitialized) return;
@@ -574,11 +722,6 @@
     initMap();
 
     // ── Folder Explorer ──────────────────────────────────────────────
-    // Java populates the tree via: window.populateExplorer(jsonString)
-    // JSON format: [ { folder: "real_sat", path: "/abs/path/to/folder", files: ["a.csv","b.csv"] }, ... ]
-    // On load, JS calls: window.javaBridge.loadSatCSV(absoluteFilePath)
-    // Java then reads the file and calls: window.receiveCSVContent(csvString)
-
     let explorerSelected = null;
     let explorerData = [];
 
@@ -637,6 +780,11 @@
     window.receiveCSVContent = function(content) {
         applyData(parseCSV(content));
     };
+
+    // Java bridge hooks for observations & EO areas (call from Java side if needed)
+    window.receiveObsCSVContent = function(content) { loadObsFromText(content); };
+    window.receiveEOCSVContent  = function(content) { loadEOFromText(content); };
+    window.receiveObsCSVContent  = function(content) { loadObsFromText(content); };
 
     setTimeout(() => {
         if (explorerData.length === 0) {

@@ -18,6 +18,10 @@ public class Satellite extends Orbiting_object {
     private List<SpacecraftState> liste_state_propa= new ArrayList<>();
     private  Map<String, Map<AbsoluteDate,Double>> map_pourcentage_collision= new LinkedHashMap<>();
     private String motor_name="Moteur_1";
+    //Parametre EO
+    private String currently_observing=null;
+    private Vector3D boresight = new Vector3D(0,0,1);
+    private double agility = Math.toRadians(60); // Capability of the satellite to look of Nadir to point
 
     // Parametres satellite
     private double area=2;    // m^2
@@ -26,9 +30,6 @@ public class Satellite extends Orbiting_object {
     private final double srpCoeff;
     private Map<String,AntennaParameters> map_parametres_antennes=new LinkedHashMap<>();
     private double puissance_amplificateur;
-    private Vector3D boresight = new Vector3D(0,0,1);
-    private double agility = Math.toRadians(30); // Capability of the satellite to look of Nadir to point
-
     private Satellite(Builder builder) {
         super(builder);  // Initialize parent with its Builder
         this.motor_name = builder.motor_name;
@@ -55,6 +56,14 @@ public class Satellite extends Orbiting_object {
             }
         }
         return false;
+    }
+
+    public String isCurrently_observing() {
+        return currently_observing;
+    }
+
+    public void setCurrently_observing(String currently_observing) {
+        this.currently_observing = currently_observing;
     }
 
     public static class Builder extends  Orbiting_object.Builder{
