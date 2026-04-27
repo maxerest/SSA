@@ -36,7 +36,7 @@ public class Ground_station {
         String name;
         double antenna_size;
         double antenna_gain;
-        double teta3dB=2;       //degrees
+        double teta3dB=2;
         double noiseFigureDb = 3.0;
         double noiseBandwidthMhz = 50.0;
         double temperatureK = 290.0;
@@ -83,7 +83,7 @@ public class Ground_station {
     }
     // Call this method at program initialization to load ground stations from CSV within the public static list liste_GS
     public static void loadStationsFromCSV() {
-        String filename = "src/main/resources/GS_coordinates.csv";
+        String filename = "src/main/resources/Satcom/GS_coordinates.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             String line;
             boolean firstLine = true;
@@ -236,21 +236,6 @@ public class Ground_station {
 
         return pvG;
     }
-    public static void satcom_station_link(NumericalPropagator propagator){
-        final double maxcheck  = 60.0;
-        final double threshold =  0.001;
-        for (GroundStation_physical GS : liste_GS ){
-             final EventDetector station_visibility =
-                     new ElevationDetector(maxcheck, threshold, GS.getBaseFrame())
-                             .withConstantElevation(Parametres.elevation)
-                             .withHandler((s, d, increasing) -> {
 
-                                 // Flip the boolean inside the map for the satellite and ground stations combo showing visibility or not
-                                 GS.map_visibility_from_sat.put(s,increasing);
-                                 return Action.CONTINUE;
-                             });
-             propagator.addEventDetector(station_visibility);
-        }
-    }
 
-   }
+}

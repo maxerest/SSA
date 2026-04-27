@@ -30,67 +30,8 @@ import java.util.*;
 public class Handlers {
     public static Map<String, Map<String,Integer>>Map_sat_visi_per_zone = new HashMap<>();
     public static Map<String, Map<String, Map<Integer,AbsoluteDate>>> Map_sat_area_entryDate = new HashMap<>();
-    // Calculation of the angle from the satellite to the ground station once it is detected
 
-    public static class SlewComputingHandler implements EventHandler {
-        private final Frame inertialFrame;
-        private final TopocentricFrame stationFrame;
-        private final String station_name;
-        private final List<SpacecraftState> list_spacecraftStates;  // <-- added
-
-        public SlewComputingHandler(Frame inertialFrame,
-                                    TopocentricFrame stationFrame,
-                                    String station_name,
-                                    List<SpacecraftState> list_spacecraftStates) {  // <-- added
-            this.inertialFrame   = inertialFrame;
-            this.stationFrame    = stationFrame;
-            this.station_name    = station_name;
-            this.list_spacecraftStates  = list_spacecraftStates;
-        }
-
-        @Override
-        public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
-            if (!increasing) return Action.CONTINUE;
-
-            // Look up the enriched state (which has "angle" attached) closest to this event date
-            SpacecraftState currentstate = list_spacecraftStates.stream()
-                    .min(Comparator.comparingDouble(st ->
-                            Math.abs(st.getDate().durationFrom(s.getDate()))))
-                    .orElse(s);  // fallback to raw state if list is empty
-
-            Vector3D boresightInBody= (Vector3D) currentstate.getAdditionalData("Boresight");
-            System.out.println(boresightInBody);
-            Attitude attitude = currentstate.getAttitude();
-            Vector3D boresightInertial = attitude.getRotation()
-                    .applyInverseTo(boresightInBody);
-
-            Vector3D satPosition = currentstate.getPosition(inertialFrame);
-
-            Transform bodyToInertial = stationFrame.getParentShape()
-                    .getBodyFrame()
-                    .getTransformTo(inertialFrame, currentstate.getDate());
-
-            Vector3D stationInertial = bodyToInertial.transformPosition(
-                    stationFrame.getCartesianPoint());
-
-            Vector3D toStation = stationInertial
-                    .subtract(satPosition)
-                    .normalize();
-
-            double slewAngleRad = Vector3D.angle(boresightInertial, toStation);
-            double slewAngleDeg = Math.toDegrees(slewAngleRad);
-
-            Vector3D slewAxis = Vector3D.crossProduct(boresightInertial, toStation);
-            if (slewAxis.getNorm() > 1e-10) {
-                slewAxis = slewAxis.normalize();
-            }
-
-            System.out.println("Slew to " + station_name
-                    + " | angle: " + slewAngleDeg + "° | axis: " + slewAxis);
-
-            return Action.CONTINUE;
-        }
-    }
+    //Step handler for the numerical propagator used in all propagation.
     public static class step_handler implements OrekitFixedStepHandler {
         private final Satellite p;
         private final String type_propa;
@@ -100,7 +41,7 @@ public class Handlers {
         }
 
         public void handleStep(SpacecraftState currentState) {
-            // add the needed information to SpacecraftState for EO observation
+            // CHECK IF CAN BE DELETED add the needed information to SpacecraftState for EO observation
             SpacecraftState updated_currentState= currentState.addAdditionalData("Boresight",p.getBoresight()).addAdditionalData("name",p.get_Name()).addAdditionalData("agility",p.getAgility());
             p.add_state(updated_currentState);
 
@@ -108,11 +49,12 @@ public class Handlers {
             Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
             Vector3D pos =updated_currentState.getPVCoordinates(itrf).getPosition();
             //Vector3D pos =updated_currentState.getPVCoordinates().getPosition();
+
             //For each ground station visible during this propagation step, calculate the link budget between the GS and the sat
             if (Ground_station.satcom_activated){
                 List<Ground_station.GroundStation_physical> list_GS_visible=Ground_station.get_list_visible_GS(updated_currentState);
                 for (Ground_station.GroundStation_physical GS:list_GS_visible ){
-                    System.out.println(GS.getName()+" - Budget link at time "+updated_currentState.getDate().toString() +" : "+ Satcom.calculate_budget_link(GS,p));
+                    //System.out.println(GS.getName()+" - Budget link at time "+updated_currentState.getDate().toString() +" : "+ Satcom.calculate_budget_link(GS,p));
                 }
             };
             Visulations.update_CSV_xyz_realsat(type_propa,p.get_Name(),pos,updated_currentState.getDate(),trigger,Ground_station.hasVisibleStations(updated_currentState,updated_currentState.getDate()), Optional.ofNullable(Ground_station.which_station_visible(updated_currentState, updated_currentState.getDate()))
@@ -231,6 +173,30 @@ public class Handlers {
             }
 
             return Action.CONTINUE;
+        }
+    }
+    public static class satcom_handler implements EventHandler{
+        private AbsoluteDate start_date= null;
+        private Satellite sat;
+        private String GS_name;
+        public satcom_handler(Satellite sat, String GS_name) {
+            this.sat = sat;
+            this.GS_name = GS_name;
+        }
+        @Override
+        public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
+            if (increasing) {
+                if (start_date == null) start_date=s.getDate();
+                return Action.CONTINUE;
+            }else{
+                if (start_date != null){
+                double duration = s.getDate().durationFrom(start_date);
+                Visulations.export_satcom_to_csv(GS_name,start_date, s.getDate(), duration, sat.get_Name());
+                start_date=null;
+                }
+                return Action.CONTINUE;
+            }
+
         }
     }
 }

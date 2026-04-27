@@ -202,6 +202,7 @@
     let groundStations = [];
     let EOzones = [];
     let observations = [];   // parsed observation windows
+    let satcom_links=[];
     let svg, projection, pathGen, W, H;
     let dotLayer, trackLayer, gsLayer, eoLayer, obsLayer;
     let speedMultiplier = 1.0;
@@ -256,7 +257,31 @@
         }
         return out;
     }
-
+    function parseSATCOMcsv(text){
+        const lines = text.trim().split('\n');
+        const h = lines[0].split(',').map(s => s.trim());
+        const iZone  = h.indexOf('GS_name');
+        const iStart = h.indexOf('start_time');
+        const iEnd   = h.indexOf('end_time');
+        const iSat   = h.indexOf('name_sat_doing_observation');
+        if (iZone < 0 || iStart < 0 || iEnd < 0 || iSat < 0) {
+            console.warn('GS CSV: missing expected columns', h);
+            return [];
+        }
+        const out = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const c = lines[i].split(',');
+            const zone  = c[iZone]?.trim();
+            const satName = c[iSat]?.trim();
+            // Truncate sub-second precision to what Date.parse can handle (ms only)
+            const startMs = isoToMs(c[iStart]?.trim());
+            const endMs   = isoToMs(c[iEnd]?.trim());
+            if (!zone || !satName || isNaN(startMs) || isNaN(endMs)) continue;
+            out.push({ zone, satName, startMs, endMs });
+        }
+        return out;
+    }
     // ── EO-area CSV ──────────────────────────────────────────────────
     function parseEOCSV(text) {
         const lines = text.trim().split('\n');
@@ -327,18 +352,20 @@
 
     // ── Zone centroid lookup ─────────────────────────────────────────
     function getZoneCentroid(zoneName) {
-        const z = EOzones.find(z => z.name === zoneName);
-        return z ? z.centroid : null;
+        const gs = groundStations.find(g => g.name === zoneName);
+        if (gs) return [gs.lon, gs.lat];
+        const eo = EOzones.find(z => z.name === zoneName);
+        return eo ? eo.centroid : null;
     }
 
     // ── Draw observation lines ───────────────────────────────────────
     // Called every frame; draws a light-yellow dashed line from the satellite
     // to the centroid of its observed zone for every active observation window.
-    function drawObservationLines(currentUnixMs) {
+    function drawLinksLines(currentUnixMs) {
         obsLayer.selectAll('*').remove();
-        if (!observations.length || !EOzones.length) return;
+        if (!satcom_links.length ) return;
 
-        observations.forEach(obs => {
+        satcom_links.forEach(obs => {
             if (currentUnixMs < obs.startMs || currentUnixMs > obs.endMs) return;
             if (hiddenSats.has(obs.satName)) return;
             if (!sats[obs.satName]) return;
@@ -442,6 +469,15 @@
 
     function loadGSFromText(text) { applyGSData(parseGSCSV(text)); }
     function loadEOFromText(text) { applyEOData(parseEOCSV(text)); }
+    function loadSATCOMFromText(text) { applySATCOMData(text);}
+    //- Apply SATCOM observations
+    function applySATCOMData(text){
+        satcom_links = parseSATCOMcsv(text);
+        const status = document.getElementById('status');
+        status.textContent = status.textContent.replace(/ \| \d+ links.*/, '') +
+            ' | ' + satcom_links.length + ' links  loaded.';
+        updateDots();
+    }
     // ── Apply observation data ────────────────────────────────────────
     function loadObsFromText(text) {
         const parsed = parseObsCSV(text);
@@ -539,6 +575,11 @@
                 currentMs >= obs.startMs &&
                 currentMs <= obs.endMs
             );
+            const isLinked = !isNaN(currentMs) && satcom_links.some(link =>
+                link.satName === name &&
+                currentMs >= link.startMs &&
+                currentMs <= link.endMs
+            );
 
             const dotColor = isObserving ? '#00e676' : col; // bright green when observing
 
@@ -570,7 +611,7 @@
                 .text(Math.round(alt) + ' km');
         });
 
-        drawObservationLines(currentMs);
+        drawLinksLines(currentMs);
         updateStats(t);
     }
 
@@ -795,9 +836,10 @@
     // Java bridge hooks for observations & EO areas (call from Java side if needed)
     window.receiveObsCSVContent = function(content) { loadObsFromText(content); };
     window.receiveEOCSVContent  = function(content) { loadEOFromText(content); };
+    window.receiveSATCOMCSVContent  = function(content) { loadSATCOMFromText(content); };
+
     function setSimulationEpoch(isoDateString) {
         obsEpoch = new Date(isoDateString).getTime(); // converts to Unix ms
-        console.log("Simulation epoch set to: " + isoDateString + " = " + obsEpoch + " ms");
     }
     setTimeout(() => {
         if (explorerData.length === 0) {

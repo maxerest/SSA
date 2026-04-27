@@ -394,7 +394,29 @@ public class Visulations {
             e.printStackTrace();
         }
     }
+    public static void init_satcom_csv() {
+        String filename = "src/main/resources/Satcom/satcom_link.csv";
+        try (FileWriter fw = new FileWriter(filename, false);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            bw.write("GS_name,start_time,end_time,duration_s,name_sat_doing_observation");
+            bw.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void export_satcom_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration, String sat_name ) {
 
+        String filename = "src/main/resources/Satcom/satcom_link.csv";
+        try (FileWriter fw = new FileWriter(filename, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+
+            bw.write(name + "," + start.toString() + "," + end.toString() + "," + duration+ "," + sat_name);
+            bw.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     public static void Python_EO_detection(){
         // Build up the full command
         List<String> cmd = new ArrayList<>();

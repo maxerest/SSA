@@ -39,8 +39,8 @@ public class App
         boolean py_3d_visualizations=false;
         boolean py_graphs_visualizations=false;
         boolean check_collision = false;
-        boolean satcom_gs_communication =false;
-        boolean EO_detection=true;
+        boolean satcom_gs_communication =true;
+        boolean EO_detection=false;
         boolean python_map = true;
         int nb_sat =1;
         //Recuperation des données Orekit à FAIRE EN PREMIER
@@ -63,6 +63,7 @@ public class App
         if (propagate_real_orbit){
             if (satcom_gs_communication){
                 Ground_station.satcom_activated=true;
+                Visulations.init_satcom_csv();
             }
             if (EO_detection){
                 new EO_detection();

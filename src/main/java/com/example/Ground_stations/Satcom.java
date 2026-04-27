@@ -1,7 +1,13 @@
 package com.example.Ground_stations;
 
+import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Orbiting_object.Satellite;
+import com.example.Parametres;
+import org.hipparchus.ode.events.Action;
 import org.orekit.propagation.SpacecraftState;
+import org.orekit.propagation.events.ElevationDetector;
+import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.numerical.NumericalPropagator;
 
 import java.util.Map;
 import java.util.Set;
@@ -160,6 +166,17 @@ public class Satcom {
         // Get all available modulation types
         public Set<String> getAvailableModulations() {
             return MODULATION_BER_TABLE.keySet();
+        }
+    }
+    public static void satcom_station_link(NumericalPropagator propagator, Satellite sat){
+        final double maxcheck  = 60.0;
+        final double threshold =  0.001;
+        for (Ground_station.GroundStation_physical GS : Ground_station.liste_GS  ){
+            final EventDetector station_visibility =
+                    new ElevationDetector(maxcheck, threshold, GS.getBaseFrame())
+                            .withConstantElevation(Parametres.elevation)
+                            .withHandler(new Handlers.satcom_handler(sat, GS.name));
+            propagator.addEventDetector(station_visibility);
         }
     }
 }

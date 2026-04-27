@@ -117,7 +117,7 @@ public class Propagator_1
         //Ajout des forces au propagateur
         Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
         // If satcom activated, we start the sequence to deal with everything linked
-        if (Ground_station.satcom_activated) Ground_station.satcom_station_link(propagator);
+        if (Ground_station.satcom_activated) Satcom.satcom_station_link(propagator,satellite);
         SpacecraftState initialState = satellite.get_s_initialState().addAdditionalData("Boresight", satellite.getBoresight());
         satellite.add_state(initialState);
         Handlers.step_handler stepHandler = new Handlers.step_handler(type_propa, satellite);

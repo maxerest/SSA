@@ -20,14 +20,16 @@ public class Satellite extends Orbiting_object {
     private String motor_name="Moteur_1";
     //Parametre EO
     private String currently_observing=null;
-    private Vector3D boresight = new Vector3D(0,0,1);
-    private double agility = Math.toRadians(60); // Capability of the satellite to look of Nadir to point
+    private final Vector3D boresight = new Vector3D(0,0,1);
+    private final double agility = Math.toRadians(60); // Capability of the satellite to look of Nadir to point
 
     // Parametres satellite
     private double area=2;    // m^2
     private double cd=0.85 ;
     private final double srpCrossSection;   // m²
     private final double srpCoeff;
+
+    // Parametres antennes
     private Map<String,AntennaParameters> map_parametres_antennes=new LinkedHashMap<>();
     private double puissance_amplificateur;
     private Satellite(Builder builder) {

@@ -1,5 +1,7 @@
 package com.example.View;
 import com.example.Ground_stations.EO_detection;
+import com.example.Ground_stations.Ground_station;
+import com.example.Ground_stations.Satcom;
 import com.example.Parametres;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -22,7 +24,11 @@ public class SatelliteTrackerUI extends Application {
 
     // Root folder containing subfolders of CSV exports
     private static final String CSV_ROOT = "src/main/resources/CSV_exports";
-
+    public static class JavaConsole {
+        public void log(String msg)   { System.out.println("[JS] " + msg); }
+        public void warn(String msg)  { System.out.println("[JS WARN] " + msg); }
+        public void error(String msg) { System.err.println("[JS ERR] " + msg); }
+    }
     @Override
     public void start(Stage stage) {
         WebView webView = new WebView();
@@ -40,6 +46,12 @@ public class SatelliteTrackerUI extends Application {
             // 1. Register the Java bridge on window
             JSObject window = (JSObject) engine.executeScript("window");
             window.setMember("javaBridge", bridge);
+            window.setMember("javaConsole", new JavaConsole());
+            engine.executeScript(
+                    "console.log = function(m){ javaConsole.log(String(m)); };" +
+                            "console.warn = function(m){ javaConsole.warn(String(m)); };" +
+                            "console.error = function(m){ javaConsole.error(String(m)); };"
+            );
 
             // 2. Scan CSV_exports folder tree and send it to the explorer
             injectFolderTree(engine);
@@ -52,7 +64,7 @@ public class SatelliteTrackerUI extends Application {
                         String startDateIso = Parametres.date_orekit.toString();
                         engine.executeScript("setSimulationEpoch('" + startDateIso + "');");
 
-                        String gsPath = Paths.get("src/main/resources/GS_coordinates.csv")
+                        String gsPath = Paths.get("src/main/resources/Satcom/GS_coordinates.csv")
                                 .toAbsolutePath().toString();
                         String gsContent = new String(Files.readAllBytes(Paths.get(gsPath)));
                         gsContent = gsContent.replace("\\", "\\\\").replace("`", "\\`");
@@ -73,6 +85,16 @@ public class SatelliteTrackerUI extends Application {
                             engine.executeScript("loadObsFromText(`" + OBSContent + "`);");
 
                         }
+                        if (Ground_station.satcom_activated) {
+                            //Coordinates to observe
+                            String SATCOMPath = Paths.get("src/main/resources/Satcom/satcom_link.csv")
+                                    .toAbsolutePath().toString();
+                            String SATCOMContent = new String(Files.readAllBytes(Paths.get(SATCOMPath)));
+                            SATCOMContent = SATCOMContent.replace("\\", "\\\\").replace("`", "\\`");
+                            engine.executeScript("loadSATCOMFromText(`" + SATCOMContent + "`);");
+
+                        }
+
                     } catch (Exception e) {
                         System.err.println("Error loading GS/EO data: " + e.getMessage());
                     }

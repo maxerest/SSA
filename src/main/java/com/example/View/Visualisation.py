@@ -66,7 +66,7 @@ def select_csv_file():
     return "src/main/java/com/example/View/TLE.csv"
 
 def select_gs_csv_file():
-    return "src/main/resources/GS_coordinates.csv"
+    return "src/main/resources/Satcom/GS_coordinates.csv"
 
 # ---------------------------------------------------------------------------
 # Initialize
