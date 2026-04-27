@@ -1,5 +1,6 @@
 package com.example.View;
 import com.example.Ground_stations.EO_detection;
+import com.example.Parametres;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
@@ -48,6 +49,9 @@ public class SatelliteTrackerUI extends Application {
                 waitForMap(engine);
                 Platform.runLater(() -> {
                     try {
+                        String startDateIso = Parametres.date_orekit.toString();
+                        engine.executeScript("setSimulationEpoch('" + startDateIso + "');");
+
                         String gsPath = Paths.get("src/main/resources/GS_coordinates.csv")
                                 .toAbsolutePath().toString();
                         String gsContent = new String(Files.readAllBytes(Paths.get(gsPath)));

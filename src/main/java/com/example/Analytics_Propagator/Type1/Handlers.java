@@ -18,19 +18,20 @@ import org.orekit.frames.TopocentricFrame;
 import org.orekit.frames.Transform;
 import org.orekit.geometry.fov.FieldOfView;
 import org.orekit.propagation.SpacecraftState;
-import org.orekit.propagation.events.BooleanDetector;
-import org.orekit.propagation.events.ElevationDetector;
-import org.orekit.propagation.events.EventDetector;
-import org.orekit.propagation.events.FieldOfViewDetector;
+import org.orekit.propagation.events.*;
 import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.IERSConventions;
 
+import javax.swing.text.StyledEditorKit;
 import java.util.*;
 
 public class Handlers {
+    public static Map<String, Map<String,Integer>>Map_sat_visi_per_zone = new HashMap<>();
+    public static Map<String, Map<String, Map<Integer,AbsoluteDate>>> Map_sat_area_entryDate = new HashMap<>();
     // Calculation of the angle from the satellite to the ground station once it is detected
+
     public static class SlewComputingHandler implements EventHandler {
         private final Frame inertialFrame;
         private final TopocentricFrame stationFrame;
@@ -121,43 +122,27 @@ public class Handlers {
         }
 
     }
-    public static class ZoneObservationContext {
 
-        public final Map<Integer, AbsoluteDate> pointEntryTimes = new HashMap<>();
-        public final Set<Integer> visiblePoints = new HashSet<>();
-
-        public AbsoluteDate currentWindowStart = null;
-
-        public void resetPass() {
-            pointEntryTimes.clear();
-            visiblePoints.clear();
-            currentWindowStart = null;
-        }
-    }
     public static EventDetector buildAreaRevisitDetector(
             TopocentricFrame tcf,
             FieldOfView fov,
             double maxCheckingInterval,
             String name,
             int pointIndex,
-            ZoneObservationContext context,
             Satellite sat,
             Frame inertialFrame) {
 
         final FieldOfViewDetector fd = new FieldOfViewDetector(tcf, fov);
-        final ElevationDetector ed = new ElevationDetector(tcf).withConstantElevation(Parametres.elevation);
+        final ElevationDetector ed = new ElevationDetector(tcf)
+                .withConstantElevation(Parametres.elevation);
 
-        return BooleanDetector.andCombine(
-                        ed,
-                        BooleanDetector.notCombine(fd)
-                )
+        return BooleanDetector.andCombine(ed, BooleanDetector.notCombine(fd))
                 .withMaxCheck(maxCheckingInterval)
                 .withHandler(new Area_revisit_Handler(
                         name,
                         sat,
                         inertialFrame,
-                        pointIndex,
-                        context
+                        pointIndex
                 ));
     }
     public static class Area_revisit_Handler implements EventHandler {
@@ -166,27 +151,37 @@ public class Handlers {
         private final Satellite sat;
         private final Frame inertialFrame;
         private final int pointIndex;
-        private final ZoneObservationContext context;
+        private final List<SpacecraftState> states;
 
         public Area_revisit_Handler(
                 String name,
                 Satellite sat,
-                Frame inertialFrame,
-                int pointIndex,
-                ZoneObservationContext context) {
-
+                Frame inertialFrame,int pointIndex
+) {
             this.name = name;
             this.sat = sat;
             this.inertialFrame = inertialFrame;
             this.pointIndex = pointIndex;
-            this.context = context;
+            states=sat.get_liste_state_propa();
+
+            // Initialize visibility counter
+            Map_sat_visi_per_zone
+                    .computeIfAbsent(sat.get_Name(), k -> new HashMap<>())
+                    .put(name, 0);
+
+            // Initialize entry date map
+            Map_sat_area_entryDate
+                    .computeIfAbsent(sat.get_Name(), k -> new HashMap<>())
+                    .computeIfAbsent(name, k -> new HashMap<>());
         }
 
         private int getTotalPoints() {
-            return EO_detection.Map_area_positions.get(name).size();
+            return 1;
+            //return EO_detection.Map_area_positions.get(name).size();
         }
 
         @Override
+
         public Action eventOccurred(
                 SpacecraftState s,
                 EventDetector detector,
@@ -196,46 +191,43 @@ public class Handlers {
             int total = getTotalPoints();
 
             if (increasing) {
-                // Point enters FOV
-                context.visiblePoints.add(pointIndex);
-                context.pointEntryTimes.put(pointIndex, date);
-
-                // Full area just became visible
-                if (context.visiblePoints.size() == total
-                        && context.currentWindowStart == null) {
-
-                    context.currentWindowStart = context.pointEntryTimes.values()
-                            .stream()
-                            .max(Comparator.naturalOrder())
-                            .orElse(date);
-
-                    sat.setCurrently_observing(name);
+                if (!sat.isCurrently_observing().equals(name) && sat.isCurrently_observing() != null) {
+                    return Action.CONTINUE;
                 }
+                sat.setCurrently_observing(name);
+                // Store this point's entry date
+                Map_sat_area_entryDate.get(sat.get_Name()).get(name).put(pointIndex, date);
+
+                // Increment visible count
+                int count = Map_sat_visi_per_zone.get(sat.get_Name()).getOrDefault(name, 0) + 1;
+                Map_sat_visi_per_zone.get(sat.get_Name()).put(name, count);
 
             } else {
-                // Point exits FOV
+                int count = Map_sat_visi_per_zone.get(sat.get_Name()).getOrDefault(name, 0);
 
-                // If full area was visible, this exit ends the observation
-                if (context.currentWindowStart != null) {
-                    AbsoluteDate windowEnd = date;
-                    double duration = windowEnd.durationFrom(context.currentWindowStart);
+                if (count == total) {
+                    // All points were visible — valid access, record it
+                    AbsoluteDate startDate = Map_sat_area_entryDate.get(sat.get_Name()).get(name)
+                            .values().stream()
+                            .max(Comparator.comparingDouble(d -> d.durationFrom(Parametres.date_orekit)))
+                            .orElse(null);
 
-                    if (duration > 0) {
+                    if (startDate != null) {
+                        double duration = date.durationFrom(startDate);
                         Visulations.export_observation_to_csv(
-                                name,
-                                context.currentWindowStart,
-                                windowEnd,
-                                duration,
-                                sat.get_Name()
-                        );
+                                name, startDate, date, duration, sat.get_Name());
                     }
-
-                    sat.setCurrently_observing(null);
-                    context.currentWindowStart = null;
                 }
 
-                context.visiblePoints.remove(pointIndex);
-                context.pointEntryTimes.remove(pointIndex);
+                // Always decrement and clean up on any exit
+                Map_sat_visi_per_zone.get(sat.get_Name()).put(name, count - 1);
+
+                // Reset fully when last point exits
+                if (count - 1 == 0) {
+                    Map_sat_area_entryDate.get(sat.get_Name()).get(name).clear();
+                    sat.setCurrently_observing(null);
+                    Map_sat_visi_per_zone.get(sat.get_Name()).put(name, 0);
+                }
             }
 
             return Action.CONTINUE;

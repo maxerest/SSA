@@ -31,15 +31,15 @@ public class EO_detection {
     public static boolean EO_detection=true; // false on default but gets change if needed from main
     public static Map<String, List<TreeMap<AbsoluteDate,AbsoluteDate>>> Map_area_history = new HashMap<>();
     public static Map<String,List<GeodeticPoint>> Map_area_positions = new HashMap<>();
+
     public EO_detection() {
         init_observable_zones();
 
     }
     public static void EO_usage_detection(NumericalPropagator propagator, Satellite sat) {
         for (String name : Map_area_positions.keySet()) {
-            Handlers.ZoneObservationContext context = new Handlers.ZoneObservationContext();
             int i = 0;
-            final double viewAngle = 15.0;
+            final double viewAngle =20.0;
 
             final FieldOfView fov = new DoubleDihedraFieldOfView(
                     Vector3D.PLUS_K,
@@ -47,19 +47,12 @@ public class EO_detection {
                     Vector3D.PLUS_J, FastMath.toRadians(viewAngle / 2.0),
                     0.0
             );
+
             for (GeodeticPoint point : Map_area_positions.get(name)) {
+
                 TopocentricFrame tcf = new TopocentricFrame(Parametres.earth, point, name + "_" + i);
 
-                EventDetector detector = Handlers.buildAreaRevisitDetector(
-                        tcf,
-                        fov,
-                        60.0,
-                        name,
-                        i,
-                        context,
-                        sat,
-                        Parametres.frame
-                );
+                EventDetector detector = Handlers.buildAreaRevisitDetector(tcf,fov,60.0,name,i,sat,Parametres.frame);
 
                 propagator.addEventDetector(detector);
                 i++;

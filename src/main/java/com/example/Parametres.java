@@ -19,7 +19,7 @@ public class Parametres
     public String nom_sat;
     //Gestion temps
     public static AbsoluteDate date_orekit = new AbsoluteDate(new Date(), TimeScalesFactory.getUTC());
-    public static double duration =Constants.JULIAN_DAY*10; //Constants.JULIAN_DAY;
+    public static double duration =Constants.JULIAN_DAY; //Constants.JULIAN_DAY;
 
     // définition de la Terre
     public static Frame frame = FramesFactory.getEME2000();
@@ -27,9 +27,9 @@ public class Parametres
     public static BodyShape earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,Constants.WGS84_EARTH_FLATTENING,FramesFactory.getITRF(IERSConventions.IERS_2010, true));
     
     // Ground Station elevation limit
-    public static double elevation =  FastMath.toRadians(0.0);
+    public static double elevation =  FastMath.toRadians(10.0);
   
-    //Seul de detection altitude
+    //Seuil de detection altitude
     public Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS +100000e3;
     
 }

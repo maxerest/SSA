@@ -118,9 +118,9 @@ public class App
             liste_par_sats.add(new Satellite.Builder()
                     .nom_sat("EO_Sat_1")
                     .mass(800)
-                    .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 5000000)
+                    .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 500000)
                     .eccentricity(0.001)
-                    .inclinaison(Math.toRadians(97.4))       // sun-synchronous
+                    .inclinaison(Math.toRadians(87.4))       // sun-synchronous
                     .long_noeud_ascendant(Math.toRadians(0))
                     .arg_periastre(Math.toRadians(0))
                     .anomalie(Math.toRadians(0))

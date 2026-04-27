@@ -450,10 +450,7 @@
         // This means t=0 in satellite data corresponds to the earliest observation start.
         // If the satellite data is already loaded and has a natural epoch you should adjust
         // obsEpoch here accordingly; for now we use the minimum start time.
-        if (parsed.length > 0) {
-            const minMs = Math.min(...parsed.map(o => o.startMs));
-            obsEpoch = minMs - (times.length > 0 ? times[0] * 1000 : 0);
-        }
+
         const status = document.getElementById('status');
         status.textContent = status.textContent.replace(/ \| \d+ obs.*/, '') +
             ' | ' + observations.length + ' observation window(s) loaded.';
@@ -465,46 +462,6 @@
         let best = pts[0], bd = Infinity;
         pts.forEach(p => { const d = Math.abs(p.t - t); if (d < bd) { bd = d; best = p; } });
         return best;
-    }
-
-    function updateDots() {
-        if (!times.length) return;
-        const t = times[idx];
-        document.getElementById('tLabel').textContent = formatSecondsAsTime(t);
-        document.getElementById('tSlider').value = idx;
-        dotLayer.selectAll('*').remove();
-
-        Object.keys(sats).forEach((name, si) => {
-            if (hiddenSats.has(name)) return;
-
-            const col = COLORS[si % COLORS.length];
-            const best = getBest(sats[name], t);
-            const ll = xyz2ll(best.x, best.y, best.z);
-            const pos = projection(ll);
-            if (!pos) return;
-
-            if (best.firing) {
-                dotLayer.append('circle')
-                    .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 11)
-                    .attr('fill', 'none').attr('stroke', '#ffb74d').attr('stroke-width', 2);
-            }
-            dotLayer.append('circle')
-                .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 6)
-                .attr('fill', col).attr('stroke', '#fff').attr('stroke-width', 0.5);
-            dotLayer.append('text')
-                .attr('x', pos[0] + 9).attr('y', pos[1] + 4)
-                .attr('fill', '#ffffff').attr('font-size', '11px').attr('font-family', 'monospace')
-                .text(name);
-            const alt = (Math.sqrt(best.x**2 + best.y**2 + best.z**2) - EARTH_R) / 1000;
-            dotLayer.append('text')
-                .attr('x', pos[0] + 9).attr('y', pos[1] + 15)
-                .attr('fill', 'rgba(255,255,255,0.5)').attr('font-size', '10px').attr('font-family', 'monospace')
-                .text(Math.round(alt) + ' km');
-        });
-
-        // Draw observation lines for the current moment
-        drawObservationLines(currentUnixMs());
-        updateStats(t);
     }
 
     function drawTracks() {
@@ -559,6 +516,64 @@
         }
     }
 
+    function updateDots() {
+        if (!times.length) return;
+        const t = times[idx];
+        const currentMs = currentUnixMs();
+        document.getElementById('tLabel').textContent = formatSecondsAsTime(t);
+        document.getElementById('tSlider').value = idx;
+        dotLayer.selectAll('*').remove();
+
+        Object.keys(sats).forEach((name, si) => {
+            if (hiddenSats.has(name)) return;
+
+            const col = COLORS[si % COLORS.length];
+            const best = getBest(sats[name], t);
+            const ll = xyz2ll(best.x, best.y, best.z);
+            const pos = projection(ll);
+            if (!pos) return;
+
+            // Check if this satellite is actively observing at this moment
+            const isObserving = !isNaN(currentMs) && observations.some(obs =>
+                obs.satName === name &&
+                currentMs >= obs.startMs &&
+                currentMs <= obs.endMs
+            );
+
+            const dotColor = isObserving ? '#00e676' : col; // bright green when observing
+
+            if (best.firing) {
+                dotLayer.append('circle')
+                    .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 11)
+                    .attr('fill', 'none').attr('stroke', '#ffb74d').attr('stroke-width', 2);
+            }
+
+            // Outer glow ring when observing
+            if (isObserving) {
+                dotLayer.append('circle')
+                    .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 10)
+                    .attr('fill', 'none').attr('stroke', '#00e676').attr('stroke-width', 1.5)
+                    .attr('opacity', 0.4);
+            }
+
+            dotLayer.append('circle')
+                .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 6)
+                .attr('fill', dotColor).attr('stroke', '#fff').attr('stroke-width', 0.5);
+            dotLayer.append('text')
+                .attr('x', pos[0] + 9).attr('y', pos[1] + 4)
+                .attr('fill', '#ffffff').attr('font-size', '11px').attr('font-family', 'monospace')
+                .text(name);
+            const alt = (Math.sqrt(best.x**2 + best.y**2 + best.z**2) - EARTH_R) / 1000;
+            dotLayer.append('text')
+                .attr('x', pos[0] + 9).attr('y', pos[1] + 15)
+                .attr('fill', 'rgba(255,255,255,0.5)').attr('font-size', '10px').attr('font-family', 'monospace')
+                .text(Math.round(alt) + ' km');
+        });
+
+        drawObservationLines(currentMs);
+        updateStats(t);
+    }
+
     function updateStats(t) {
         const row = document.getElementById('statsRow');
         row.innerHTML = '';
@@ -595,10 +610,6 @@
         idx = 0;
         hiddenSats.clear();
         // Re-compute obsEpoch when new satellite data is loaded
-        if (observations.length > 0) {
-            const minMs = Math.min(...observations.map(o => o.startMs));
-            obsEpoch = minMs - times[0] * 1000;
-        }
         const sl = document.getElementById('tSlider');
         sl.min = 0; sl.max = times.length - 1; sl.value = 0;
         document.getElementById('status').textContent =
@@ -784,8 +795,10 @@
     // Java bridge hooks for observations & EO areas (call from Java side if needed)
     window.receiveObsCSVContent = function(content) { loadObsFromText(content); };
     window.receiveEOCSVContent  = function(content) { loadEOFromText(content); };
-    window.receiveObsCSVContent  = function(content) { loadObsFromText(content); };
-
+    function setSimulationEpoch(isoDateString) {
+        obsEpoch = new Date(isoDateString).getTime(); // converts to Unix ms
+        console.log("Simulation epoch set to: " + isoDateString + " = " + obsEpoch + " ms");
+    }
     setTimeout(() => {
         if (explorerData.length === 0) {
             document.getElementById('explorerTree').innerHTML =

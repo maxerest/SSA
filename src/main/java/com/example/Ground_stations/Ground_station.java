@@ -41,12 +41,14 @@ public class Ground_station {
         double noiseBandwidthMhz = 50.0;
         double temperatureK = 290.0;
         public Map <SpacecraftState,Boolean> map_visibility_from_sat=new HashMap<>();
+        public GeodeticPoint geo_point;
 
-        public GroundStation_physical(TopocentricFrame baseFrame,String name) {
+        public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point) {
             super(baseFrame);
             this.antenna_gain=10; //dB
             this.antenna_size=10; //m
             this.name=name;
+            this.geo_point=point;
         }
 
         public String getName() {
@@ -101,16 +103,17 @@ public class Ground_station {
                     // Station is deactivated, skip it
                     continue;
                     }
+                GeodeticPoint point= new GeodeticPoint(
+                        FastMath.toRadians(lat),
+                        FastMath.toRadians(lonNorm),
+                        alt
+                );
                 TopocentricFrame station = new TopocentricFrame(
-                        Parametres.earth,
-                        new GeodeticPoint(
-                                FastMath.toRadians(lat),
-                                FastMath.toRadians(lonNorm),
-                                alt
-                        ),
+                        Parametres.earth,point
+                        ,
                         name
                 );
-                GroundStation_physical station_gs = new GroundStation_physical(station,name);
+                GroundStation_physical station_gs = new GroundStation_physical(station,name,point);
                 
                 liste_GS.add(station_gs);
             }
