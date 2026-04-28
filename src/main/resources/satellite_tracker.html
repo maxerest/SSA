@@ -11,6 +11,16 @@
         label { font-size: 13px; color: #888; white-space: nowrap; }
         input[type=range] { flex: 1; min-width: 120px; cursor: pointer; }
         #tLabel { font-size: 13px; font-weight: 500; color: #fff; min-width: 70px; }
+        #datetimeBar {
+            font-size: 11px;
+            color: #4fc3f7;
+            margin-bottom: 4px;
+            letter-spacing: 0.04em;
+            min-height: 15px;
+        }
+        #datetimeBar .epoch-label { color: #445; margin-right: 6px; }
+        #datetimeBar .epoch-val   { color: #4fc3f7; font-weight: 600; }
+        #datetimeBar .no-epoch    { color: #334; font-style: italic; }
         #speedLabel { font-size: 13px; font-weight: 500; color: #fff; min-width: 40px; }
         button { font-size: 12px; padding: 4px 12px; background: transparent; color: #ccc; border: 0.5px solid #444; border-radius: 6px; cursor: pointer; }
         button:hover { background: #1a2a3a; }
@@ -40,6 +50,7 @@
             transition: border-color 0.15s, opacity 0.15s;
             user-select: none;
             flex-shrink: 0;
+            position: relative;
         }
         .stat-card:hover { border-color: rgba(255,255,255,0.2); }
         .stat-card.hidden-sat { opacity: 0.35; border-color: rgba(255,255,255,0.08); }
@@ -49,6 +60,141 @@
         .stat-card .val { color: #fff; }
         .stat-card .eye-icon { margin-left: auto; font-size: 11px; color: #555; }
         .stat-card:not(.hidden-sat) .eye-icon { color: #888; }
+
+        /* Info button on each card */
+        .info-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 6px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #1a3a5a;
+            border: 0.5px solid #2a5a8a;
+            color: #4fc3f7;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: background 0.15s, border-color 0.15s;
+            line-height: 1;
+            padding: 0;
+        }
+        .info-btn:hover {
+            background: #1e5a8a;
+            border-color: #4fc3f7;
+        }
+        .info-btn.has-activity {
+            background: #0a3a1a;
+            border-color: #00e676;
+            color: #00e676;
+        }
+
+        /* Satellite info popup */
+        #satInfoPopup {
+            position: fixed;
+            z-index: 2000;
+            background: #0d1b2a;
+            border: 0.5px solid #2a5a8a;
+            border-radius: 10px;
+            width: 320px;
+            max-height: 420px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+            overflow: hidden;
+            animation: popupIn 0.15s ease;
+        }
+        @keyframes popupIn {
+            from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        #satInfoPopup.hidden { display: none; }
+        #satInfoPopupHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-bottom: 0.5px solid #1a3a5a;
+            background: #0a1520;
+        }
+        #satInfoPopupTitle {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        #satInfoPopupClose {
+            font-size: 14px;
+            color: #556;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        #satInfoPopupClose:hover { color: #aaa; background: none; }
+        #satInfoPopupBody {
+            overflow-y: auto;
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 12px;
+        }
+        #satInfoPopupBody::-webkit-scrollbar { width: 4px; }
+        #satInfoPopupBody::-webkit-scrollbar-thumb { background: #1a3a5a; border-radius: 3px; }
+
+        .info-section-title {
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #4fc3f7;
+            margin: 8px 0 5px;
+            padding-bottom: 3px;
+            border-bottom: 0.5px solid #1a3a5a;
+        }
+        .info-section-title:first-child { margin-top: 0; }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 4px 0;
+            border-bottom: 0.5px solid rgba(255,255,255,0.04);
+            gap: 8px;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .lbl { color: #667; flex-shrink: 0; }
+        .info-row .vl  { color: #ccc; text-align: right; word-break: break-word; }
+        .info-row .vl.active { color: #00e676; font-weight: 600; }
+        .info-row .vl.linked { color: #ffb74d; font-weight: 600; }
+        .info-row .vl.inactive { color: #445; }
+
+        .info-empty {
+            color: #445;
+            font-style: italic;
+            padding: 4px 0;
+            font-size: 11px;
+        }
+
+        .obs-entry {
+            background: #0a2030;
+            border-radius: 5px;
+            padding: 5px 8px;
+            margin-bottom: 5px;
+            border-left: 2px solid #00e676;
+        }
+        .obs-entry.satcom { border-left-color: #ffb74d; }
+        .obs-entry .obs-zone { color: #fff; font-weight: 600; margin-bottom: 2px; }
+        .obs-entry .obs-time { color: #556; font-size: 10px; }
+        .obs-entry .obs-status-active   { color: #00e676; font-size: 10px; font-weight: 600; }
+        .obs-entry .obs-status-upcoming { color: #ffb74d; font-size: 10px; }
+        .obs-entry .obs-status-past     { color: #445;    font-size: 10px; }
+
         #mapDiv { width: 100%; border-radius: 8px; overflow: hidden; border: 0.5px solid rgba(255,255,255,0.15); background: #0d1b2a; }
         #legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px; color: #888; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
@@ -86,15 +232,12 @@
             padding: 6px 10px; outline: none; width: calc(100% - 28px);
         }
         #explorerSearch:focus { border-color: #4fc3f7; }
-        #explorerTree {
-            overflow-y: auto; flex: 1; padding: 6px 0;
-        }
+        #explorerTree { overflow-y: auto; flex: 1; padding: 6px 0; }
         #explorerTree::-webkit-scrollbar { width: 5px; }
         #explorerTree::-webkit-scrollbar-thumb { background: #1a3a5a; border-radius: 3px; }
         .ex-folder {
             display: flex; align-items: center; gap: 7px;
-            padding: 5px 16px; font-size: 12px; color: #7aa; cursor: pointer;
-            user-select: none;
+            padding: 5px 16px; font-size: 12px; color: #7aa; cursor: pointer; user-select: none;
         }
         .ex-folder:hover { background: #112030; }
         .ex-folder .icon { font-size: 12px; color: #4fc3f7; width: 14px; text-align: center; }
@@ -136,6 +279,20 @@
     </div>
 </div>
 
+<!-- Satellite info popup -->
+<div id="satInfoPopup" class="hidden">
+    <div id="satInfoPopupHeader">
+        <div id="satInfoPopupTitle">
+            <span id="satInfoDot" style="width:9px;height:9px;border-radius:50%;display:inline-block;"></span>
+            <span id="satInfoName">—</span>
+        </div>
+        <button id="satInfoPopupClose">✕</button>
+    </div>
+    <div id="satInfoPopupBody"></div>
+</div>
+
+
+<div id="datetimeBar"><span class="no-epoch">No epoch set — load an observations or SATCOM CSV to display simulation date</span></div>
 <div id="controls">
     <label>Time</label>
     <input type="range" id="tSlider" min="0" max="9" value="0" step="1" style="flex:2;" />
@@ -198,20 +355,63 @@
         return hr + ':' + min + ':' + sec;
     }
 
+    function formatMs(ms) {
+        if (isNaN(ms)) return '—';
+        const d = new Date(ms);
+        return d.toISOString().replace('T',' ').substring(0,19);
+    }
+
+    function updateDatetimeBar() {
+        const bar = document.getElementById('datetimeBar');
+        const currentMs = currentUnixMs();
+        if (obsEpoch === null) {
+            bar.innerHTML = '<span class="no-epoch">No epoch set — load an observations or SATCOM CSV to display simulation date</span>';
+            return;
+        }
+        if (isNaN(currentMs)) {
+            bar.innerHTML = '<span class="no-epoch">Epoch set — load satellite CSV to begin</span>';
+            return;
+        }
+        const d = new Date(currentMs);
+        // Format: YYYY-MM-DD HH:MM:SS UTC
+        const iso = d.toISOString(); // e.g. 2026-04-23T16:08:25.000Z
+        const datePart = iso.substring(0, 10);
+        const timePart = iso.substring(11, 19);
+        // Also show elapsed seconds from epoch
+        const elapsedS = Math.round((currentMs - obsEpoch) / 1000);
+        const elH = Math.floor(elapsedS / 3600);
+        const elM = Math.floor((elapsedS % 3600) / 60);
+        const elS = elapsedS % 60;
+        const elapsedStr = `T+${elH}h ${String(elM).padStart(2,'0')}m ${String(elS).padStart(2,'0')}s`;
+        bar.innerHTML =
+            `<span class="epoch-label">SIM DATE</span>` +
+            `<span class="epoch-val">${datePart} &nbsp;${timePart} UTC</span>` +
+            `<span class="epoch-label" style="margin-left:16px;">ELAPSED</span>` +
+            `<span class="epoch-val">${elapsedStr}</span>`;
+    }
+
+    function msToDuration(ms) {
+        const s = Math.round(ms / 1000);
+        if (s < 60)   return s + 's';
+        if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
+        return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
+    }
+
     let sats = {}, times = [], idx = 0, playing = false, timer = null;
     let groundStations = [];
     let EOzones = [];
-    let observations = [];   // parsed observation windows
-    let satcom_links=[];
+    let observations = [];
+    let satcom_links = [];
     let svg, projection, pathGen, W, H;
     let dotLayer, trackLayer, gsLayer, eoLayer, obsLayer;
     let speedMultiplier = 1.0;
     let hiddenSats = new Set();
     window.mapInitialized = false;
 
-    // Reference epoch: the first time-step value is treated as t=0 offset
-    // For satellite data t is in seconds; for observations we compute seconds from the same epoch.
-    let obsEpoch = null;   // Unix ms of t=0 in the satellite timeline
+    let obsEpoch = null;
+
+    // ── Info popup state ─────────────────────────────────────────────
+    let popupSatName = null;
 
     function xyz2ll(x, y, z) {
         const r = Math.sqrt(x*x + y*y + z*z);
@@ -257,7 +457,8 @@
         }
         return out;
     }
-    function parseSATCOMcsv(text){
+
+    function parseSATCOMcsv(text) {
         const lines = text.trim().split('\n');
         const h = lines[0].split(',').map(s => s.trim());
         const iZone  = h.indexOf('GS_name');
@@ -272,9 +473,8 @@
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             const c = lines[i].split(',');
-            const zone  = c[iZone]?.trim();
+            const zone    = c[iZone]?.trim();
             const satName = c[iSat]?.trim();
-            // Truncate sub-second precision to what Date.parse can handle (ms only)
             const startMs = isoToMs(c[iStart]?.trim());
             const endMs   = isoToMs(c[iEnd]?.trim());
             if (!zone || !satName || isNaN(startMs) || isNaN(endMs)) continue;
@@ -282,6 +482,7 @@
         }
         return out;
     }
+
     // ── EO-area CSV ──────────────────────────────────────────────────
     function parseEOCSV(text) {
         const lines = text.trim().split('\n');
@@ -295,14 +496,11 @@
                 const lat = parseFloat(c[j]);
                 const lon = parseFloat(c[j+1]);
                 if (!isNaN(lat) && !isNaN(lon)) {
-                    // Coordinates_area_to_observe uses lon values > 180 (e.g. 270 = -90)
-                    // normalise to [-180, 180]
                     const normLon = ((lon + 180) % 360) - 180;
                     points.push([normLon, lat]);
                 }
             }
             if (name && points.length >= 3) {
-                // Compute centroid for observation-line anchor
                 const cx = points.reduce((s,p) => s + p[0], 0) / points.length;
                 const cy = points.reduce((s,p) => s + p[1], 0) / points.length;
                 out.push({ name, points, centroid: [cx, cy] });
@@ -312,8 +510,6 @@
     }
 
     // ── Observations CSV ─────────────────────────────────────────────
-    // Columns: zone_name, start_time, end_time, duration_s, name_sat_doing_observation
-    // Timestamps are ISO-8601 strings like 2026-04-23T16:08:25.009285247521242112Z
     function parseObsCSV(text) {
         const lines = text.trim().split('\n');
         const h = lines[0].split(',').map(s => s.trim());
@@ -329,9 +525,8 @@
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             const c = lines[i].split(',');
-            const zone  = c[iZone]?.trim();
+            const zone    = c[iZone]?.trim();
             const satName = c[iSat]?.trim();
-            // Truncate sub-second precision to what Date.parse can handle (ms only)
             const startMs = isoToMs(c[iStart]?.trim());
             const endMs   = isoToMs(c[iEnd]?.trim());
             if (!zone || !satName || isNaN(startMs) || isNaN(endMs)) continue;
@@ -340,17 +535,12 @@
         return out;
     }
 
-    // Parse an ISO-8601 string that may have nano/picosecond precision into Unix ms.
-    // JavaScript's Date.parse only handles up to milliseconds, so we trim the fractional
-    // part to 3 digits before parsing.
     function isoToMs(isoStr) {
         if (!isoStr) return NaN;
-        // Replace the fractional seconds part (any length) with at most 3 digits
         const fixed = isoStr.replace(/(\.\d{1,3})\d*/, '$1');
         return Date.parse(fixed);
     }
 
-    // ── Zone centroid lookup ─────────────────────────────────────────
     function getZoneCentroid(zoneName) {
         const gs = groundStations.find(g => g.name === zoneName);
         if (gs) return [gs.lon, gs.lat];
@@ -358,33 +548,23 @@
         return eo ? eo.centroid : null;
     }
 
-    // ── Draw observation lines ───────────────────────────────────────
-    // Called every frame; draws a light-yellow dashed line from the satellite
-    // to the centroid of its observed zone for every active observation window.
     function drawLinksLines(currentUnixMs) {
         obsLayer.selectAll('*').remove();
-        if (!satcom_links.length ) return;
-
+        if (!satcom_links.length) return;
         satcom_links.forEach(obs => {
             if (currentUnixMs < obs.startMs || currentUnixMs > obs.endMs) return;
             if (hiddenSats.has(obs.satName)) return;
             if (!sats[obs.satName]) return;
-
-            // Find current satellite position
             const satPts = sats[obs.satName];
             const t = times[idx];
             const best = getBest(satPts, t);
             const satLL = xyz2ll(best.x, best.y, best.z);
             const satPos = projection(satLL);
             if (!satPos) return;
-
-            // Find zone centroid in projected space
             const centroid = getZoneCentroid(obs.zone);
             if (!centroid) return;
             const zonePos = projection(centroid);
             if (!zonePos) return;
-
-            // Dashed light-yellow line
             obsLayer.append('line')
                 .attr('x1', satPos[0]).attr('y1', satPos[1])
                 .attr('x2', zonePos[0]).attr('y2', zonePos[1])
@@ -392,22 +572,139 @@
                 .attr('stroke-width', 1.4)
                 .attr('stroke-dasharray', '5,3')
                 .attr('opacity', 0.75);
-
         });
     }
 
-    // ── Convert current slider time to Unix ms ───────────────────────
-    // obsEpoch is the Unix-ms timestamp that corresponds to t=0 in the satellite data.
-    // It is set when observations are loaded (we use the earliest observation start as anchor
-    // if the satellite data has not been loaded yet, or we derive it from a user-provided epoch).
-    //
-    // Strategy: when both satellite CSV and observations CSV are available, we assume the
-    // satellite t values are seconds elapsed since obsEpoch.  obsEpoch is taken as the
-    // Unix-ms of the very first ISO timestamp found in the observations file.
     function currentUnixMs() {
         if (obsEpoch === null || !times.length) return NaN;
         return obsEpoch + times[idx] * 1000;
     }
+
+    // ── Satellite info popup ─────────────────────────────────────────
+    function openSatInfoPopup(satName, satColor, cardEl) {
+        popupSatName = satName;
+        document.getElementById('satInfoName').textContent = satName;
+        document.getElementById('satInfoDot').style.background = satColor;
+        refreshSatInfoPopup();
+
+        const popup = document.getElementById('satInfoPopup');
+        popup.classList.remove('hidden');
+
+        // Position near the card
+        const rect = cardEl.getBoundingClientRect();
+        const pw = 320, ph = 420;
+        let left = rect.left;
+        let top  = rect.bottom + 6;
+        if (left + pw > window.innerWidth - 8)  left = window.innerWidth - pw - 8;
+        if (top  + ph > window.innerHeight - 8) top  = rect.top - ph - 6;
+        if (top < 8) top = 8;
+        popup.style.left = left + 'px';
+        popup.style.top  = top  + 'px';
+    }
+
+    function refreshSatInfoPopup() {
+        if (!popupSatName) return;
+        const currentMs = currentUnixMs();
+        const body = document.getElementById('satInfoPopupBody');
+        body.innerHTML = '';
+
+        // ── EO Observations ───────────────────────────────────────
+        const eoTitle = document.createElement('div');
+        eoTitle.className = 'info-section-title';
+        eoTitle.textContent = '📡 EO Observations';
+        body.appendChild(eoTitle);
+
+        const satObs = observations.filter(o => o.satName === popupSatName);
+        if (satObs.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'info-empty';
+            empty.textContent = 'No EO observation windows';
+            body.appendChild(empty);
+        } else {
+            // Sort: active first, then upcoming, then past
+            const now = isNaN(currentMs) ? 0 : currentMs;
+            const sorted = [...satObs].sort((a, b) => {
+                const statusOrder = o => now >= o.startMs && now <= o.endMs ? 0
+                    : now < o.startMs ? 1 : 2;
+                return statusOrder(a) - statusOrder(b) || a.startMs - b.startMs;
+            });
+            sorted.forEach(obs => {
+                const entry = document.createElement('div');
+                entry.className = 'obs-entry';
+                const isActive   = !isNaN(currentMs) && currentMs >= obs.startMs && currentMs <= obs.endMs;
+                const isUpcoming = !isNaN(currentMs) && currentMs < obs.startMs;
+                const statusText = isActive   ? '● ACTIVE NOW'
+                    : isUpcoming ? '◌ Upcoming'
+                        :              '○ Past';
+                const statusCls  = isActive   ? 'obs-status-active'
+                    : isUpcoming ? 'obs-status-upcoming'
+                        :              'obs-status-past';
+                const duration = msToDuration(obs.endMs - obs.startMs);
+                entry.innerHTML = `
+                    <div class="obs-zone">${obs.zone}</div>
+                    <div class="obs-time">Start: ${formatMs(obs.startMs)}</div>
+                    <div class="obs-time">End:   ${formatMs(obs.endMs)} &nbsp;·&nbsp; ${duration}</div>
+                    <div class="${statusCls}">${statusText}</div>`;
+                body.appendChild(entry);
+            });
+        }
+
+        // ── SATCOM Links ──────────────────────────────────────────
+        const scTitle = document.createElement('div');
+        scTitle.className = 'info-section-title';
+        scTitle.textContent = '🔗 SATCOM Links';
+        body.appendChild(scTitle);
+
+        const satLinks = satcom_links.filter(l => l.satName === popupSatName);
+        if (satLinks.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'info-empty';
+            empty.textContent = 'No SATCOM link windows';
+            body.appendChild(empty);
+        } else {
+            const now = isNaN(currentMs) ? 0 : currentMs;
+            const sorted = [...satLinks].sort((a, b) => {
+                const statusOrder = o => now >= o.startMs && now <= o.endMs ? 0
+                    : now < o.startMs ? 1 : 2;
+                return statusOrder(a) - statusOrder(b) || a.startMs - b.startMs;
+            });
+            sorted.forEach(link => {
+                const entry = document.createElement('div');
+                entry.className = 'obs-entry satcom';
+                const isActive   = !isNaN(currentMs) && currentMs >= link.startMs && currentMs <= link.endMs;
+                const isUpcoming = !isNaN(currentMs) && currentMs < link.startMs;
+                const statusText = isActive   ? '● LINKED NOW'
+                    : isUpcoming ? '◌ Upcoming'
+                        :              '○ Past';
+                const statusCls  = isActive   ? 'obs-status-active'
+                    : isUpcoming ? 'obs-status-upcoming'
+                        :              'obs-status-past';
+                const duration = msToDuration(link.endMs - link.startMs);
+                entry.innerHTML = `
+                    <div class="obs-zone">${link.zone}</div>
+                    <div class="obs-time">Start: ${formatMs(link.startMs)}</div>
+                    <div class="obs-time">End:   ${formatMs(link.endMs)} &nbsp;·&nbsp; ${duration}</div>
+                    <div class="${statusCls}">${statusText}</div>`;
+                body.appendChild(entry);
+            });
+        }
+    }
+
+    function closeSatInfoPopup() {
+        popupSatName = null;
+        document.getElementById('satInfoPopup').classList.add('hidden');
+    }
+
+    document.getElementById('satInfoPopupClose').addEventListener('click', closeSatInfoPopup);
+    // Close on outside click
+    document.addEventListener('click', e => {
+        const popup = document.getElementById('satInfoPopup');
+        if (!popup.classList.contains('hidden') &&
+            !popup.contains(e.target) &&
+            !e.target.classList.contains('info-btn')) {
+            closeSatInfoPopup();
+        }
+    });
 
     // ── Map drawing helpers ──────────────────────────────────────────
     function drawGroundStations() {
@@ -457,39 +754,28 @@
         buildLegend(EOzones.length > 0);
     }
 
-    function applyGSData(stations) {
-        groundStations = stations;
-        drawGroundStations();
-        buildLegend(false);
-    }
-    function applyEOData(zones) {
-        EOzones = zones;
-        loadEOAreas();
-    }
+    function applyGSData(stations) { groundStations = stations; drawGroundStations(); buildLegend(false); }
+    function applyEOData(zones)    { EOzones = zones; loadEOAreas(); }
+    function loadGSFromText(text)  { applyGSData(parseGSCSV(text)); }
+    function loadEOFromText(text)  { applyEOData(parseEOCSV(text)); }
+    function loadSATCOMFromText(text) { applySATCOMData(text); }
 
-    function loadGSFromText(text) { applyGSData(parseGSCSV(text)); }
-    function loadEOFromText(text) { applyEOData(parseEOCSV(text)); }
-    function loadSATCOMFromText(text) { applySATCOMData(text);}
-    //- Apply SATCOM observations
-    function applySATCOMData(text){
+    function applySATCOMData(text) {
         satcom_links = parseSATCOMcsv(text);
         const status = document.getElementById('status');
         status.textContent = status.textContent.replace(/ \| \d+ links.*/, '') +
-            ' | ' + satcom_links.length + ' links  loaded.';
+            ' | ' + satcom_links.length + ' links loaded.';
+        updateDatetimeBar();
         updateDots();
     }
-    // ── Apply observation data ────────────────────────────────────────
+
     function loadObsFromText(text) {
         const parsed = parseObsCSV(text);
         observations = parsed;
-        // Derive obsEpoch as the minimum start timestamp in the observations.
-        // This means t=0 in satellite data corresponds to the earliest observation start.
-        // If the satellite data is already loaded and has a natural epoch you should adjust
-        // obsEpoch here accordingly; for now we use the minimum start time.
-
         const status = document.getElementById('status');
         status.textContent = status.textContent.replace(/ \| \d+ obs.*/, '') +
             ' | ' + observations.length + ' observation window(s) loaded.';
+        updateDatetimeBar();
         updateDots();
         buildLegend(EOzones.length > 0);
     }
@@ -504,7 +790,6 @@
         trackLayer.selectAll('*').remove();
         Object.keys(sats).forEach((name, si) => {
             if (hiddenSats.has(name)) return;
-
             const col = COLORS[si % COLORS.length];
             const pts = sats[name];
             const chunks = [];
@@ -562,41 +847,30 @@
 
         Object.keys(sats).forEach((name, si) => {
             if (hiddenSats.has(name)) return;
-
             const col = COLORS[si % COLORS.length];
             const best = getBest(sats[name], t);
             const ll = xyz2ll(best.x, best.y, best.z);
             const pos = projection(ll);
             if (!pos) return;
 
-            // Check if this satellite is actively observing at this moment
             const isObserving = !isNaN(currentMs) && observations.some(obs =>
-                obs.satName === name &&
-                currentMs >= obs.startMs &&
-                currentMs <= obs.endMs
-            );
+                obs.satName === name && currentMs >= obs.startMs && currentMs <= obs.endMs);
             const isLinked = !isNaN(currentMs) && satcom_links.some(link =>
-                link.satName === name &&
-                currentMs >= link.startMs &&
-                currentMs <= link.endMs
-            );
+                link.satName === name && currentMs >= link.startMs && currentMs <= link.endMs);
 
-            const dotColor = isObserving ? '#00e676' : col; // bright green when observing
+            const dotColor = isObserving ? '#00e676' : col;
 
             if (best.firing) {
                 dotLayer.append('circle')
                     .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 11)
                     .attr('fill', 'none').attr('stroke', '#ffb74d').attr('stroke-width', 2);
             }
-
-            // Outer glow ring when observing
             if (isObserving) {
                 dotLayer.append('circle')
                     .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 10)
                     .attr('fill', 'none').attr('stroke', '#00e676').attr('stroke-width', 1.5)
                     .attr('opacity', 0.4);
             }
-
             dotLayer.append('circle')
                 .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 6)
                 .attr('fill', dotColor).attr('stroke', '#fff').attr('stroke-width', 0.5);
@@ -612,10 +886,15 @@
         });
 
         drawLinksLines(currentMs);
-        updateStats(t);
+        updateDatetimeBar();
+        updateStats(t, currentMs);
+
+        // Refresh popup if open
+        if (popupSatName) refreshSatInfoPopup();
     }
 
-    function updateStats(t) {
+    function updateStats(t, currentMs) {
+        if (currentMs === undefined) currentMs = currentUnixMs();
         const row = document.getElementById('statsRow');
         row.innerHTML = '';
         Object.keys(sats).forEach((name, si) => {
@@ -624,6 +903,16 @@
             const ll = xyz2ll(best.x, best.y, best.z);
             const alt = (Math.sqrt(best.x**2 + best.y**2 + best.z**2) - EARTH_R) / 1000;
             const hidden = hiddenSats.has(name);
+
+            // Check for any active EO or SATCOM right now
+            const hasActiveEO = !isNaN(currentMs) && observations.some(o =>
+                o.satName === name && currentMs >= o.startMs && currentMs <= o.endMs);
+            const hasActiveLink = !isNaN(currentMs) && satcom_links.some(l =>
+                l.satName === name && currentMs >= l.startMs && currentMs <= l.endMs);
+            const hasAnyData = observations.some(o => o.satName === name) ||
+                satcom_links.some(l => l.satName === name);
+            const hasActivity = hasActiveEO || hasActiveLink;
+
             const card = document.createElement('div');
             card.className = 'stat-card' + (hidden ? ' hidden-sat' : '');
             card.title = hidden ? 'Click to show ' + name : 'Click to hide ' + name;
@@ -635,6 +924,24 @@
                 </div>
                 <div class="row">Lat <span class="val">${ll[1].toFixed(2)}°</span> &nbsp;Lon <span class="val">${ll[0].toFixed(2)}°</span></div>
                 <div class="row">Alt <span class="val">${Math.round(alt)} km</span></div>`;
+
+            // Info button — only show if there's EO or SATCOM data for this sat
+            if (hasAnyData || observations.length > 0 || satcom_links.length > 0) {
+                const btn = document.createElement('button');
+                btn.className = 'info-btn' + (hasActivity ? ' has-activity' : '');
+                btn.title = 'Show EO & SATCOM info for ' + name;
+                btn.textContent = 'i';
+                btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    if (popupSatName === name && !document.getElementById('satInfoPopup').classList.contains('hidden')) {
+                        closeSatInfoPopup();
+                    } else {
+                        openSatInfoPopup(name, col, card);
+                    }
+                });
+                card.appendChild(btn);
+            }
+
             card.addEventListener('click', () => {
                 if (hiddenSats.has(name)) { hiddenSats.delete(name); } else { hiddenSats.add(name); }
                 drawTracks();
@@ -650,7 +957,6 @@
         times = parsed.times;
         idx = 0;
         hiddenSats.clear();
-        // Re-compute obsEpoch when new satellite data is loaded
         const sl = document.getElementById('tSlider');
         sl.min = 0; sl.max = times.length - 1; sl.value = 0;
         document.getElementById('status').textContent =
@@ -676,25 +982,20 @@
         const container = document.getElementById('mapDiv');
         W = container.clientWidth;
         H = Math.round(W * 0.45);
-
         svg = d3.select('#mapDiv').append('svg').attr('width', W).attr('height', H);
         projection = d3.geoEquirectangular().scale(W / 6.28).translate([W/2, H/2]);
         pathGen = d3.geoPath().projection(projection);
-
         svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#0d1b2a');
-
         const graticule = d3.geoGraticule()();
         svg.append('g').append('path').datum(graticule)
             .attr('d', pathGen)
             .attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.08)').attr('stroke-width', 0.5);
-
         const landLayer = svg.append('g');
         eoLayer    = svg.append('g');
         trackLayer = svg.append('g');
         gsLayer    = svg.append('g');
-        obsLayer   = svg.append('g');   // observation lines — above GS, below dots
+        obsLayer   = svg.append('g');
         dotLayer   = svg.append('g');
-
         d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
             landLayer.selectAll('path')
                 .data(topojson.feature(world, world.objects.countries).features)
@@ -704,9 +1005,7 @@
                 .attr('stroke', 'rgba(255,255,255,0.15)')
                 .attr('stroke-width', 0.4);
             window.mapInitialized = true;
-        }).catch(() => {
-            window.mapInitialized = true;
-        });
+        }).catch(() => { window.mapInitialized = true; });
     }
 
     function resetmap() {
@@ -816,31 +1115,25 @@
     }
 
     document.getElementById('explorerSearch').addEventListener('input', e => renderTree(e.target.value));
-
     document.getElementById('explorerLoadBtn').addEventListener('click', () => {
         if (!explorerSelected) return;
-        if (window.javaBridge) {
-            window.javaBridge.loadSatCSV(explorerSelected.absPath);
-        }
+        if (window.javaBridge) { window.javaBridge.loadSatCSV(explorerSelected.absPath); }
         document.getElementById('explorerOverlay').classList.add('hidden');
     });
-
     document.getElementById('explorerSkip').addEventListener('click', () => {
         document.getElementById('explorerOverlay').classList.add('hidden');
     });
 
-    window.receiveCSVContent = function(content) {
-        applyData(parseCSV(content));
-    };
-
-    // Java bridge hooks for observations & EO areas (call from Java side if needed)
-    window.receiveObsCSVContent = function(content) { loadObsFromText(content); };
-    window.receiveEOCSVContent  = function(content) { loadEOFromText(content); };
+    window.receiveCSVContent        = function(content) { applyData(parseCSV(content)); };
+    window.receiveObsCSVContent     = function(content) { loadObsFromText(content); };
+    window.receiveEOCSVContent      = function(content) { loadEOFromText(content); };
     window.receiveSATCOMCSVContent  = function(content) { loadSATCOMFromText(content); };
 
     function setSimulationEpoch(isoDateString) {
-        obsEpoch = new Date(isoDateString).getTime(); // converts to Unix ms
+        obsEpoch = new Date(isoDateString).getTime();
+        updateDatetimeBar();
     }
+
     setTimeout(() => {
         if (explorerData.length === 0) {
             document.getElementById('explorerTree').innerHTML =
