@@ -123,7 +123,7 @@ public class Propagator_1
         Handlers.step_handler stepHandler = new Handlers.step_handler(type_propa, satellite);
 
 
-        propagator.getMultiplexer().add(10, stepHandler);
+        propagator.getMultiplexer().add(40, stepHandler);
        return propagator;
     }
 

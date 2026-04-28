@@ -133,7 +133,8 @@ public class Handlers {
             int total = getTotalPoints();
 
             if (increasing) {
-                if (!sat.isCurrently_observing().equals(name) && sat.isCurrently_observing() != null) {
+                String currentObs = sat.isCurrently_observing();
+                if (currentObs != null && !currentObs.equals(name)) {
                     return Action.CONTINUE;
                 }
                 sat.setCurrently_observing(name);

@@ -40,7 +40,7 @@ public class App
         boolean py_graphs_visualizations=false;
         boolean check_collision = false;
         boolean satcom_gs_communication =true;
-        boolean EO_detection=false;
+        boolean EO_detection=true;
         boolean python_map = true;
         int nb_sat =1;
         //Recuperation des données Orekit à FAIRE EN PREMIER
@@ -95,7 +95,7 @@ public class App
             Visulations.Python_graph_orbital_param();
         }
         if(EO_detection){
-            //Visulations.Python_EO_detection();
+            Visulations.Python_EO_detection();
         }
         if (python_map){
             Application.launch(SatelliteTrackerUI.class, args);
@@ -122,6 +122,18 @@ public class App
                     .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 500000)
                     .eccentricity(0.001)
                     .inclinaison(Math.toRadians(87.4))       // sun-synchronous
+                    .long_noeud_ascendant(Math.toRadians(0))
+                    .arg_periastre(Math.toRadians(0))
+                    .anomalie(Math.toRadians(0))
+                    .type_anomalie(PositionAngleType.TRUE)
+                    .motor_name("Moteur_2")
+                    .build());
+            liste_par_sats.add(new Satellite.Builder()
+                    .nom_sat("EO_Sat_2")
+                    .mass(800)
+                    .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 480000)
+                    .eccentricity(0.002)
+                    .inclinaison(Math.toRadians(97.4))       // sun-synchronous
                     .long_noeud_ascendant(Math.toRadians(0))
                     .arg_periastre(Math.toRadians(0))
                     .anomalie(Math.toRadians(0))
