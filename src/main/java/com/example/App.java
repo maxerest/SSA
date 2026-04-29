@@ -95,7 +95,7 @@ public class App
             Visulations.Python_graph_orbital_param();
         }
         if(EO_detection){
-            Visulations.Python_EO_detection();
+            //Visulations.Python_EO_detection();
         }
         if (python_map){
             Application.launch(SatelliteTrackerUI.class, args);
