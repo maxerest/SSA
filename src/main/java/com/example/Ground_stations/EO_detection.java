@@ -2,6 +2,7 @@ package com.example.Ground_stations;
 
 import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Orbiting_object.Satellite;
+import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
 import com.example.Parametres;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.util.FastMath;
@@ -39,23 +40,18 @@ public class EO_detection {
     public static void EO_usage_detection(NumericalPropagator propagator, Satellite sat) {
         for (String name : Map_area_positions.keySet()) {
             int i = 0;
-            final double viewAngle =20.0;
+            for (String sensor_name:sat.get_sensor().getAllSensors().keySet()){
+                FieldOfView fov=sat.get_sensor_FoV(sensor_name);
 
-            final FieldOfView fov = new DoubleDihedraFieldOfView(
-                    Vector3D.PLUS_K,
-                    Vector3D.PLUS_I, FastMath.toRadians(viewAngle / 2.0),
-                    Vector3D.PLUS_J, FastMath.toRadians(viewAngle / 2.0),
-                    0.0
-            );
+                for (GeodeticPoint point : Map_area_positions.get(name)) {
 
-            for (GeodeticPoint point : Map_area_positions.get(name)) {
+                    TopocentricFrame tcf = new TopocentricFrame(Parametres.earth, point, name + "_" + i);
 
-                TopocentricFrame tcf = new TopocentricFrame(Parametres.earth, point, name + "_" + i);
+                    EventDetector detector = Handlers.buildAreaRevisitDetector(tcf,fov,60.0,name,i,sat,Parametres.frame);
 
-                EventDetector detector = Handlers.buildAreaRevisitDetector(tcf,fov,60.0,name,i,sat,Parametres.frame);
-
-                propagator.addEventDetector(detector);
-                i++;
+                    propagator.addEventDetector(detector);
+                    i++;
+                }
             }
         }
     }

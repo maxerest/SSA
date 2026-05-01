@@ -1,9 +1,12 @@
 package com.example.Orbiting_object;
 
+import com.example.Ground_stations.EO_detection;
 import com.example.Manoeuvre.Manoeuvre;
+import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.attitudes.NadirPointing;
 import org.orekit.attitudes.TargetPointing;
+import org.orekit.geometry.fov.FieldOfView;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
@@ -22,7 +25,7 @@ public class Satellite extends Orbiting_object {
     private String currently_observing=null;
     private final Vector3D boresight = new Vector3D(0,0,1);
     private final double agility = Math.toRadians(60); // Capability of the satellite to look of Nadir to point
-
+    private final EO_sensors sensor = new EO_sensors();
     // Parametres satellite
     private double area=2;    // m^2
     private double cd=0.85 ;
@@ -40,6 +43,9 @@ public class Satellite extends Orbiting_object {
         this.srpCrossSection = builder.srpCrossSection;
         this.srpCoeff = builder.srpCoeff;
         this.map_parametres_antennes.put("Antenna 1",new AntennaParameters());
+        if(EO_detection.EO_detection){
+            sensor.addSensor(EO_sensors.SensorFactory.createSAR("SAR_1"));
+        }
     }
 
     public boolean is_firing(SpacecraftState currentState) {
@@ -124,8 +130,10 @@ public class Satellite extends Orbiting_object {
     public Map<String,AntennaParameters> getMap_parametres_antennes() {
         return map_parametres_antennes;
     }
-
-
+    public EO_sensors get_sensor(){return sensor;}
+    public FieldOfView get_sensor_FoV(String name){
+        return this.sensor.getSensor(name).getFieldOfView();
+    }
     public double getSrpCoeff() {return srpCoeff;}
     public List<Manoeuvre> getListe_manoeuvre_sat(){return liste_manoeuvre_sat;}
     public List<SpacecraftState> get_liste_state_propa(){return liste_state_propa;}
@@ -247,4 +255,5 @@ public class Satellite extends Orbiting_object {
             this.teta3dB = teta3dB;
         }
     }
+
 }
