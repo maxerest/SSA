@@ -36,7 +36,7 @@ public class Ground_station {
         String name;
         double antenna_size;
         double antenna_gain;
-        double teta3dB=2;
+        double teta3dB=0.2;
         double noiseFigureDb = 3.0;
         double noiseBandwidthMhz = 50.0;
         double temperatureK = 290.0;
@@ -45,7 +45,7 @@ public class Ground_station {
 
         public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point) {
             super(baseFrame);
-            this.antenna_gain=10; //dB
+            this.antenna_gain=55; //dB
             this.antenna_size=10; //m
             this.name=name;
             this.geo_point=point;
@@ -78,7 +78,10 @@ public class Ground_station {
             return teta3dB;
         }
         public void get_visibility(SpacecraftState s){
+        }
 
+        public void setNoiseBandwidthMhz(double noiseBandwidthMhz) {
+            this.noiseBandwidthMhz = noiseBandwidthMhz;
         }
     }
     // Call this method at program initialization to load ground stations from CSV within the public static list liste_GS

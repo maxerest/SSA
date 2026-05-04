@@ -1,21 +1,18 @@
 package com.example.Analytics_Propagator.Type1;
 
-import com.example.App;
-import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Ground_station;
 import com.example.Ground_stations.Satcom;
 import com.example.Orbiting_object.Satellite;
+import com.example.Orbiting_object.Satellite_sub_systems.AntennaParameters;
+import com.example.Orbiting_object.Satellite_sub_systems.MODCOD;
 import com.example.Parametres;
+import com.example.RevisitFrequency.EO_observations;
 import com.example.View.Visulations;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.ode.events.Action;
-import org.orekit.attitudes.Attitude;
-import org.orekit.bodies.GeodeticPoint;
-import org.orekit.errors.OrekitException;
 import org.orekit.frames.Frame;
 import org.orekit.frames.FramesFactory;
 import org.orekit.frames.TopocentricFrame;
-import org.orekit.frames.Transform;
 import org.orekit.geometry.fov.FieldOfView;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.events.*;
@@ -24,7 +21,6 @@ import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.IERSConventions;
 
-import javax.swing.text.StyledEditorKit;
 import java.util.*;
 
 public class Handlers {
@@ -159,6 +155,13 @@ public class Handlers {
                         double duration = date.durationFrom(startDate);
                         Visulations.export_observation_to_csv(
                                 name, startDate, date, duration, sat.get_Name());
+                        double totalData_MB = sat.get_sensor()
+                                .getAllSensors()
+                                .values()
+                                .stream()
+                                .mapToDouble(sensor -> sensor.getGeneratedData_MB(duration))
+                                .sum();
+                        sat.add_observation(new EO_observations(startDate,s.getDate(),totalData_MB));
                     }
                 }
 
@@ -176,29 +179,66 @@ public class Handlers {
             return Action.CONTINUE;
         }
     }
-    public static class satcom_handler implements EventHandler{
-        private AbsoluteDate start_date= null;
+    public static class satcom_handler implements EventHandler {
+        private AbsoluteDate start_date = null;
         private Satellite sat;
         private String GS_name;
+
         public satcom_handler(Satellite sat, String GS_name) {
             this.sat = sat;
             this.GS_name = GS_name;
         }
+
         @Override
         public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
             if (increasing) {
-                if (start_date == null) start_date=s.getDate();
+                // Satellite entering visibility window
+                if (start_date == null) {
+                    start_date = s.getDate();
+                }
                 return Action.CONTINUE;
-            }else{
-                if (start_date != null){
-                double duration = s.getDate().durationFrom(start_date);
-                Visulations.export_satcom_to_csv(GS_name,start_date, s.getDate(), duration, sat.get_Name());
-                start_date=null;
+
+            } else {
+                // Satellite leaving visibility window
+                if (start_date != null) {
+                    double duration_sec = s.getDate().durationFrom(start_date);
+
+                    // Calculate downlink data
+                    double transmittableData_MB = Satcom.calculateTransmittableData_MB(sat, duration_sec,GS_name);
+                    // Export to CSV with data information
+                    Visulations.export_satcom_to_csv(GS_name, start_date, s.getDate(),
+                            duration_sec, sat.get_Name(),transmittableData_MB);
+
+                    while (transmittableData_MB > 0 &&!sat.getList_observations_on_board().isEmpty()) {
+                        double firstData = sat.getList_observations_on_board()
+                                .getFirst()
+                                .getTotal_data();
+
+                        if (transmittableData_MB >= firstData) {
+                            transmittableData_MB -= firstData;
+                            sat.getList_observations_on_board().remove(0);
+                        } else {
+                            // partial consumption (important edge case)
+                            sat.getList_observations_on_board()
+                                    .getFirst()
+                                    .reduce_total_data(transmittableData_MB);
+                            transmittableData_MB = 0;
+                        }
+
+                        sat.setMemory_on_board(transmittableData_MB);
+                    }
+
+                    start_date = null;
                 }
                 return Action.CONTINUE;
             }
-
         }
+
+        /**
+         * Calculate transmittable data for this visibility pass
+         */
+
+
     }
 }
 

@@ -398,19 +398,19 @@ public class Visulations {
         String filename = "src/main/resources/Satcom/satcom_link.csv";
         try (FileWriter fw = new FileWriter(filename, false);
              BufferedWriter bw = new BufferedWriter(fw)) {
-            bw.write("GS_name,start_time,end_time,duration_s,name_sat_doing_observation");
+            bw.write("GS_name,start_time,end_time,duration_s,name_sat_doing_observation,total_data_downlinkable(MB)");
             bw.newLine();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    public static void export_satcom_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration, String sat_name ) {
+    public static void export_satcom_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration, String sat_name,double data_downlinkabable ) {
 
         String filename = "src/main/resources/Satcom/satcom_link.csv";
         try (FileWriter fw = new FileWriter(filename, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
 
-            bw.write(name + "," + start.toString() + "," + end.toString() + "," + duration+ "," + sat_name);
+            bw.write(name + "," + start.toString() + "," + end.toString() + "," + duration+ "," + sat_name+","+String.format("%.2f", data_downlinkabable).replaceAll(",","."));
             bw.newLine();
 
         } catch (IOException e) {

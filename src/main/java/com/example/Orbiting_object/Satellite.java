@@ -2,10 +2,11 @@ package com.example.Orbiting_object;
 
 import com.example.Ground_stations.EO_detection;
 import com.example.Manoeuvre.Manoeuvre;
+import com.example.Orbiting_object.Satellite_sub_systems.AntennaParameters;
+import com.example.Orbiting_object.Satellite_sub_systems.MODCOD;
 import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
+import com.example.RevisitFrequency.EO_observations;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
-import org.orekit.attitudes.NadirPointing;
-import org.orekit.attitudes.TargetPointing;
 import org.orekit.geometry.fov.FieldOfView;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
@@ -26,15 +27,22 @@ public class Satellite extends Orbiting_object {
     private final Vector3D boresight = new Vector3D(0,0,1);
     private final double agility = Math.toRadians(60); // Capability of the satellite to look of Nadir to point
     private final EO_sensors sensor = new EO_sensors();
+    private final List<EO_observations> list_observations_on_board= new LinkedList<>();
     // Parametres satellite
     private double area=2;    // m^2
     private double cd=0.85 ;
     private final double srpCrossSection;   // m²
     private final double srpCoeff;
-
-    // Parametres antennes
+    private double memory_on_board=2000000; //MB
+    private final double max_memory_on_board=2048000;
+    // Parametres satcom
     private Map<String,AntennaParameters> map_parametres_antennes=new LinkedHashMap<>();
-    private double puissance_amplificateur;
+
+
+
+    private MODCOD.modcod MODCOD;
+
+
     private Satellite(Builder builder) {
         super(builder);  // Initialize parent with its Builder
         this.motor_name = builder.motor_name;
@@ -46,6 +54,8 @@ public class Satellite extends Orbiting_object {
         if(EO_detection.EO_detection){
             sensor.addSensor(EO_sensors.SensorFactory.createSAR("SAR_1"));
         }
+        //Change this if needed to do different type of Modcod
+        MODCOD= com.example.Orbiting_object.Satellite_sub_systems.MODCOD.MODCODLibrary.getMODCOD("64-QAM 7/8");;
     }
 
     public boolean is_firing(SpacecraftState currentState) {
@@ -65,7 +75,10 @@ public class Satellite extends Orbiting_object {
         }
         return false;
     }
-
+    public void add_observation(EO_observations observations) {
+        list_observations_on_board.add(observations);
+        memory_on_board-=observations.getTotal_data();
+    }
     public String isCurrently_observing() {
         return currently_observing;
     }
@@ -124,10 +137,21 @@ public class Satellite extends Orbiting_object {
         return area;
     }
 
+    public double getMemory_on_board() {
+        return memory_on_board;
+    }
+
+    public List<EO_observations> getList_observations_on_board() {
+        return list_observations_on_board;
+    }
+
+    public MODCOD.modcod getMODCOD() {
+        return MODCOD;
+    }
     public double getSrpCrossSection() {
         return srpCrossSection;
     }
-    public Map<String,AntennaParameters> getMap_parametres_antennes() {
+    public Map<String, AntennaParameters> getMap_parametres_antennes() {
         return map_parametres_antennes;
     }
     public EO_sensors get_sensor(){return sensor;}
@@ -181,79 +205,8 @@ public class Satellite extends Orbiting_object {
             System.out.println(e);
         }
     }
-    public class AntennaParameters {
-        private double gain;           // dBi
-        private double noiseFigure;    // dB
-        private double frequency;      // GHz
-        private double bandwidth;      // MHz
-        private double efficiency;     // %
-        private double txPowerDbm;     // dBm
-        private double teta3dB;        //degrees
 
-        public AntennaParameters() {
-            this.gain = 15.0;           // dBi (satellite TX antenna)
-            this.noiseFigure = 5.0;     // dB (satellite receiver, higher than ground station)
-            this.frequency = 12.0;      // GHz (Ku-band uplink/downlink)
-            this.bandwidth = 2.9;      // MHz (typical satellite transponder)
-            this.efficiency = 0.60;     // 60%
-            this.txPowerDbm = 20.0;     //dB for the power
-            this.teta3dB=2;
-        }
-        public AntennaParameters(double gain, double noiseFigure, double frequency,double bandwidth,double efficiencyn,double teta3dB) {
-            this.gain = gain;
-            this.noiseFigure = noiseFigure;
-            this.frequency = frequency;
-            this.bandwidth=bandwidth;
-            this.efficiency=efficiency;
-            this.teta3dB=teta3dB;
-        }
-
-        public double getGain() {
-            return gain;
-        }
-
-        public double getNoiseFigure() {
-            return noiseFigure;
-        }
-
-        public double getFrequency() {
-            return frequency;
-        }
-
-        public double getBandwidth() {
-            return bandwidth;
-        }
-
-        public double getEfficiency() {
-            return efficiency;
-        }
-        public double getteta3dB() {
-            return teta3dB;
-        }
-        public double getTxPowerDbm(){return txPowerDbm;}
-
-        public void setGain(double gain) {
-            this.gain = gain;
-        }
-
-        public void setNoiseFigure(double noiseFigure) {
-            this.noiseFigure = noiseFigure;
-        }
-
-        public void setFrequency(double frequency) {
-            this.frequency = frequency;
-        }
-
-        public void setBandwidth(double bandwidth) {
-            this.bandwidth = bandwidth;
-        }
-
-        public void setEfficiency(double efficiency) {
-            this.efficiency = efficiency;
-        }
-        public void setteta3dB(double teta3dB) {
-            this.teta3dB = teta3dB;
-        }
+    public void setMemory_on_board(double added_memory) {
+        this.memory_on_board = Math.min(max_memory_on_board,memory_on_board+added_memory);
     }
-
 }

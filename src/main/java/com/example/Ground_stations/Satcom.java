@@ -2,6 +2,8 @@ package com.example.Ground_stations;
 
 import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Orbiting_object.Satellite;
+import com.example.Orbiting_object.Satellite_sub_systems.AntennaParameters;
+import com.example.Orbiting_object.Satellite_sub_systems.MODCOD;
 import com.example.Parametres;
 import org.hipparchus.ode.events.Action;
 import org.orekit.propagation.SpacecraftState;
@@ -46,7 +48,7 @@ public class Satcom {
     /**
      * Calculate EIRP
      */
-    private static double calculateEIRP(Satellite.AntennaParameters antenna) {
+    private static double calculateEIRP(AntennaParameters antenna) {
         return antenna.getTxPowerDbm() + antenna.getGain();
     }
 
@@ -83,91 +85,6 @@ public class Satcom {
 
 
 
-    public static class SignalCoding {
-        private double Rs ;  // Symbol rate Mbit/s
-        private double code_rate ;
-        private double Rc;  // Code rate
-        private double spectral_efficency = 0.7;
-        private double Bandwidth;
-        private String modulation;
-        private double redundant_bits;
-        private double M;   // Modulation order
-
-        // Constructor to initialize calculated values
-        public SignalCoding() {
-            this.Rs=2.048;
-            this.code_rate=7.0/8.0;
-            this.Rc = Rs / code_rate;
-            this.Bandwidth = Rc / spectral_efficency;
-            this.modulation= "BPSK";
-        }
-        public SignalCoding(double Rs,double code_rate,String modulation) {
-            this.Rs=Rs;
-            this.code_rate=code_rate;
-            this.Rc = Rs / code_rate;
-            this.Bandwidth = Rc / spectral_efficency;
-            this.modulation=modulation;
-        }
-
-        // Getter for Bandwidth
-        public double getBandwidth() {
-            return Bandwidth;
-        }
-
-        // Map: Modulation Type → (BER Level → Ec/N0 value)
-        private static final Map<String, Map<String, Double>> MODULATION_BER_TABLE = Map.ofEntries(
-                Map.entry("BPSK", Map.ofEntries(
-                        Map.entry("BEP_1E_3", 6.8),
-                        Map.entry("BEP_1E_4", 8.4),
-                        Map.entry("BEP_1E_5", 9.6),
-                        Map.entry("BEP_1E_6", 10.5),
-                        Map.entry("BEP_1E_7", 11.3),
-                        Map.entry("BEP_1E_8", 12.0),
-                        Map.entry("BEP_1E_9", 12.6)
-                )),
-                Map.entry("QPSK", Map.ofEntries(
-                        Map.entry("BEP_1E_3", 7.4),
-                        Map.entry("BEP_1E_4", 8.8),
-                        Map.entry("BEP_1E_5", 9.9),
-                        Map.entry("BEP_1E_6", 10.8),
-                        Map.entry("BEP_1E_7", 11.5),
-                        Map.entry("BEP_1E_8", 12.2),
-                        Map.entry("BEP_1E_9", 12.8)
-                )),
-                Map.entry("DE_BPSK", Map.ofEntries(
-                        Map.entry("BEP_1E_3", 7.9),
-                        Map.entry("BEP_1E_4", 9.3),
-                        Map.entry("BEP_1E_5", 10.3),
-                        Map.entry("BEP_1E_6", 11.2),
-                        Map.entry("BEP_1E_7", 11.9),
-                        Map.entry("BEP_1E_8", 12.5),
-                        Map.entry("BEP_1E_9", 13.0)
-                )),
-                Map.entry("DE_QPSK", Map.ofEntries(
-                        Map.entry("BEP_1E_3", 9.2),
-                        Map.entry("BEP_1E_4", 10.7),
-                        Map.entry("BEP_1E_5", 11.9),
-                        Map.entry("BEP_1E_6", 12.8),
-                        Map.entry("BEP_1E_7", 13.6),
-                        Map.entry("BEP_1E_8", 14.3),
-                        Map.entry("BEP_1E_9", 14.9)
-                ))
-        );
-
-        // Get Required Ec/N0 for given modulation and BER
-        public double getEcNo(String modulationType, String berLevel) {
-            Map<String, Double> berMap = MODULATION_BER_TABLE.get(modulationType);
-            if (berMap == null) {
-                return -10.0;  // Modulation type not found
-            }
-            return berMap.getOrDefault(berLevel, -10.0);
-        }
-
-        // Get all available modulation types
-        public Set<String> getAvailableModulations() {
-            return MODULATION_BER_TABLE.keySet();
-        }
-    }
     public static void satcom_station_link(NumericalPropagator propagator, Satellite sat){
         final double maxcheck  = 60.0;
         final double threshold =  0.001;
@@ -177,6 +94,60 @@ public class Satcom {
                             .withConstantElevation(Parametres.elevation)
                             .withHandler(new Handlers.satcom_handler(sat, GS.name));
             propagator.addEventDetector(station_visibility);
+        }
+    }
+
+    public static double calculateDataRate_Mbps(double snr_dB, double bandwidth_MHz) {
+        // Get satellite's fixed MODCOD
+        //MODCOD.modcod modcod = sat.getMODCOD();
+        //get best modcod
+        MODCOD.modcod modcod = MODCOD.MODCODLibrary.getBestMODCOD(snr_dB);
+
+        if (modcod == null) {
+            return 0;
+        }
+
+        // Roll-off factor (typical for satellite systems)
+        double rollOffFactor = 0.25;
+
+        // Symbol rate = Bandwidth / (1 + roll-off)
+        double symbolRate_MHz = bandwidth_MHz / (1.0 + rollOffFactor);
+
+        // Data Rate = Symbol Rate × Bits per Symbol × Code Rate
+
+        return symbolRate_MHz
+                * modcod.getBitsPerSymbol()
+                * modcod.getCodeRate();
+    }
+    public static double calculateTransmittableData_MB(Satellite sat, double duration_sec,String GS_name) {
+        // Find the ground station object
+        Ground_station.GroundStation_physical GS = Ground_station.liste_GS.stream()
+                .filter(g -> g.getName() != null && g.getName().equals(GS_name))
+                .findFirst()
+                .orElse(null);
+
+        try {
+
+            // Get bandwidth from antenna parameters
+            AntennaParameters antenna = sat.getMap_parametres_antennes()
+                    .values()
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+            double bandwidth_MHz = antenna != null ? antenna.getBandwidth() : 50.0;
+            GS.setNoiseBandwidthMhz(bandwidth_MHz);
+
+            // Calculate SNR from link budget
+            double snr_dB = Satcom.calculate_budget_link(GS, sat);
+            // Calculate data rate based on SNR and MODCOD
+            double dataRate_Mbps = Satcom.calculateDataRate_Mbps(snr_dB, bandwidth_MHz);
+
+            // Calculate transmittable data: (Data Rate in Mbps × Duration in sec) / 8
+            return (dataRate_Mbps * duration_sec) / 8.0;
+
+        } catch (Exception e) {
+            System.err.println("Error calculating transmittable data: " + e.getMessage());
+            return 0;
         }
     }
 }

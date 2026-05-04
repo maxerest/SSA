@@ -87,7 +87,9 @@ public class EO_sensors {
         public double getPower_consumption_W() { return power_consumption_W; }
         public double getWavelength_um() { return wavelength_um; }
         public int getNumberOfBands() { return numberOfBands; }
-
+        public double getGeneratedData_MB(double duration_sec) {
+            return (dataRate_Mbps * duration_sec) / 8.0;
+        }
         // Setters
         public void setFieldOfView(FieldOfView fov) { this.fieldOfView = fov; }
         public void setImageSize_MB(double size) { this.imageSize_MB = size; }
@@ -156,23 +158,6 @@ public class EO_sensors {
         return new LinkedHashMap<>(sensors);
     }
 
-    /**
-     * Get total power consumption of all sensors
-     */
-    public double getTotalPowerConsumption() {
-        return sensors.values().stream()
-                .mapToDouble(Sensor::getPower_consumption_W)
-                .sum();
-    }
-
-    /**
-     * Get total data volume from all sensors in one pass
-     */
-    public double getTotalDataVolume_MB() {
-        return sensors.values().stream()
-                .mapToDouble(Sensor::getImageSize_MB)
-                .sum();
-    }
 
     /**
      * Get sensor by type
@@ -183,22 +168,6 @@ public class EO_sensors {
                 .collect(java.util.stream.Collectors.toList());
     }
 
-    /**
-     * Print all sensors
-     */
-    public void printAllSensors() {
-        System.out.println("\n" + "=".repeat(100));
-        System.out.println("EARTH OBSERVATION SENSORS");
-        System.out.println("=".repeat(100));
-
-        for (Sensor sensor : sensors.values()) {
-            System.out.println(sensor);
-        }
-
-        System.out.println("\nTotal Power Consumption: " + getTotalPowerConsumption() + " W");
-        System.out.println("Total Data Volume (1 pass): " + getTotalDataVolume_MB() + " MB");
-        System.out.println("=".repeat(100) + "\n");
-    }
 
     /**
      * Factory method to create pre-configured sensors with Orekit FieldOfView
@@ -212,7 +181,7 @@ public class EO_sensors {
             // CircularFieldOfView: radius in radians = 45 degrees
             FieldOfView fov = new CircularFieldOfView(
                     Vector3D.PLUS_K,  // Along Z axis (nadir)
-                    Math.toRadians(45.0),  // 45 degree radius
+                    Math.toRadians(20.0),
                     0.0  // No margin
             );
 
