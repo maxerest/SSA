@@ -8,3 +8,7 @@
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
+real_sats.csv
+real_sats_Orbital_param.csv
+observations.csv
+satcom_link.csv
