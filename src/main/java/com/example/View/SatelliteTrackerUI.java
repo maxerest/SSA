@@ -1,7 +1,6 @@
 package com.example.View;
 import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Ground_station;
-import com.example.Ground_stations.Satcom;
 import com.example.Parametres;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -34,7 +33,7 @@ public class SatelliteTrackerUI extends Application {
         WebView webView = new WebView();
         WebEngine engine = webView.getEngine();
 
-        URL url = getClass().getResource("/satellite_tracker.html");
+        URL url = getClass().getResource("/final_visualization_2D/satellite_tracker.html");
         engine.load(url.toExternalForm());
 
         // Keep a strong reference to the bridge — WebEngine only holds a weak ref

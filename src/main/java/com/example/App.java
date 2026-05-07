@@ -13,12 +13,17 @@ import com.example.TLE.My_TLE;
 import com.example.View.SatelliteTrackerUI;
 import com.example.View.Visulations;
 import javafx.application.Application;
+import javafx.application.Platform;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
 import org.orekit.models.earth.EarthShape;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.utils.Constants;
+import com.example.Mission_config.ConfigBridge;
+import com.example.Mission_config.MissionConfig;
+import java.util.concurrent.CountDownLatch;
+import com.example.Mission_config.MissionConfiguratorUI;
 
 import java.util.*;
 import java.io.File;
@@ -28,176 +33,50 @@ import java.io.IOException;
 public class App 
 {
     public static List<Satellite> liste_par_sats_real_orbit;
-    public static void main( String[] args )throws IOException 
-    {
-
-        boolean propagate_real_orbit = true;
-        boolean propagate_kalman_filter = false;
-        boolean propagate_least_squares = false;
-        boolean TLE_visualisation = false;
-        boolean TLE_propagation=false;
-        boolean py_3d_visualizations=false;
-        boolean py_graphs_visualizations=false;
-        boolean check_collision = false;
-        boolean satcom_gs_communication =true;
-        boolean EO_detection=true;
-        boolean python_map = true;
-        int nb_sat =1;
+    public static void main(String[] args) throws IOException {
+        //TODO do the possibility to do from config or from here
+        boolean config_or_manual = true; //true is config, false is sat in this file
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
-        // Definition des GS    
-        Ground_station.loadStationsFromCSV();
-        Manoeuvre.Motor.initialize_list();
-        // Delete past CSV files
-        Visulations.deleteAllCsvFiles();
-        if (TLE_visualisation)
-            My_TLE.choixTLE();
-        if (TLE_propagation){
-            My_TLE.propagation();
-            if (check_collision){
-                My_TLE.collision_TLE();
-            }
-        }
-        if (propagate_real_orbit){
-            if (satcom_gs_communication){
-                Ground_station.satcom_activated=true;
-                Visulations.init_satcom_csv();
-            }
-            if (EO_detection){
-                new EO_detection();
-            }
-            // Definition des satellites
-            liste_par_sats_real_orbit = real_orbit(nb_sat);
-            Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit,satcom_gs_communication);
-            List<Satellite> liste_par_sats_noisy_orbit;
-
-            if (check_collision){
-                Patera_detection.check_per_sat_collision(liste_par_sats_real_orbit);
-            }
-            if (propagate_kalman_filter){
-                liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
-                Propagator_1.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
-            }
-
-            if (propagate_least_squares){
-                for (Satellite pReal : liste_par_sats_real_orbit)
-                    //Creation of the estimated orbit through the least square batch method
-                    Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
-            }
-        }
-
-        if(py_3d_visualizations){
-        Visulations.RunPythonScript();
-        }
-        if(py_graphs_visualizations){
-            Visulations.Python_graph_orbital_param();
-        }
-        if(EO_detection){
-            //Visulations.Python_EO_detection();
-        }
-        if (python_map){
-            Application.launch(SatelliteTrackerUI.class, args);
-        }
 
 
+        ConfigBridge bridge = new ConfigBridge(config -> {
+            System.out.println("[App] Mission config received: " + config);
+            // Hide configurator window
+            for (javafx.stage.Window window : new ArrayList<>(javafx.stage.Window.getWindows())) {
+                window.hide();
+            }
+
+            // Run simulation OUTSIDE JavaFX thread
+            new Thread(() -> {
+                try {
+                    runSimulation(config);
+                    // Open second JavaFX window AFTER simulation
+                    Platform.runLater(() -> {
+                        try {
+                            System.out.println("[App] Opening SatelliteTrackerUI...");
+                            new SatelliteTrackerUI().start(new javafx.stage.Stage());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+        }, new CountDownLatch(1));
+
+        MissionConfiguratorUI.setBridge(bridge);
+
+        Platform.setImplicitExit(false);
+        Application.launch(MissionConfiguratorUI.class, args);
     }
 
 
-
-    /**
-     * Création objets satellites pour les orbites réelle de propoagation
-     * @param nb_sat nb d'objets satellites à créer
-     */
-    public static List<Satellite> real_orbit(int nb_sat){
-        Scanner user_orbit_input = new Scanner(System.in);
-        List<Satellite> liste_par_sats = new ArrayList<>();
-
-        for (int i = 0; i<nb_sat; i++){
-            // Plane A — 3 satellites, RAAN 0°
-            liste_par_sats.add(new Satellite.Builder()
-                    .nom_sat("EO_Sat_1")
-                    .mass(800)
-                    .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 500000)
-                    .eccentricity(0.001)
-                    .inclinaison(Math.toRadians(87.4))       // sun-synchronous
-                    .long_noeud_ascendant(Math.toRadians(0))
-                    .arg_periastre(Math.toRadians(0))
-                    .anomalie(Math.toRadians(0))
-                    .type_anomalie(PositionAngleType.TRUE)
-                    .motor_name("Moteur_2")
-                    .build());
-            liste_par_sats.add(new Satellite.Builder()
-                    .nom_sat("EO_Sat_2")
-                    .mass(800)
-                    .semi_axis(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 480000)
-                    .eccentricity(0.002)
-                    .inclinaison(Math.toRadians(97.4))       // sun-synchronous
-                    .long_noeud_ascendant(Math.toRadians(0))
-                    .arg_periastre(Math.toRadians(0))
-                    .anomalie(Math.toRadians(0))
-                    .type_anomalie(PositionAngleType.TRUE)
-                    .motor_name("Moteur_2")
-                    .build());
-
-
-
-
-        }
-
-        /*
-        liste_par_sats.add(
-                new Satellite.Builder()
-                        .nom_sat("Sat_real_2")
-                        .mass(2500)
-                        .semi_axis(24396159)
-                        .eccentricity(0.5)
-                        .inclinaison(Math.toRadians(180))
-                        .long_noeud_ascendant(Math.toRadians(180))
-                        .arg_periastre(Math.toRadians(180))
-                        .anomalie(Math.toRadians(200))
-                        .type_anomalie(PositionAngleType.TRUE)
-                        .motor_name("Moteur_2")
-                        .build());
-        /*
-        liste_par_sats.add(
-                new Satellite.Builder()
-                        .nom_sat("Sat_real_3")
-                        .mass(2500)
-                        .semi_axis(24396159)
-                        .eccentricity(0.5)
-                        .inclinaison(Math.toRadians(180))
-                        .long_noeud_ascendant(Math.toRadians(180))
-                        .arg_periastre(Math.toRadians(90))
-                        .anomalie(Math.toRadians(180))
-                        .type_anomalie(PositionAngleType.MEAN)
-                        .motor_name("Moteur_2")
-                        .build());
-
-
-
-
-        liste_par_sats.add(
-                new Satellite.Builder()
-                        .nom_sat("Sat_real GTO")
-                        .mass(2500)
-                        .semi_axis(28000000)
-                        .eccentricity(0.7285)
-                        .inclinaison(Math.toRadians(0.05))
-                        .long_noeud_ascendant(Math.toRadians(0))
-                        .arg_periastre(Math.toRadians(180))
-                        .anomalie(Math.toRadians(180))
-                        .type_anomalie(PositionAngleType.TRUE)
-                        .type_moteur(1)
-                        .start_manoeuvre(86400)
-                        .duration_manoeuvre(0)
-                        .build());
-
-         */
-        user_orbit_input.close();
-        return liste_par_sats;
-    }
     
     /**
      * Création objets satellites pour la propagation avec des orbites bruitées
@@ -228,6 +107,88 @@ public class App
     }
 
     return liste_par_sats_noise_orbit;
+    }
+    private static void runSimulation(MissionConfig missionConfig) throws IOException {
+        boolean propagate_real_orbit = true;
+        boolean propagate_kalman_filter = false;
+        boolean propagate_least_squares = false;
+        boolean TLE_visualisation = false;
+        boolean TLE_propagation=false;
+        boolean py_3d_visualizations=false;
+        boolean py_graphs_visualizations=false;
+        boolean check_collision = false;
+        boolean satcom_gs_communication =missionConfig.satcomEnabled;
+        boolean EO_detection=missionConfig.eoDetectionEnabled;
+        int nb_sat =missionConfig.satellites.size();
+        // Definition des GS
+        Ground_station.loadStationsFromCSV();
+        Manoeuvre.Motor.initialize_list();
+        // Delete past CSV files
+        Visulations.deleteAllCsvFiles();
+        if (TLE_visualisation)
+            My_TLE.choixTLE();
+        if (TLE_propagation){
+            My_TLE.propagation();
+            if (check_collision){
+                My_TLE.collision_TLE();
+            }
+        }
+        if (propagate_real_orbit){
+            if (satcom_gs_communication){
+                Ground_station.satcom_activated=true;
+                Visulations.init_satcom_csv();
+            }
+            if (EO_detection){
+                new EO_detection();
+            }
+            // Definition des satellites
+            liste_par_sats_real_orbit = real_orbit(missionConfig);
+            Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit, satcom_gs_communication);
+            List<Satellite> liste_par_sats_noisy_orbit;
+
+            if (check_collision){
+                Patera_detection.check_per_sat_collision(liste_par_sats_real_orbit);
+            }
+            if (propagate_kalman_filter){
+                liste_par_sats_noisy_orbit = noisy_orbit(liste_par_sats_real_orbit);
+                Propagator_1.propagator_noisy_orbit(liste_par_sats_noisy_orbit,liste_par_sats_real_orbit);
+            }
+
+            if (propagate_least_squares){
+                for (Satellite pReal : liste_par_sats_real_orbit)
+                    //Creation of the estimated orbit through the least square batch method
+                    Visulations.export_LSB_csv(pReal,Least_squares_batch.least_squares_estimation(pReal,Ground_station.liste_GS,60));
+            }
+        }
+
+        if(py_3d_visualizations){
+            Visulations.RunPythonScript();
+        }
+        if(py_graphs_visualizations){
+            //Visulations.Python_graph_orbital_param();
+        }
+        if(EO_detection){
+            Visulations.Python_EO_detection();
+        }
+    }
+    public static List<Satellite> real_orbit(MissionConfig missionConfig) {
+        List<Satellite> liste_par_sats = new ArrayList<>();
+        for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
+            System.out.println(satConfig.motorName());
+            liste_par_sats.add(new Satellite.Builder()
+                    .nom_sat(satConfig.name)
+                    .mass(satConfig.mass)
+                    .semi_axis(satConfig.semiAxis)
+                    .eccentricity(satConfig.eccentricity)
+                    .inclinaison(satConfig.inclination)
+                    .long_noeud_ascendant(satConfig.raan)
+                    .arg_periastre(satConfig.argPerigee)
+                    .anomalie(satConfig.trueAnomaly)
+                    .type_anomalie(PositionAngleType.TRUE)
+                    .motor_name(satConfig.motorName())
+                    .build());
+        }
+        return liste_par_sats;
     }
 }
 

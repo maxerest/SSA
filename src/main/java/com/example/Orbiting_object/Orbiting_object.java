@@ -137,7 +137,7 @@ public class Orbiting_object {
                     anomalie,
                     type_anomalie,
                     FramesFactory.getEME2000(),
-                    new AbsoluteDate(new Date(), TimeScalesFactory.getUTC()),
+                    Parametres.date_orekit,
                     Constants.EIGEN5C_EARTH_MU
             );
             this.s_initialState = new SpacecraftState(orbit).withMass(this.mass);

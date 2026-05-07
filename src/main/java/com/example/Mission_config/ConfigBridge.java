@@ -1,0 +1,323 @@
+package com.example.Mission_config;
+
+import com.example.Parametres;
+import javafx.application.Platform;
+import org.orekit.time.AbsoluteDate;
+import org.orekit.time.TimeScalesFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Parameter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
+
+/**
+ * Injected into the configurator WebView as window.configBridge.
+ *
+ * JS calls:
+ *   configBridge.submitConfig(jsonString)   — user clicked "Launch Mission"
+ *   configBridge.saveConfig(jsonString)     — user clicked "Save"
+ *   configBridge.loadSavedConfig()          — returns JSON string or ""
+ *   configBridge.getSubsystemsJson(folder)  — returns JSON array of subsystem objects
+ *   configBridge.log(msg)                   — debug console
+ */
+public class ConfigBridge {
+
+    private static final String SAVE_PATH        = "src/main/resources/mission_config.json";
+    private static final String SUBSYSTEMS_ROOT  = "src/main/resources/subsystems";
+
+    private final Consumer<MissionConfig> onConfigReady;
+    private final CountDownLatch latch;
+
+    public ConfigBridge(Consumer<MissionConfig> onConfigReady, CountDownLatch latch) {
+        this.onConfigReady = onConfigReady;
+        this.latch         = latch;
+    }
+
+    // ── Called by JS when user clicks "Launch Mission" ─────────────────────
+    public void submitConfig(String jsonString) {
+        Platform.runLater(() -> {
+            try {
+                MissionConfig config = parseConfig(jsonString);
+
+                System.out.println("here");
+                System.out.println("[Configurator] Config received: " + config);
+                onConfigReady.accept(config);
+                latch.countDown();
+            } catch (Exception e) {
+                System.err.println("[ConfigBridge] submitConfig error: " + e.getMessage());
+            }
+        });
+    }
+
+    // ── Save config to disk ────────────────────────────────────────────────
+    public void saveConfig(String jsonString) {
+        try {
+            File f = new File(SAVE_PATH);
+            f.getParentFile().mkdirs();
+            Files.writeString(f.toPath(), jsonString);
+            System.out.println("[Configurator] Config saved to " + SAVE_PATH);
+        } catch (IOException e) {
+            System.err.println("[ConfigBridge] saveConfig error: " + e.getMessage());
+        }
+    }
+
+    // ── Load previously saved config (returns "" if none) ─────────────────
+    public String loadSavedConfig() {
+        try {
+            File f = new File(SAVE_PATH);
+            if (f.exists()) return Files.readString(f.toPath());
+        } catch (IOException e) {
+            System.err.println("[ConfigBridge] loadSavedConfig error: " + e.getMessage());
+        }
+        return "";
+    }
+
+    /**
+     * Scans src/main/resources/subsystems/ and returns a JSON object:
+     * {
+     *   "PROPULSION": [ {name, type, mass_kg, power_w, ...}, ... ],
+     *   "EO_SENSOR":  [ ... ],
+     *   "SATCOM":     [ ... ],
+     *   ...
+     * }
+     * Categories are derived from the 'type' column in each CSV.
+     * Multiple CSV files in the same category are merged.
+     */
+    public String getSubsystemsJson() {
+        Map<String, List<Map<String, String>>> result = new LinkedHashMap<>();
+        File root = Paths.get(SUBSYSTEMS_ROOT).toAbsolutePath().toFile();
+
+        if (!root.exists() || !root.isDirectory()) {
+            System.err.println("[ConfigBridge] Subsystems folder not found: " + root);
+            return "{}";
+        }
+
+        File[] csvFiles = root.listFiles(f -> f.isFile() && f.getName().endsWith(".csv"));
+        if (csvFiles == null) return "{}";
+        Arrays.sort(csvFiles);
+
+        for (File csv : csvFiles) {
+            try {
+                List<String> lines = Files.readAllLines(csv.toPath());
+                if (lines.isEmpty()) continue;
+                String[] headers = lines.get(0).split(",", -1);
+
+                for (int i = 1; i < lines.size(); i++) {
+                    String line = lines.get(i).trim();
+                    if (line.isEmpty()) continue;
+                    String[] vals = line.split(",", -1);
+                    Map<String, String> entry = new LinkedHashMap<>();
+                    for (int j = 0; j < headers.length; j++) {
+                        entry.put(headers[j].trim(), j < vals.length ? vals[j].trim() : "");
+                    }
+                    // Category = value of 'type' column, fallback to filename stem uppercased
+                    String category = entry.getOrDefault("type",
+                            csv.getName().replace(".csv","").toUpperCase());
+                    result.computeIfAbsent(category, k -> new ArrayList<>()).add(entry);
+                }
+            } catch (IOException e) {
+                System.err.println("[ConfigBridge] Error reading " + csv.getName() + ": " + e.getMessage());
+            }
+        }
+
+        // Serialize to JSON manually (no external dependency)
+        return mapToJson(result);
+    }
+
+    public void log(String msg) {
+        System.out.println("[JS-Config] " + msg);
+    }
+
+    // ── JSON parsing ───────────────────────────────────────────────────────
+    @SuppressWarnings("unchecked")
+    private MissionConfig parseConfig(String json) throws Exception {
+        // Lightweight JSON parsing without external dependencies
+        // Relies on the structure produced by the JS side
+
+        // Use javax/Jackson if available, else fall back to manual parse
+        // We use a simple recursive descent approach for our known schema
+        SimpleJsonParser p = new SimpleJsonParser(json);
+        Map<String, Object> root = p.parseObject();
+
+        boolean satcom = getBool(root, "satcomEnabled");
+        boolean eo     = getBool(root, "eoDetectionEnabled");
+        AbsoluteDate epoch   = getAbsDate(root, "epoch");
+        Parametres.date_orekit=epoch;
+        List<Map<String, Object>> satList = (List<Map<String, Object>>) root.getOrDefault("satellites", List.of());
+        List<MissionConfig.SatConfig> configs = new ArrayList<>();
+
+        for (Map<String, Object> s : satList) {
+            String name       = getString(s, "name");
+            double mass       = getDouble(s, "mass");
+            double alt        = getDouble(s, "altitudeKm") * 1000.0 + 6_378_137.0;
+            double ecc        = getDouble(s, "eccentricity");
+            double inc        = Math.toRadians(getDouble(s, "inclinationDeg"));
+            double raan       = Math.toRadians(getDouble(s, "raanDeg"));
+            double omega      = Math.toRadians(getDouble(s, "argPerigeeDeg"));
+            double nu         = Math.toRadians(getDouble(s, "trueAnomalyDeg"));
+
+            Map<String, Object> subs = (Map<String, Object>) s.getOrDefault("subsystems", Map.of());
+            Map<String, String> subsStr = new LinkedHashMap<>();
+            for (Map.Entry<String, Object> e : subs.entrySet()) {
+                subsStr.put(e.getKey(), e.getValue() == null ? "" : e.getValue().toString());
+            }
+
+            configs.add(new MissionConfig.SatConfig(name, mass, alt, ecc, inc, raan, omega, nu, subsStr));
+        }
+
+        return new MissionConfig(satcom, eo, epoch, configs);
+    }
+
+    private boolean getBool(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        if (v instanceof Boolean) return (Boolean) v;
+        return "true".equalsIgnoreCase(String.valueOf(v));
+    }
+
+    private String getString(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        return v == null ? "" : v.toString();
+    }
+
+    private AbsoluteDate getAbsDate(Map<String, Object> m, String k) {
+
+        Object v = m.get(k);
+        if (v == null) {
+            throw new IllegalArgumentException("Missing date field: " + k);
+        }
+        String iso = v.toString().trim();
+        return new AbsoluteDate(
+                iso,
+                TimeScalesFactory.getUTC()
+        );
+    }
+
+    private double getDouble(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        if (v == null) return 0.0;
+        try { return Double.parseDouble(v.toString()); } catch (Exception e) { return 0.0; }
+    }
+
+    // ── Minimal JSON serializer ────────────────────────────────────────────
+    private String mapToJson(Map<String, List<Map<String, String>>> data) {
+        StringBuilder sb = new StringBuilder("{");
+        boolean firstCat = true;
+        for (Map.Entry<String, List<Map<String, String>>> cat : data.entrySet()) {
+            if (!firstCat) sb.append(",");
+            firstCat = false;
+            sb.append("\"").append(esc(cat.getKey())).append("\":[");
+            boolean firstItem = true;
+            for (Map<String, String> item : cat.getValue()) {
+                if (!firstItem) sb.append(",");
+                firstItem = false;
+                sb.append("{");
+                boolean firstField = true;
+                for (Map.Entry<String, String> field : item.entrySet()) {
+                    if (!firstField) sb.append(",");
+                    firstField = false;
+                    sb.append("\"").append(esc(field.getKey())).append("\":\"")
+                            .append(esc(field.getValue())).append("\"");
+                }
+                sb.append("}");
+            }
+            sb.append("]");
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    private String esc(String s) {
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    // ── Minimal JSON parser ────────────────────────────────────────────────
+    static class SimpleJsonParser {
+        private final String src;
+        private int pos = 0;
+
+        SimpleJsonParser(String src) { this.src = src.trim(); }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> parseObject() {
+            Map<String, Object> map = new LinkedHashMap<>();
+            expect('{');
+            skipWs();
+            while (pos < src.length() && src.charAt(pos) != '}') {
+                String key = parseString();
+                skipWs(); expect(':'); skipWs();
+                Object val = parseValue();
+                map.put(key, val);
+                skipWs();
+                if (pos < src.length() && src.charAt(pos) == ',') { pos++; skipWs(); }
+            }
+            if (pos < src.length()) pos++; // consume '}'
+            return map;
+        }
+
+        @SuppressWarnings("unchecked")
+        private List<Object> parseArray() {
+            List<Object> list = new ArrayList<>();
+            expect('[');
+            skipWs();
+            while (pos < src.length() && src.charAt(pos) != ']') {
+                list.add(parseValue());
+                skipWs();
+                if (pos < src.length() && src.charAt(pos) == ',') { pos++; skipWs(); }
+            }
+            if (pos < src.length()) pos++;
+            return list;
+        }
+
+        private Object parseValue() {
+            skipWs();
+            if (pos >= src.length()) return null;
+            char c = src.charAt(pos);
+            if (c == '"')  return parseString();
+            if (c == '{')  return parseObject();
+            if (c == '[')  return parseArray();
+            if (c == 't')  { pos += 4; return Boolean.TRUE; }
+            if (c == 'f')  { pos += 5; return Boolean.FALSE; }
+            if (c == 'n')  { pos += 4; return null; }
+            // number
+            int start = pos;
+            while (pos < src.length() && "-0123456789.eE+".indexOf(src.charAt(pos)) >= 0) pos++;
+            String num = src.substring(start, pos);
+            try { return Double.parseDouble(num); } catch (Exception e) { return num; }
+        }
+
+        private String parseString() {
+            expect('"');
+            StringBuilder sb = new StringBuilder();
+            while (pos < src.length()) {
+                char c = src.charAt(pos++);
+                if (c == '"') break;
+                if (c == '\\' && pos < src.length()) {
+                    char e = src.charAt(pos++);
+                    switch (e) {
+                        case '"': sb.append('"'); break;
+                        case '\\': sb.append('\\'); break;
+                        case 'n': sb.append('\n'); break;
+                        case 't': sb.append('\t'); break;
+                        default: sb.append(e);
+                    }
+                } else {
+                    sb.append(c);
+                }
+            }
+            return sb.toString();
+        }
+
+        private void expect(char c) {
+            skipWs();
+            if (pos < src.length() && src.charAt(pos) == c) pos++;
+        }
+
+        private void skipWs() {
+            while (pos < src.length() && Character.isWhitespace(src.charAt(pos))) pos++;
+        }
+    }
+}

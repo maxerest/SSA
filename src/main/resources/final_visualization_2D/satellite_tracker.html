@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Satellite Ground Track Tracker</title>
-    <link rel="stylesheet" href="web/styles.css" />
+    <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
@@ -74,15 +74,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 
 <!-- ── Application scripts (load order: dependencies first) ────── -->
-<script src="web/config.js"></script>   <!-- COLORS, EARTH_R                          -->
-<script src="web/utils.js"></script>    <!-- xyz2ll, formatMs, getBest …              -->
-<script src="web/state.js"></script>    <!-- sats, times, idx, obsEpoch …             -->
-<script src="web/parsers.js"></script>  <!-- parseCSV, parseGSCSV, parseObsCSV …      -->
-<script src="web/map.js"></script>      <!-- initMap, drawTracks, updateDots …        -->
-<script src="web/popup.js"></script>    <!-- openSatInfoPopup, refreshSatInfoPopup … -->
-<script src="web/stats.js"></script>    <!-- updateStats, buildLegend                 -->
-<script src="web/explorer.js"></script> <!-- populateExplorer, renderExplorerTree …  -->
-<script src="web/main.js"></script>     <!-- event listeners, Java bridge, initMap()  -->
+<script src="config.js"></script>   <!-- COLORS, EARTH_R                          -->
+<script src="utils.js"></script>    <!-- xyz2ll, formatMs, getBest …              -->
+<script src="state.js"></script>    <!-- sats, times, idx, obsEpoch …             -->
+<script src="parsers.js"></script>  <!-- parseCSV, parseGSCSV, parseObsCSV …      -->
+<script src="map.js"></script>      <!-- initMap, drawTracks, updateDots …        -->
+<script src="popup.js"></script>    <!-- openSatInfoPopup, refreshSatInfoPopup … -->
+<script src="stats.js"></script>    <!-- updateStats, buildLegend                 -->
+<script src="explorer.js"></script> <!-- populateExplorer, renderExplorerTree …  -->
+<script src="main.js"></script>     <!-- event listeners, Java bridge, initMap()  -->
 
 </body>
 </html>

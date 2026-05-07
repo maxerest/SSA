@@ -82,6 +82,7 @@ public class Propagator_1
            Visulations.init_observation_csv();
        }
     // Paramétrage du propagateur numérique
+
         for  (Satellite p : liste_par_sats_real_orbit){
             NumericalPropagator propagator = generic_propagator(name_file,p);
             EO_setup(p, propagator);

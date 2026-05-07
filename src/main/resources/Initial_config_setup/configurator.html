@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Mission Configurator</title>
+    <style>
+        /* ── Reset ──────────────────────────────────────────────────────────── */
+        *{box-sizing:border-box;margin:0;padding:0}
+
+        /* ── Design tokens (exact palette from tracker) ─────────────────── */
+        :root{
+            --bg:        #0a1220;
+            --bg2:       #0d1b2a;
+            --bg3:       #111e2e;
+            --bg4:       #0a1828;
+            --border:    #1a3a5a;
+            --border-hi: #2a6aaa;
+            --accent:    #4fc3f7;
+            --accent-dim:#1a4a6a;
+            --green:     #00e676;
+            --green-dim: #0a3a1a;
+            --warn:      #ffb74d;
+            --red:       #ef5350;
+            --text:      #ccc;
+            --text-dim:  #778;
+            --text-hi:   #fff;
+            --font:      'Courier New', Courier, monospace;
+        }
+
+        body{
+            font-family:var(--font);
+            background:var(--bg);
+            color:var(--text);
+            height:100vh;
+            display:flex;
+            flex-direction:column;
+            overflow:hidden;
+        }
+
+        /* ── Scrollbar ──────────────────────────────────────────────────── */
+        ::-webkit-scrollbar{width:5px;height:5px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#1a3a5a;border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:#2a5a8a}
+
+        /* ── Header ─────────────────────────────────────────────────────── */
+        #header{
+            display:flex;align-items:center;justify-content:space-between;
+            padding:10px 20px;
+            border-bottom:0.5px solid var(--border);
+            background:var(--bg2);
+            flex-shrink:0;
+        }
+        .header-title{
+            display:flex;align-items:center;gap:10px;
+            font-size:13px;font-weight:700;letter-spacing:.1em;
+            color:var(--text-hi);text-transform:uppercase;
+        }
+        .header-title .dot-anim{
+            width:8px;height:8px;border-radius:50%;
+            background:var(--accent);
+            box-shadow:0 0 8px var(--accent);
+            animation:pulse 2s infinite;
+        }
+        @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+        .header-actions{display:flex;gap:8px;align-items:center}
+
+        /* ── Buttons ─────────────────────────────────────────────────────── */
+        button{
+            font-family:var(--font);
+            font-size:11px;
+            padding:5px 14px;
+            background:transparent;
+            color:var(--text);
+            border:0.5px solid #334;
+            border-radius:6px;
+            cursor:pointer;
+            transition:background .15s,border-color .15s,color .15s;
+            white-space:nowrap;
+        }
+        button:hover{background:#1a2a3a;border-color:var(--border-hi);color:var(--text-hi)}
+        .btn-accent{
+            background:var(--accent-dim);
+            color:var(--accent);
+            border-color:var(--border-hi);
+        }
+        .btn-accent:hover{background:#1e5a8a;color:#7fd8ff}
+        .btn-green{
+            background:var(--green-dim);
+            color:var(--green);
+            border-color:#1a6a3a;
+            font-weight:700;
+            padding:6px 22px;
+            font-size:12px;
+        }
+        .btn-green:hover{background:#0e4a2a}
+        .btn-red{
+            background:#2a0a0a;color:var(--red);
+            border-color:#5a1a1a;
+            padding:3px 8px;font-size:11px;
+        }
+        .btn-red:hover{background:#3a1010}
+
+        /* ── Layout ─────────────────────────────────────────────────────── */
+        #layout{
+            display:flex;flex:1;overflow:hidden;
+        }
+
+        /* ── LEFT: satellite list ────────────────────────────────────────── */
+        #satPanel{
+            width:220px;flex-shrink:0;
+            border-right:0.5px solid var(--border);
+            display:flex;flex-direction:column;
+            background:var(--bg2);
+        }
+        #satPanelHeader{
+            padding:10px 14px;
+            border-bottom:0.5px solid var(--border);
+            display:flex;align-items:center;justify-content:space-between;
+        }
+        #satPanelHeader span{font-size:11px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase}
+        #satList{overflow-y:auto;flex:1;padding:6px 0}
+
+        .sat-item{
+            display:flex;align-items:center;gap:8px;
+            padding:8px 14px;
+            cursor:pointer;
+            border-left:2px solid transparent;
+            transition:background .12s,border-color .12s;
+            user-select:none;
+        }
+        .sat-item:hover{background:rgba(79,195,247,.06);border-left-color:rgba(79,195,247,.3)}
+        .sat-item.active{background:rgba(79,195,247,.1);border-left-color:var(--accent)}
+        .sat-item .sat-dot{
+            width:7px;height:7px;border-radius:50%;flex-shrink:0;
+        }
+        .sat-item .sat-label{font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .sat-item.active .sat-label{color:var(--text-hi)}
+        .sat-item .del-btn{
+            font-size:10px;color:#445;padding:1px 4px;
+            background:none;border:none;
+            opacity:0;transition:opacity .12s;
+        }
+        .sat-item:hover .del-btn{opacity:1}
+        .sat-item .del-btn:hover{color:var(--red);background:none}
+
+        #addSatBtn{
+            margin:10px 14px;
+            border:0.5px dashed #2a4a6a;
+            color:var(--accent);font-size:11px;
+            padding:7px;text-align:center;
+            border-radius:6px;
+            cursor:pointer;
+            transition:background .15s;
+            flex-shrink:0;
+        }
+        #addSatBtn:hover{background:rgba(79,195,247,.06);border-color:var(--accent)}
+
+        /* ── MIDDLE: satellite editor ────────────────────────────────────── */
+        #editorPanel{
+            flex:1;overflow-y:auto;
+            padding:20px 24px;
+        }
+
+        .section{
+            background:var(--bg3);
+            border:0.5px solid var(--border);
+            border-radius:8px;
+            margin-bottom:14px;
+            overflow:hidden;
+        }
+        .section-title{
+            font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+            color:var(--accent);
+            padding:8px 14px;
+            border-bottom:0.5px solid var(--border);
+            background:rgba(79,195,247,.04);
+            display:flex;align-items:center;gap:8px;
+        }
+        .section-title .badge{
+            font-size:9px;color:var(--text-dim);letter-spacing:0;
+            background:#0a1520;border:0.5px solid #2a3a4a;
+            padding:1px 6px;border-radius:3px;text-transform:none;
+        }
+        .section-body{padding:12px 14px}
+
+        /* ── Form grid ───────────────────────────────────────────────────── */
+        .form-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+            gap:10px 14px;
+        }
+        .form-field{display:flex;flex-direction:column;gap:3px}
+        .form-field label{font-size:10px;color:var(--text-dim);letter-spacing:.05em}
+        .form-field input,.form-field select{
+            font-family:var(--font);
+            font-size:12px;
+            background:#0a1520;
+            color:var(--text-hi);
+            border:0.5px solid var(--border);
+            border-radius:5px;
+            padding:5px 8px;
+            outline:none;
+            transition:border-color .12s;
+            width:100%;
+        }
+        .form-field input:focus,.form-field select:focus{border-color:var(--accent)}
+        .form-field select option{background:#0d1b2a}
+        .form-field .unit{font-size:10px;color:var(--text-dim);margin-top:2px}
+
+        /* ── Subsystems tabs ─────────────────────────────────────────────── */
+        .sub-tabs{
+            display:flex;gap:0;
+            border-bottom:0.5px solid var(--border);
+            overflow-x:auto;
+            flex-shrink:0;
+        }
+        .sub-tab{
+            font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+            color:var(--text-dim);
+            padding:7px 14px;
+            cursor:pointer;
+            border-bottom:2px solid transparent;
+            white-space:nowrap;
+            transition:color .12s,border-color .12s;
+            background:none;border-radius:0;border-left:none;border-right:none;border-top:none;
+        }
+        .sub-tab:hover{color:var(--text);background:rgba(79,195,247,.04)}
+        .sub-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+        .sub-panel{display:none;padding:10px 0 4px}
+        .sub-panel.active{display:block}
+
+        .sub-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+            gap:8px;
+        }
+        .sub-card{
+            background:#0a1520;
+            border:0.5px solid var(--border);
+            border-radius:6px;
+            padding:10px 12px;
+            cursor:pointer;
+            transition:border-color .12s,background .12s;
+            position:relative;
+        }
+        .sub-card:hover{border-color:var(--border-hi);background:#0d2030}
+        .sub-card.selected{border-color:var(--accent);background:rgba(79,195,247,.07)}
+        .sub-card.selected::before{
+            content:'✓';
+            position:absolute;top:7px;right:9px;
+            font-size:10px;color:var(--accent);
+        }
+        .sub-card .sub-name{font-size:12px;color:var(--text-hi);margin-bottom:4px;font-weight:600}
+        .sub-card .sub-specs{font-size:10px;color:var(--text-dim);line-height:1.6}
+        .sub-card .sub-spec-row{display:flex;justify-content:space-between;gap:6px}
+        .sub-card .sub-spec-row .spec-val{color:var(--text)}
+        .sub-none{
+            background:#0a1520;
+            border:0.5px dashed #2a3a4a;
+            border-radius:6px;padding:10px 12px;
+            cursor:pointer;font-size:11px;color:var(--text-dim);
+            transition:border-color .12s,color .12s;
+        }
+        .sub-none:hover{border-color:#4a5a6a;color:var(--text)}
+        .sub-none.selected{border-color:#4a5a6a;color:var(--text);background:#0d1520}
+
+        /* ── RIGHT: mission settings ─────────────────────────────────────── */
+        #missionPanel{
+            width:230px;flex-shrink:0;
+            border-left:0.5px solid var(--border);
+            display:flex;flex-direction:column;
+            background:var(--bg2);
+        }
+        #missionPanelHeader{
+            padding:10px 14px;
+            border-bottom:0.5px solid var(--border);
+        }
+        #missionPanelHeader span{font-size:11px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase}
+        #missionPanelBody{padding:14px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1}
+
+        /* ── Toggle switch ───────────────────────────────────────────────── */
+        .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .toggle-label{font-size:11px;color:var(--text)}
+        .toggle{position:relative;display:inline-block;width:36px;height:19px;flex-shrink:0}
+        .toggle input{opacity:0;width:0;height:0}
+        .slider{
+            position:absolute;inset:0;
+            background:#1a2a3a;border:0.5px solid #2a4a6a;
+            border-radius:19px;cursor:pointer;
+            transition:background .2s,border-color .2s;
+        }
+        .slider::before{
+            content:'';
+            position:absolute;left:3px;top:2.5px;
+            width:13px;height:13px;border-radius:50%;
+            background:#445;
+            transition:transform .2s,background .2s;
+        }
+        input:checked + .slider{background:rgba(0,230,118,.12);border-color:#1a6a3a}
+        input:checked + .slider::before{transform:translateX(17px);background:var(--green)}
+
+        .mission-divider{height:0.5px;background:var(--border)}
+
+        .mission-stat{
+            background:#0a1520;border:0.5px solid var(--border);
+            border-radius:6px;padding:8px 10px;
+        }
+        .mission-stat .ms-label{font-size:9px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+        .mission-stat .ms-val{font-size:20px;color:var(--text-hi);font-weight:700}
+        .mission-stat .ms-sub{font-size:10px;color:var(--text-dim);margin-top:1px}
+
+        /* ── Empty state ─────────────────────────────────────────────────── */
+        #emptyState{
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            height:100%;color:var(--text-dim);text-align:center;gap:12px;padding:40px;
+        }
+        #emptyState .empty-icon{font-size:36px;opacity:.3}
+        #emptyState p{font-size:12px;line-height:1.6;max-width:260px}
+
+        /* ── Toast ───────────────────────────────────────────────────────── */
+        #toast{
+            position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);
+            background:#0d2030;border:0.5px solid var(--accent);
+            color:var(--accent);font-size:11px;
+            padding:7px 18px;border-radius:20px;
+            opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;
+            z-index:9999;
+        }
+        #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+        /* ── No-data placeholder ─────────────────────────────────────────── */
+        .no-data{font-size:11px;color:var(--text-dim);font-style:italic;padding:8px 0}
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+    <div class="header-title">
+        <div class="dot-anim"></div>
+        MISSION CONFIGURATOR
+    </div>
+    <div class="header-actions">
+        <button onclick="loadSaved()">↑ Load</button>
+        <button onclick="saveConfig()">↓ Save</button>
+        <div style="width:1px;height:20px;background:var(--border)"></div>
+        <button class="btn-green" onclick="launchMission()">▶ Launch Mission</button>
+    </div>
+</div>
+
+<!-- Layout -->
+<div id="layout">
+
+    <!-- LEFT: satellite list -->
+    <div id="satPanel">
+        <div id="satPanelHeader">
+            <span>Satellites</span>
+            <span id="satCountBadge" style="font-size:11px;color:var(--accent)">0</span>
+        </div>
+        <div id="satList"></div>
+        <div id="addSatBtn" onclick="addSatellite()">＋ Add Satellite</div>
+    </div>
+
+    <!-- MIDDLE: editor -->
+    <div id="editorPanel">
+        <div id="emptyState">
+            <div class="empty-icon">🛰</div>
+            <p>No satellite configured.<br>Click <strong style="color:var(--accent)">+ Add Satellite</strong> to begin.</p>
+        </div>
+        <div id="satEditor" style="display:none"></div>
+    </div>
+
+    <!-- RIGHT: mission settings -->
+    <div id="missionPanel">
+        <div id="missionPanelHeader"><span>Mission Settings</span></div>
+        <div id="missionPanelBody">
+
+            <div>
+                <div style="font-size:10px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Epoch</div>
+                <div class="form-field">
+                    <label>Start date (UTC)</label>
+                    <input type="datetime-local" id="epochInput" value="2025-06-01T00:00"/>
+                </div>
+            </div>
+
+            <div class="mission-divider"></div>
+
+            <div>
+                <div style="font-size:10px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Payloads</div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                    <div class="toggle-row">
+                        <span class="toggle-label">EO Detection</span>
+                        <label class="toggle"><input type="checkbox" id="eoToggle" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">SATCOM Link</span>
+                        <label class="toggle"><input type="checkbox" id="satcomToggle" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mission-divider"></div>
+
+            <div>
+                <div style="font-size:10px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Summary</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                    <div class="mission-stat">
+                        <div class="ms-label">Satellites</div>
+                        <div class="ms-val" id="sumSats">0</div>
+                    </div>
+                    <div class="mission-stat">
+                        <div class="ms-label">Total mass</div>
+                        <div class="ms-val" id="sumMass">0</div>
+                        <div class="ms-sub">kg</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+    // ── State ────────────────────────────────────────────────────────
+    const SAT_COLORS = ['#4fc3f7','#00e676','#ffb74d','#ef5350','#ce93d8',
+        '#80cbc4','#fff176','#ff8a65','#90caf9','#a5d6a7'];
+    let satellites = [];   // array of sat objects
+    let activeSatId = null;
+    let subsystemCatalog = {};  // { PROPULSION:[...], EO_SENSOR:[...], SATCOM:[...] }
+
+    // ── Init ─────────────────────────────────────────────────────────
+    window.onload = () => {
+        loadSubsystems();
+    };
+
+    function loadSubsystems() {
+        try {
+            if (window.configBridge) {
+                const json = configBridge.getSubsystemsJson();
+                subsystemCatalog = JSON.parse(json || '{}');
+            }
+        } catch(e) {
+            console.error('loadSubsystems:', e);
+        }
+        // Add a default first satellite for convenience
+        addSatellite();
+    }
+
+    // ── Satellite management ──────────────────────────────────────────
+    function addSatellite() {
+        const id = Date.now();
+        const idx = satellites.length;
+        satellites.push({
+            id,
+            name: 'SAT_' + (idx + 1),
+            color: SAT_COLORS[idx % SAT_COLORS.length],
+            mass: 800,
+            altitudeKm: 500,
+            eccentricity: 0.001,
+            inclinationDeg: 87.4,
+            raanDeg: 0,
+            argPerigeeDeg: 0,
+            trueAnomalyDeg: 0,
+            subsystems: {}
+        });
+        renderSatList();
+        selectSat(id);
+        updateSummary();
+    }
+
+    function deleteSat(id, e) {
+        e.stopPropagation();
+        satellites = satellites.filter(s => s.id !== id);
+        if (activeSatId === id) {
+            activeSatId = satellites.length ? satellites[satellites.length-1].id : null;
+        }
+        renderSatList();
+        renderEditor();
+        updateSummary();
+    }
+
+    function selectSat(id) {
+        // Commit current editor values before switching
+        if (activeSatId !== null) commitEditor();
+        activeSatId = id;
+        renderSatList();
+        renderEditor();
+    }
+
+    function renderSatList() {
+        const list = document.getElementById('satList');
+        list.innerHTML = '';
+        satellites.forEach(s => {
+            const div = document.createElement('div');
+            div.className = 'sat-item' + (s.id === activeSatId ? ' active' : '');
+            div.innerHTML = `
+      <span class="sat-dot" style="background:${s.color}"></span>
+      <span class="sat-label">${esc(s.name)}</span>
+      <button class="del-btn" onclick="deleteSat(${s.id}, event)">✕</button>
+    `;
+            div.addEventListener('click', () => selectSat(s.id));
+            list.appendChild(div);
+        });
+        document.getElementById('satCountBadge').textContent = satellites.length;
+    }
+
+    // ── Editor ────────────────────────────────────────────────────────
+    function renderEditor() {
+        const empty  = document.getElementById('emptyState');
+        const editor = document.getElementById('satEditor');
+
+        if (!activeSatId || !satellites.length) {
+            empty.style.display = 'flex';
+            editor.style.display = 'none';
+            return;
+        }
+
+        const sat = satellites.find(s => s.id === activeSatId);
+        if (!sat) { empty.style.display='flex'; editor.style.display='none'; return; }
+
+        empty.style.display  = 'none';
+        editor.style.display = 'block';
+
+        editor.innerHTML = `
+    <!-- Identity -->
+    <div class="section">
+      <div class="section-title">
+        <span style="width:8px;height:8px;border-radius:50%;background:${sat.color};display:inline-block"></span>
+        Identity
+      </div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="form-field" style="grid-column:1/-1">
+            <label>Satellite name</label>
+            <input id="f_name" value="${esc(sat.name)}" oninput="liveUpdate('name',this.value)"/>
+          </div>
+          <div class="form-field">
+            <label>Mass (kg)</label>
+            <input id="f_mass" type="number" min="1" step="1" value="${sat.mass}" oninput="liveUpdate('mass',+this.value)"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orbital elements -->
+    <div class="section">
+      <div class="section-title">Orbital elements</div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Altitude (km)</label>
+            <input id="f_alt" type="number" min="200" max="40000" step="1" value="${sat.altitudeKm}" oninput="liveUpdate('altitudeKm',+this.value)"/>
+            <span class="unit">≈ ${altToSemiAxis(sat.altitudeKm).toFixed(0)} m semi-axis</span>
+          </div>
+          <div class="form-field">
+            <label>Eccentricity</label>
+            <input id="f_ecc" type="number" min="0" max="0.99" step="0.001" value="${sat.eccentricity}" oninput="liveUpdate('eccentricity',+this.value)"/>
+          </div>
+          <div class="form-field">
+            <label>Inclination (°)</label>
+            <input id="f_inc" type="number" min="0" max="180" step="0.1" value="${sat.inclinationDeg}" oninput="liveUpdate('inclinationDeg',+this.value)"/>
+          </div>
+          <div class="form-field">
+            <label>RAAN (°)</label>
+            <input id="f_raan" type="number" min="0" max="360" step="0.1" value="${sat.raanDeg}" oninput="liveUpdate('raanDeg',+this.value)"/>
+          </div>
+          <div class="form-field">
+            <label>Arg. perigee (°)</label>
+            <input id="f_omega" type="number" min="0" max="360" step="0.1" value="${sat.argPerigeeDeg}" oninput="liveUpdate('argPerigeeDeg',+this.value)"/>
+          </div>
+          <div class="form-field">
+            <label>True anomaly (°)</label>
+            <input id="f_nu" type="number" min="0" max="360" step="0.1" value="${sat.trueAnomalyDeg}" oninput="liveUpdate('trueAnomalyDeg',+this.value)"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sub-systems -->
+    <div class="section">
+      <div class="section-title">
+        Sub-systems
+        <span class="badge">${Object.keys(subsystemCatalog).length} categories loaded</span>
+      </div>
+      <div id="subsSection">
+        ${renderSubsystems(sat)}
+      </div>
+    </div>
+  `;
+    }
+
+    function renderSubsystems(sat) {
+        const cats = Object.keys(subsystemCatalog);
+        if (!cats.length) return '<div class="section-body no-data">No subsystems CSV found in resources/subsystems/</div>';
+
+        // Build tab headers
+        let tabs = '<div class="sub-tabs">';
+        cats.forEach((cat, i) => {
+            tabs += `<button class="sub-tab${i===0?' active':''}" onclick="switchSubTab(this,'subtab_${catId(cat)}')">${cat}</button>`;
+        });
+        tabs += '</div>';
+
+        // Build tab panels
+        let panels = '';
+        cats.forEach((cat, i) => {
+            const items = subsystemCatalog[cat] || [];
+            const selected = sat.subsystems[cat] || '';
+            panels += `<div id="subtab_${catId(cat)}" class="sub-panel${i===0?' active':''}">
+      <div class="section-body">
+        <div class="sub-grid">
+          <div class="sub-none${selected===''?' selected':''}" onclick="selectSub('${esc(cat)}','',this)">
+            <div style="font-size:11px;color:var(--text-dim)">— None —</div>
+          </div>`;
+            items.forEach(item => {
+                const n = item.name || '';
+                const isSelected = selected === n;
+                // Build spec rows from all columns except name, type, notes
+                const skip = new Set(['name','type','notes']);
+                const specRows = Object.entries(item)
+                    .filter(([k]) => !skip.has(k))
+                    .map(([k,v]) => `<div class="sub-spec-row"><span>${k}</span><span class="spec-val">${v}</span></div>`)
+                    .join('');
+                panels += `
+        <div class="sub-card${isSelected?' selected':''}" onclick="selectSub('${esc(cat)}','${esc(n)}',this)">
+          <div class="sub-name">${esc(n)}</div>
+          <div class="sub-specs">${specRows}</div>
+          ${item.notes ? `<div style="font-size:9px;color:var(--text-dim);margin-top:4px;font-style:italic">${esc(item.notes)}</div>` : ''}
+        </div>`;
+            });
+            panels += `</div></div></div>`;
+        });
+
+        return tabs + panels;
+    }
+
+    function switchSubTab(btn, panelId) {
+        btn.closest('.section').querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+        btn.closest('.section').querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(panelId).classList.add('active');
+    }
+
+    function selectSub(cat, name, el) {
+        const sat = satellites.find(s => s.id === activeSatId);
+        if (!sat) return;
+        sat.subsystems[cat] = name;
+        // Update UI selection in the current tab panel
+        el.closest('.sub-grid').querySelectorAll('.sub-card,.sub-none').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+
+    // ── Live update helpers ───────────────────────────────────────────
+    function liveUpdate(field, value) {
+        const sat = satellites.find(s => s.id === activeSatId);
+        if (!sat) return;
+        sat[field] = value;
+        if (field === 'name') {
+            renderSatList();
+            // Update alt display
+            const u = document.querySelector('#f_alt + .unit');
+            if (u) u.textContent = '';
+        }
+        if (field === 'altitudeKm') {
+            const u = document.querySelector('#f_alt + .unit');
+            if (u) u.textContent = `≈ ${altToSemiAxis(value).toFixed(0)} m semi-axis`;
+        }
+        if (field === 'mass') updateSummary();
+    }
+
+    function commitEditor() {
+        // Already committed via liveUpdate — nothing extra needed
+    }
+
+    // ── Summary ───────────────────────────────────────────────────────
+    function updateSummary() {
+        document.getElementById('sumSats').textContent = satellites.length;
+        const total = satellites.reduce((s, sat) => s + (sat.mass || 0), 0);
+        document.getElementById('sumMass').textContent = total.toFixed(0);
+    }
+
+    // ── Save / Load ───────────────────────────────────────────────────
+    function saveConfig() {
+        if (!window.configBridge) { toast('Bridge not available'); return; }
+        const payload = buildPayload();
+        configBridge.saveConfig(JSON.stringify(payload));
+        toast('Configuration saved ✓');
+    }
+
+    function loadSaved() {
+        if (!window.configBridge) { toast('Bridge not available'); return; }
+        try {
+            const json = configBridge.loadSavedConfig();
+            if (!json) { toast('No saved configuration found'); return; }
+            const data = JSON.parse(json);
+            applyPayload(data);
+            toast('Configuration loaded ✓');
+        } catch(e) {
+            toast('Load error: ' + e.message);
+        }
+    }
+
+    function applyPayload(data) {
+        document.getElementById('eoToggle').checked     = !!data.eoDetectionEnabled;
+        document.getElementById('satcomToggle').checked = !!data.satcomEnabled;
+        if (data.epoch) document.getElementById('epochInput').value = data.epoch.replace('Z','').replace(':00Z','');
+
+        satellites = (data.satellites || []).map((s, i) => ({
+            id: Date.now() + i,
+            name: s.name || 'SAT_'+(i+1),
+            color: SAT_COLORS[i % SAT_COLORS.length],
+            mass: s.mass || 800,
+            altitudeKm: s.altitudeKm || 500,
+            eccentricity: s.eccentricity || 0.001,
+            inclinationDeg: s.inclinationDeg || 0,
+            raanDeg: s.raanDeg || 0,
+            argPerigeeDeg: s.argPerigeeDeg || 0,
+            trueAnomalyDeg: s.trueAnomalyDeg || 0,
+            subsystems: s.subsystems || {}
+        }));
+
+        activeSatId = satellites.length ? satellites[0].id : null;
+        renderSatList();
+        renderEditor();
+        updateSummary();
+    }
+
+    // ── Launch ────────────────────────────────────────────────────────
+    function launchMission() {
+        if (satellites.length === 0) { toast('Add at least one satellite'); return; }
+        if (!window.configBridge) { toast('Bridge not connected'); return; }
+        commitEditor();
+        const payload = buildPayload();
+        configBridge.submitConfig(JSON.stringify(payload));
+    }
+
+    function buildPayload() {
+        const epoch = document.getElementById('epochInput').value;
+        return {
+            satcomEnabled:      document.getElementById('satcomToggle').checked,
+            eoDetectionEnabled: document.getElementById('eoToggle').checked,
+            epoch: epoch ? epoch + ':00Z' : '2025-06-01T00:00:00Z',
+            satellites: satellites.map(s => ({
+                name:           s.name,
+                mass:           s.mass,
+                altitudeKm:     s.altitudeKm,
+                eccentricity:   s.eccentricity,
+                inclinationDeg: s.inclinationDeg,
+                raanDeg:        s.raanDeg,
+                argPerigeeDeg:  s.argPerigeeDeg,
+                trueAnomalyDeg: s.trueAnomalyDeg,
+                subsystems:     s.subsystems
+            }))
+        };
+    }
+
+    // ── Utils ─────────────────────────────────────────────────────────
+    function altToSemiAxis(km) { return km * 1000 + 6_378_137; }
+    function catId(cat) { return cat.replace(/[^a-zA-Z0-9]/g,'_'); }
+    function esc(s) {
+        return String(s)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function toast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._to);
+        t._to = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+</script>
+</body>
+</html>
