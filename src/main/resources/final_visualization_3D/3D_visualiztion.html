@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>3D Satellite Visualizer</title>
+    <style>
+        :root {
+            --bg:         #07090f;
+            --panel:      #0d1117;
+            --border:     #1c2333;
+            --accent:     #1e90ff;
+            --accent2:    #00e5b0;
+            --warn:       #f59e0b;
+            --danger:     #ef4444;
+            --text:       #c9d1d9;
+            --text-dim:   #586069;
+            --ctrl-h:     46px;
+            --font-mono:  'Courier New', monospace;
+            --font-ui:    'Segoe UI', system-ui, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ── Datetime bar ───────────────────────────────────────────── */
+        #datetimeBar {
+            height: 28px;
+            background: #0a0e18;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            gap: 10px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            letter-spacing: .04em;
+            flex-shrink: 0;
+        }
+        .epoch-label { color: var(--text-dim); text-transform: uppercase; }
+        .epoch-val   { color: var(--accent2); }
+        .no-epoch    { color: var(--text-dim); font-style: italic; }
+
+        /* ── Controls bar ───────────────────────────────────────────── */
+        #controls {
+            height: var(--ctrl-h);
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 10px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        #controls label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+        #controls input[type=range] { accent-color: var(--accent); cursor: pointer; }
+
+        .ctrl-sep {
+            width: 1px; height: 24px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        button {
+            background: #161b22;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background .15s, border-color .15s;
+            white-space: nowrap;
+        }
+        button:hover { background: #21262d; border-color: var(--accent); }
+        button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        /* ── Status / stats ─────────────────────────────────────────── */
+        #statusRow {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 4px 14px;
+            background: #090c13;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            min-height: 26px;
+        }
+        #status { font-size: 11px; color: var(--text-dim); flex: 1; }
+        #statsRow {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--text-dim);
+            display: flex;
+            gap: 16px;
+        }
+        .stat-item { display: flex; gap: 5px; }
+        .stat-label { color: var(--text-dim); }
+        .stat-val   { color: var(--text); }
+
+        /* ── Canvas area ────────────────────────────────────────────── */
+        #canvasWrap {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        #glCanvas {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+        }
+
+        /* ── HUD overlays ───────────────────────────────────────────── */
+        #hudTopRight {
+            position: absolute;
+            top: 12px; right: 14px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: #f5e642;
+            text-align: right;
+            pointer-events: none;
+            line-height: 1.7;
+            text-shadow: 0 0 6px rgba(245,230,66,.5);
+        }
+
+        /* ── Legend ─────────────────────────────────────────────────── */
+        #legend {
+            position: absolute;
+            bottom: 14px; left: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            pointer-events: none;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            color: var(--text);
+        }
+        .legend-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ── Sat info popup ─────────────────────────────────────────── */
+        #satInfoPopup {
+            position: absolute;
+            top: 12px; left: 14px;
+            background: rgba(13,17,23,.92);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 14px;
+            min-width: 200px;
+            max-width: 280px;
+            font-size: 12px;
+            backdrop-filter: blur(8px);
+            display: none;
+        }
+        #satInfoPopup.visible { display: block; }
+        #satInfoHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        #satInfoTitle { font-weight: 600; color: var(--accent); }
+        #satInfoClose {
+            background: none; border: none;
+            color: var(--text-dim); cursor: pointer;
+            font-size: 14px; padding: 0 2px;
+        }
+        #satInfoClose:hover { color: var(--text); }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px solid #1c2333;
+            gap: 12px;
+        }
+        .info-key { color: var(--text-dim); }
+        .info-val { color: var(--text); font-family: var(--font-mono); }
+    </style>
+</head>
+<body>
+
+<!-- Datetime bar -->
+<div id="datetimeBar">
+    <span class="no-epoch">No epoch set — load a satellite CSV to begin</span>
+</div>
+
+<!-- Controls -->
+<div id="controls">
+    <label>Time</label>
+    <input type="range" id="tSlider" min="0" max="9" value="0" step="1" style="flex:2;min-width:120px;"/>
+    <div class="ctrl-sep"></div>
+    <button id="playBtn">▶ Play</button>
+    <div class="ctrl-group" style="display:flex;align-items:center;gap:6px;">
+        <label>Speed</label>
+        <input type="range" id="speedSlider" min="-6" max="6" value="0" step="1" style="width:90px;"/>
+        <span id="speedLabel" style="font-size:12px;min-width:28px;">1×</span>
+    </div>
+    <div class="ctrl-sep"></div>
+    <button id="uploadBtn">Load Sat CSV</button>
+    <button id="uploadGSBtn">Load GS CSV</button>
+    <button id="trailToggle" class="active">Trails ✓</button>
+    <button id="coneToggle"  class="active">Cones ✓</button>
+    <input type="file" id="csvFile"  accept=".csv" style="display:none;"/>
+    <input type="file" id="gsFile"   accept=".csv" style="display:none;"/>
+</div>
+
+<!-- Status / stats -->
+<div id="statusRow">
+    <div id="status">Waiting for data…</div>
+    <div id="statsRow"></div>
+</div>
+
+<!-- 3D canvas -->
+<div id="canvasWrap">
+    <canvas id="glCanvas"></canvas>
+    <div id="hudTopRight"></div>
+    <div id="legend"></div>
+
+    <!-- Sat info popup -->
+    <div id="satInfoPopup">
+        <div id="satInfoHeader">
+            <span id="satInfoTitle">—</span>
+            <button id="satInfoClose">✕</button>
+        </div>
+        <div id="satInfoBody"></div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    // ================================================================
+    // CONFIG
+    // ================================================================
+    const EARTH_R      = 6_378_100;   // metres
+    const TRAIL_LENGTH = 40;          // trail dot count
+    const SAT_COLORS   = [
+        '#e74c3c','#3498db','#2ecc71','#f1c40f',
+        '#e91e63','#00bcd4','#ff9800','#9c27b0',
+    ];
+
+    // ================================================================
+    // STATE  (mirrors state.js of the 2D visualiser)
+    // ================================================================
+    let sats         = {};       // { satName: { points, stationNames, color, ... } }
+    let times        = [];       // sorted unique timestamps (seconds)
+    let idx          = 0;
+    let obsEpoch     = null;     // ms
+    let groundStations = [];
+    let playing      = false;
+    let timer        = null;
+    let speedMultiplier = 1;
+    let showTrails   = true;
+    let showCones    = true;
+    let selectedSat  = null;
+
+    // ================================================================
+    // UTILS
+    // ================================================================
+    function sliderToSpeed(v) {
+        if (v === 0) return 1;
+        return v > 0 ? Math.pow(2, v) : 1 / Math.pow(2, -v);
+    }
+
+    function ecefToThree(x, y, z) {
+        // Three.js uses Y-up; ECEF: X→right, Y→up, Z→viewer
+        return new THREE.Vector3(x, z, -y);
+    }
+
+    function latLonToECEF(lat, lon, altM = 0) {
+        const phi    = lat * Math.PI / 180;
+        const lambda = lon * Math.PI / 180;
+        const r      = EARTH_R + altM;
+        return [
+            r * Math.cos(phi) * Math.cos(lambda),
+            r * Math.cos(phi) * Math.sin(lambda),
+            r * Math.sin(phi),
+        ];
+    }
+
+    // ================================================================
+    // THREE.JS SCENE SETUP
+    // ================================================================
+    const canvas  = document.getElementById('glCanvas');
+    const wrap    = document.getElementById('canvasWrap');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x07090f, 1);
+
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 1e4, 1e10);
+    camera.position.set(0, 0, EARTH_R * 3.2);
+
+    // Ambient + directional light
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    const sun = new THREE.DirectionalLight(0xfff8e7, 1.1);
+    sun.position.set(1, 0.5, 1).normalize();
+    scene.add(sun);
+
+    // ── Stars background ─────────────────────────────────────────────
+    (function buildStars() {
+        const N  = 3000;
+        const pos = new Float32Array(N * 3);
+        for (let i = 0; i < N; i++) {
+            const phi   = Math.acos(2 * Math.random() - 1);
+            const theta = 2 * Math.PI * Math.random();
+            const r     = EARTH_R * 40;
+            pos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+            pos[i * 3 + 1] = r * Math.cos(phi);
+            pos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        scene.add(new THREE.Points(geo,
+            new THREE.PointsMaterial({ color: 0xffffff, size: EARTH_R * 0.003, sizeAttenuation: true })));
+    })();
+
+    // ── Earth sphere ─────────────────────────────────────────────────
+    const earthGeo = new THREE.SphereGeometry(EARTH_R, 64, 64);
+    // Load real texture if available, else procedural fallback
+    const texLoader = new THREE.TextureLoader();
+    const earthMat  = new THREE.MeshPhongMaterial({
+        color: 0x1a6fa0,
+        emissive: 0x0a1a2e,
+        specular: 0x2244aa,
+        shininess: 12,
+    });
+    // Try online texture (fails silently in offline envs)
+    texLoader.load(
+        'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+        tex => { earthMat.map = tex; earthMat.needsUpdate = true; },
+        undefined, () => {}
+    );
+    const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+    scene.add(earthMesh);
+
+    // Atmosphere glow
+    const atmGeo = new THREE.SphereGeometry(EARTH_R * 1.025, 64, 64);
+    const atmMat = new THREE.MeshPhongMaterial({
+        color: 0x3399ff, transparent: true, opacity: 0.07,
+        side: THREE.FrontSide, depthWrite: false,
+    });
+    scene.add(new THREE.Mesh(atmGeo, atmMat));
+
+    // ── Orbit controls (manual implementation, no import needed) ─────
+    let isDragging = false, prevMouse = { x: 0, y: 0 };
+    let spherical  = { theta: 0, phi: Math.PI / 2, r: EARTH_R * 3.2 };
+
+    canvas.addEventListener('mousedown',  e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+    canvas.addEventListener('mouseup',    () => isDragging = false);
+    canvas.addEventListener('mouseleave', () => isDragging = false);
+    canvas.addEventListener('mousemove',  e => {
+        if (!isDragging) return;
+        const dx = (e.clientX - prevMouse.x) * 0.005;
+        const dy = (e.clientY - prevMouse.y) * 0.005;
+        spherical.theta -= dx;
+        spherical.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy));
+        prevMouse = { x: e.clientX, y: e.clientY };
+        updateCamera();
+    });
+    canvas.addEventListener('wheel', e => {
+        spherical.r = Math.max(EARTH_R * 1.5, Math.min(EARTH_R * 8, spherical.r * (1 + e.deltaY * 0.001)));
+        updateCamera();
+    }, { passive: true });
+
+    // Touch support
+    let touchStart = null;
+    canvas.addEventListener('touchstart', e => {
+        if (e.touches.length === 1)
+            touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    });
+    canvas.addEventListener('touchmove', e => {
+        if (!touchStart || e.touches.length !== 1) return;
+        const dx = (e.touches[0].clientX - touchStart.x) * 0.005;
+        const dy = (e.touches[0].clientY - touchStart.y) * 0.005;
+        spherical.theta -= dx;
+        spherical.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy));
+        touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        updateCamera();
+        e.preventDefault();
+    }, { passive: false });
+
+    function updateCamera() {
+        camera.position.set(
+            spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta),
+            spherical.r * Math.cos(spherical.phi),
+            spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta),
+        );
+        camera.lookAt(0, 0, 0);
+    }
+    updateCamera();
+
+    // ── Raycaster for satellite click ─────────────────────────────────
+    const raycaster  = new THREE.Raycaster();
+    const mouseNDC   = new THREE.Vector2();
+    const satMeshMap = new Map();   // mesh uuid → satName
+
+    canvas.addEventListener('click', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouseNDC.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+        mouseNDC.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouseNDC, camera);
+        const hits = raycaster.intersectObjects([...satMeshMap.keys()].map(id =>
+            scene.getObjectByProperty('uuid', id)).filter(Boolean));
+        if (hits.length) {
+            const name = satMeshMap.get(hits[0].object.uuid);
+            if (name) openSatInfoPopup(name);
+        }
+    });
+
+    // ================================================================
+    // SCENE OBJECTS
+    // ================================================================
+    const satObjects   = {};   // satName → { mesh, trailPts[], cones[], trailGeo }
+    const gsObjects    = [];
+
+    function hexToColor(hex) {
+        return new THREE.Color(hex);
+    }
+
+    // ── Ground station helpers ────────────────────────────────────────
+    function buildConeMesh(ecefPos, colorHex, activated) {
+        const outward = new THREE.Vector3(...ecefPos).normalize();
+        const top     = new THREE.Vector3(...ecefPos).addScaledVector(outward, 2_000_000);
+        const radius  = 2_000_000 * Math.tan(75 * Math.PI / 180);
+
+        const pts     = [];
+        const N       = 48;
+        const arbitrary = Math.abs(outward.z) < 0.9
+            ? new THREE.Vector3(0, 0, 1)
+            : new THREE.Vector3(1, 0, 0);
+        const u = new THREE.Vector3().crossVectors(outward, arbitrary).normalize();
+        const v = new THREE.Vector3().crossVectors(outward, u);
+
+        for (let i = 0; i < N; i++) {
+            const a = (2 * Math.PI * i) / N;
+            pts.push(top.clone()
+                .addScaledVector(u, radius * Math.cos(a))
+                .addScaledVector(v, radius * Math.sin(a)));
+        }
+
+        // Tip = ecefPos
+        const tip   = new THREE.Vector3(...ecefPos);
+        const verts = [];
+        for (let i = 0; i < N; i++) {
+            const next = (i + 1) % N;
+            verts.push(tip, pts[i], pts[next]);
+        }
+        const geo = new THREE.BufferGeometry();
+        const arr = new Float32Array(verts.length * 3);
+        verts.forEach((v3, i) => { arr[i*3]=v3.x; arr[i*3+1]=v3.y; arr[i*3+2]=v3.z; });
+        geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+        const mat = new THREE.MeshBasicMaterial({
+            color: activated ? 0x00cc66 : 0xff3333,
+            transparent: true, opacity: 0.18,
+            side: THREE.DoubleSide, depthWrite: false,
+        });
+        return new THREE.Mesh(geo, mat);
+    }
+
+    function addGroundStation(name, lat, lon, alt, activated) {
+        const [x, y, z] = latLonToECEF(lat, lon, alt * 1000);
+        const pos = new THREE.Vector3(x, y, z);
+
+        const sphere = new THREE.Mesh(
+            new THREE.SphereGeometry(80_000, 16, 16),
+            new THREE.MeshPhongMaterial({ color: activated ? 0x00ff88 : 0xff4444, emissive: activated ? 0x003322 : 0x220000 })
+        );
+        sphere.position.copy(pos);
+        scene.add(sphere);
+
+        const cone = buildConeMesh([x, y, z], activated ? '#00ff88' : '#ff4444', activated);
+        cone.visible = showCones;
+        scene.add(cone);
+
+        gsObjects.push({ name, sphere, cone, activated });
+    }
+
+    // ── Satellite scene objects ───────────────────────────────────────
+    function createSatObjects(satName, colorHex) {
+        const color = hexToColor(colorHex);
+        const mat   = new THREE.MeshPhongMaterial({
+            color, emissive: color.clone().multiplyScalar(0.3), shininess: 60,
+        });
+        const mesh  = new THREE.Mesh(new THREE.SphereGeometry(100_000, 12, 12), mat);
+        scene.add(mesh);
+        satMeshMap.set(mesh.uuid, satName);
+
+        // Trail: a Points object, positions updated each frame
+        const trailArr = new Float32Array(TRAIL_LENGTH * 3);
+        const trailGeo = new THREE.BufferGeometry();
+        trailGeo.setAttribute('position', new THREE.BufferAttribute(trailArr, 3));
+        const trailMat = new THREE.PointsMaterial({
+            color, size: 50_000, sizeAttenuation: true,
+            transparent: true, opacity: 0.55,
+        });
+        const trailPts = new THREE.Points(trailGeo, trailMat);
+        trailPts.visible = showTrails;
+        scene.add(trailPts);
+
+        const history = [];  // array of [x,y,z] (most-recent first)
+
+        satObjects[satName] = { mesh, trailPts, trailGeo, trailArr, history, colorHex };
+    }
+
+    // ================================================================
+    // CSV PARSING  (matches parsers.js pattern)
+    // ================================================================
+    function parseCSV(text) {
+        const lines   = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const rows    = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const vals = lines[i].split(',');
+            const obj  = {};
+            headers.forEach((h, j) => obj[h] = vals[j] ? vals[j].trim() : '');
+            rows.push(obj);
+        }
+        return { headers, rows };
+    }
+
+    function loadSatCSV(text) {
+        const { rows } = parseCSV(text);
+        if (!rows.length) return;
+
+        // Group by satellite name
+        const grouped = {};
+        rows.forEach(r => {
+            const name = r['name_sat'] || r['name'] || 'Unknown';
+            if (!grouped[name]) grouped[name] = [];
+            grouped[name].push(r);
+        });
+
+        // Determine epoch from first timestamp
+        const firstRow = rows[0];
+        const t0 = parseFloat(firstRow['t'] || 0);
+        // If epoch not set via Java bridge, default to "now minus t0"
+        if (obsEpoch === null) {
+            obsEpoch = Date.now() - t0 * 1000;
+        }
+
+        // Build sats
+        sats   = {};
+        times  = [];
+        const timeSet = new Set();
+
+        const satNames = Object.keys(grouped);
+        satNames.forEach((satName, colorIdx) => {
+            const colorHex = SAT_COLORS[colorIdx % SAT_COLORS.length];
+            const pts = grouped[satName].map(r => {
+                const t = parseFloat(r['t'] || 0);
+                timeSet.add(t);
+                const firing  = parseFloat(r['firing'] || 0);
+                const detStr  = (r['detected_by_gs'] || r['detected_by_gs'] || '').toLowerCase();
+                const detected = detStr === 'true' || detStr === '1' ? 1 : 0;
+                return {
+                    x: parseFloat(r['x']), y: parseFloat(r['y']), z: parseFloat(r['z']),
+                    t, firing, detected,
+                    station: r['nom_station'] || '',
+                };
+            });
+            sats[satName] = { pts, colorHex, isNoisy: satName.toLowerCase().includes('noisy') };
+
+            // (Re)create scene objects
+            if (satObjects[satName]) {
+                scene.remove(satObjects[satName].mesh);
+                scene.remove(satObjects[satName].trailPts);
+                satMeshMap.delete(satObjects[satName].mesh.uuid);
+            }
+            createSatObjects(satName, colorHex);
+        });
+
+        times = [...timeSet].sort((a, b) => a - b);
+        idx   = 0;
+
+        const sl = document.getElementById('tSlider');
+        sl.min = 0; sl.max = times.length - 1; sl.value = 0;
+
+        document.getElementById('status').textContent =
+            `${satNames.length} satellite(s), ${times.length} time steps loaded.`;
+
+        buildLegend();
+        updateDatetimeBar();
+        tick();
+    }
+
+    function loadGSCSV(text) {
+        // Remove old GS objects
+        gsObjects.forEach(o => { scene.remove(o.sphere); scene.remove(o.cone); });
+        gsObjects.length = 0;
+
+        const { rows } = parseCSV(text);
+        rows.forEach((r, i) => {
+            const name      = r['name'] || `GS_${i}`;
+            const lat       = parseFloat(r['lat'] || 0);
+            const lon       = parseFloat(r['long'] || r['lon'] || 0);
+            const alt       = parseFloat(r['alt'] || 0);
+            const activated = (r['activated'] || 'true').toLowerCase() !== 'false';
+            addGroundStation(name, lat, lon, alt, activated);
+        });
+        document.getElementById('status').textContent =
+            document.getElementById('status').textContent +
+            ` | ${gsObjects.length} ground station(s) loaded.`;
+    }
+
+    // ================================================================
+    // ANIMATION / TICK
+    // ================================================================
+    function currentUnixMs() {
+        if (!times.length) return NaN;
+        return obsEpoch + times[idx] * 1000;
+    }
+
+    function tick() {
+        if (!times.length) return;
+        const t       = times[idx];
+        const satNames = Object.keys(sats);
+        const labelLines = [];
+
+        satNames.forEach(satName => {
+            const sat = sats[satName];
+            const obj = satObjects[satName];
+            if (!obj) return;
+
+            // Find closest point at time t
+            const closest = sat.pts.reduce((best, p) =>
+                Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best, sat.pts[0]);
+
+            const pos = new THREE.Vector3(closest.x, closest.y, closest.z);
+
+            // Move sphere
+            obj.mesh.position.copy(pos);
+
+            // Color based on detection
+            let hexColor = sat.colorHex;
+            if (sat.isNoisy) {
+                hexColor = closest.detected ? '#3498db' : '#ffffff';
+            } else {
+                hexColor = closest.detected ? '#2ecc71' : '#e74c3c';
+            }
+            obj.mesh.material.color.set(hexColor);
+            obj.mesh.material.emissive.set(hexColor).multiplyScalar(0.25);
+            obj.trailPts.material.color.set(hexColor);
+
+            // Update trail history
+            obj.history.unshift([closest.x, closest.y, closest.z]);
+            if (obj.history.length > TRAIL_LENGTH) obj.history.length = TRAIL_LENGTH;
+            for (let i = 0; i < TRAIL_LENGTH; i++) {
+                const p = obj.history[i] || obj.history[obj.history.length - 1] || [0,0,0];
+                obj.trailArr[i * 3]     = p[0];
+                obj.trailArr[i * 3 + 1] = p[1];
+                obj.trailArr[i * 3 + 2] = p[2];
+            }
+            obj.trailGeo.attributes.position.needsUpdate = true;
+
+            // Station label
+            if (closest.detected && closest.station && closest.station !== '' && closest.station !== 'nan') {
+                labelLines.push(`${satName} → ${closest.station}`);
+            }
+        });
+
+        // HUD labels
+        document.getElementById('hudTopRight').textContent = labelLines.join('\n');
+
+        // Datetime bar
+        updateDatetimeBar();
+
+        // Stats
+        const detected = satNames.filter(n => {
+            const s = sats[n];
+            const c = s.pts.reduce((b, p) => Math.abs(p.t - t) < Math.abs(b.t - t) ? p : b, s.pts[0]);
+            return c.detected;
+        });
+        document.getElementById('statsRow').innerHTML =
+            `<div class="stat-item"><span class="stat-label">VISIBLE</span>
+       <span class="stat-val">${detected.length} / ${satNames.length}</span></div>` +
+            `<div class="stat-item"><span class="stat-label">GS</span>
+       <span class="stat-val">${gsObjects.length}</span></div>`;
+
+        // Refresh selected sat popup
+        if (selectedSat) refreshSatInfoPopup(selectedSat);
+
+        document.getElementById('tSlider').value = idx;
+    }
+
+    // ── Playback ──────────────────────────────────────────────────────
+    function restartTimer() {
+        clearInterval(timer);
+        if (!playing || !times.length) return;
+        const interval = Math.max(16, Math.round(120 / Math.max(1, speedMultiplier)));
+        const steps    = Math.max(1, Math.round(speedMultiplier));
+        timer = setInterval(() => {
+            idx = (idx + steps) % times.length;
+            tick();
+        }, interval);
+    }
+
+    // ── Render loop (Three.js) ────────────────────────────────────────
+    function resizeIfNeeded() {
+        const w = wrap.clientWidth, h = wrap.clientHeight;
+        if (canvas.width !== w || canvas.height !== h) {
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        }
+    }
+
+    (function renderLoop() {
+        requestAnimationFrame(renderLoop);
+        resizeIfNeeded();
+        renderer.render(scene, camera);
+    })();
+
+    // ================================================================
+    // DATETIME BAR
+    // ================================================================
+    function updateDatetimeBar() {
+        const bar = document.getElementById('datetimeBar');
+        const ms  = currentUnixMs();
+
+        if (obsEpoch === null) {
+            bar.innerHTML = '<span class="no-epoch">No epoch set — load a satellite CSV to begin</span>';
+            return;
+        }
+        if (isNaN(ms)) {
+            bar.innerHTML = '<span class="no-epoch">Epoch set — load satellite CSV to begin</span>';
+            return;
+        }
+
+        const iso        = new Date(ms).toISOString();
+        const datePart   = iso.substring(0, 10);
+        const timePart   = iso.substring(11, 19);
+        const elapsedS   = Math.round((ms - obsEpoch) / 1000);
+        const elH        = Math.floor(elapsedS / 3600);
+        const elM        = Math.floor((elapsedS % 3600) / 60);
+        const elS        = elapsedS % 60;
+        bar.innerHTML =
+            `<span class="epoch-label">SIM DATE</span>` +
+            `<span class="epoch-val">${datePart}&nbsp;&nbsp;${timePart} UTC</span>` +
+            `<span class="epoch-label" style="margin-left:16px;">ELAPSED</span>` +
+            `<span class="epoch-val">T+${elH}h ${String(elM).padStart(2,'0')}m ${String(elS).padStart(2,'0')}s</span>`;
+    }
+
+    // ================================================================
+    // LEGEND
+    // ================================================================
+    function buildLegend() {
+        const el = document.getElementById('legend');
+        const items = [
+            { color: '#2ecc71', label: 'Detected (real)' },
+            { color: '#e74c3c', label: 'Not detected (real)' },
+            { color: '#3498db', label: 'Detected (noisy)' },
+            { color: '#ffffff', label: 'Not detected (noisy)' },
+            { color: '#00ff88', label: 'Ground station (active)' },
+            { color: '#ff4444', label: 'Ground station (inactive)' },
+        ];
+        el.innerHTML = items.map(i =>
+            `<div class="legend-item">
+       <div class="legend-dot" style="background:${i.color};"></div>
+       <span>${i.label}</span>
+     </div>`
+        ).join('');
+    }
+
+    // ================================================================
+    // SAT INFO POPUP
+    // ================================================================
+    function openSatInfoPopup(satName) {
+        selectedSat = satName;
+        document.getElementById('satInfoTitle').textContent = satName;
+        document.getElementById('satInfoPopup').classList.add('visible');
+        refreshSatInfoPopup(satName);
+    }
+
+    function refreshSatInfoPopup(satName) {
+        const sat = sats[satName];
+        if (!sat || !times.length) return;
+        const t       = times[idx];
+        const closest = sat.pts.reduce((b, p) => Math.abs(p.t-t) < Math.abs(b.t-t) ? p : b, sat.pts[0]);
+        const r       = Math.sqrt(closest.x**2 + closest.y**2 + closest.z**2);
+        const altKm   = ((r - EARTH_R) / 1000).toFixed(1);
+        const rows = [
+            ['X (km)',    (closest.x/1000).toFixed(1)],
+            ['Y (km)',    (closest.y/1000).toFixed(1)],
+            ['Z (km)',    (closest.z/1000).toFixed(1)],
+            ['Alt (km)',  altKm],
+            ['T (s)',     closest.t.toFixed(0)],
+            ['Detected',  closest.detected ? '✓ Yes' : '✗ No'],
+            ['Firing',    closest.firing ? '🔥 Yes' : 'No'],
+            ['Station',   closest.station || '—'],
+        ];
+        document.getElementById('satInfoBody').innerHTML = rows.map(([k,v]) =>
+            `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v}</span></div>`
+        ).join('');
+    }
+
+    document.getElementById('satInfoClose').addEventListener('click', () => {
+        selectedSat = null;
+        document.getElementById('satInfoPopup').classList.remove('visible');
+    });
+
+    // ================================================================
+    // UI EVENT LISTENERS
+    // ================================================================
+    document.getElementById('tSlider').addEventListener('input', e => {
+        idx = parseInt(e.target.value);
+        tick();
+    });
+
+    document.getElementById('speedSlider').addEventListener('input', e => {
+        const v = parseInt(e.target.value);
+        speedMultiplier = sliderToSpeed(v);
+        document.getElementById('speedLabel').textContent =
+            speedMultiplier < 1 ? speedMultiplier.toFixed(1)+'×' : Math.round(speedMultiplier)+'×';
+        restartTimer();
+    });
+
+    document.getElementById('playBtn').addEventListener('click', () => {
+        playing = !playing;
+        document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
+        if (playing) restartTimer();
+        else clearInterval(timer);
+    });
+
+    document.getElementById('trailToggle').addEventListener('click', function() {
+        showTrails = !showTrails;
+        this.classList.toggle('active', showTrails);
+        this.textContent = showTrails ? 'Trails ✓' : 'Trails ✗';
+        Object.values(satObjects).forEach(o => { o.trailPts.visible = showTrails; });
+    });
+
+    document.getElementById('coneToggle').addEventListener('click', function() {
+        showCones = !showCones;
+        this.classList.toggle('active', showCones);
+        this.textContent = showCones ? 'Cones ✓' : 'Cones ✗';
+        gsObjects.forEach(o => { o.cone.visible = showCones; });
+    });
+
+    // File inputs
+    document.getElementById('uploadBtn').addEventListener('click', () =>
+        document.getElementById('csvFile').click());
+    document.getElementById('uploadGSBtn').addEventListener('click', () =>
+        document.getElementById('gsFile').click());
+
+    document.getElementById('csvFile').addEventListener('change', e => {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = ev => loadSatCSV(ev.target.result);
+        r.readAsText(f);
+    });
+    document.getElementById('gsFile').addEventListener('change', e => {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = ev => loadGSCSV(ev.target.result);
+        r.readAsText(f);
+    });
+
+    // ================================================================
+    // JAVA BRIDGE ENTRY POINTS  (mirrors main.js window.* exports)
+    // ================================================================
+    window.receiveCSVContent    = text => loadSatCSV(text);
+    window.receiveGSCSVContent  = text => loadGSCSV(text);
+
+    /**
+     * Called from Java: window.setSimulationEpoch("2026-04-23T14:00:00Z")
+     */
+    window.setSimulationEpoch = function(isoDateString) {
+        obsEpoch = new Date(isoDateString).getTime();
+        updateDatetimeBar();
+    };
+
+    // ================================================================
+    // INIT
+    // ================================================================
+    buildLegend();
+    updateDatetimeBar();
+    console.log('[3D Visualizer] Ready.');
+</script>
+</body>
+</html>

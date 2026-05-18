@@ -40,9 +40,7 @@ public class EO_detection {
     public static void EO_usage_detection(NumericalPropagator propagator, Satellite sat) {
         for (String name : Map_area_positions.keySet()) {
             int i = 0;
-            for (String sensor_name:sat.get_sensor().getAllSensors().keySet()){
-                FieldOfView fov=sat.get_sensor_FoV(sensor_name);
-
+                FieldOfView fov=sat.get_sensor().getFieldOfView();
                 for (GeodeticPoint point : Map_area_positions.get(name)) {
 
                     TopocentricFrame tcf = new TopocentricFrame(Parametres.earth, point, name + "_" + i);
@@ -51,7 +49,7 @@ public class EO_detection {
 
                     propagator.addEventDetector(detector);
                     i++;
-                }
+
             }
         }
     }

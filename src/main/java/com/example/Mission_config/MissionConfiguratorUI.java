@@ -28,6 +28,7 @@ public class MissionConfiguratorUI extends Application {
                 JSObject window = (JSObject) engine.executeScript("window");
                 window.setMember("configBridge", bridge);
                 System.out.println("[MissionConfiguratorUI] configBridge injected");
+                engine.executeScript("loadSubsystems()");
             }
         });
 

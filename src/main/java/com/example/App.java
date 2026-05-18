@@ -8,6 +8,7 @@ import com.example.Ground_stations.Satcom;
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
+import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
 import com.example.SSA.Patera_detection;
 import com.example.TLE.My_TLE;
 import com.example.View.SatelliteTrackerUI;
@@ -38,6 +39,9 @@ public class App
         boolean config_or_manual = true; //true is config, false is sat in this file
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
+        final boolean visualisation_2D = true;
+        final boolean visualisation_3D = false;
+
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
 
@@ -54,14 +58,26 @@ public class App
                 try {
                     runSimulation(config);
                     // Open second JavaFX window AFTER simulation
-                    Platform.runLater(() -> {
-                        try {
-                            System.out.println("[App] Opening SatelliteTrackerUI...");
-                            new SatelliteTrackerUI().start(new javafx.stage.Stage());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
+                    if (visualisation_2D){
+                        Platform.runLater(() -> {
+                            try {
+                                System.out.println("[App] Opening 2DUI...");
+                                new SatelliteTrackerUI().start(new javafx.stage.Stage());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    }
+                    if (visualisation_3D){
+                        Platform.runLater(() -> {
+                            try {
+                                System.out.println("[App] Opening 3DUI...");
+                                new SatelliteTrackerUI().start(new javafx.stage.Stage());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    }
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -140,6 +156,7 @@ public class App
             }
             if (EO_detection){
                 new EO_detection();
+                EO_sensors.loadSensorsFromCSV();
             }
             // Definition des satellites
             liste_par_sats_real_orbit = real_orbit(missionConfig);
@@ -174,7 +191,6 @@ public class App
     public static List<Satellite> real_orbit(MissionConfig missionConfig) {
         List<Satellite> liste_par_sats = new ArrayList<>();
         for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
-            System.out.println(satConfig.motorName());
             liste_par_sats.add(new Satellite.Builder()
                     .nom_sat(satConfig.name)
                     .mass(satConfig.mass)
@@ -186,6 +202,7 @@ public class App
                     .anomalie(satConfig.trueAnomaly)
                     .type_anomalie(PositionAngleType.TRUE)
                     .motor_name(satConfig.motorName())
+                    .eo_sensor(EO_sensors.sensor_catalogue.get(satConfig.subsystems.get("EO_SENSORS")))
                     .build());
         }
         return liste_par_sats;

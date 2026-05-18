@@ -435,7 +435,8 @@
 
     // ── Init ─────────────────────────────────────────────────────────
     window.onload = () => {
-        loadSubsystems();
+        console.log("configBridge available:", typeof window.configBridge);
+        console.log("configBridge:", window.configBridge);
     };
 
     function loadSubsystems() {
@@ -613,7 +614,8 @@
             panels += `<div id="subtab_${catId(cat)}" class="sub-panel${i===0?' active':''}">
       <div class="section-body">
         <div class="sub-grid">
-          <div class="sub-none${selected===''?' selected':''}" onclick="selectSub('${esc(cat)}','',this)">
+          <div class="sub-none${selected===''?' selected':''}" data-cat="${esc(cat)}" data-name="" onclick="selectSub(this)">
+
             <div style="font-size:11px;color:var(--text-dim)">— None —</div>
           </div>`;
             items.forEach(item => {
@@ -626,7 +628,7 @@
                     .map(([k,v]) => `<div class="sub-spec-row"><span>${k}</span><span class="spec-val">${v}</span></div>`)
                     .join('');
                 panels += `
-        <div class="sub-card${isSelected?' selected':''}" onclick="selectSub('${esc(cat)}','${esc(n)}',this)">
+        <div class="sub-card${isSelected?' selected':''}" data-cat="${esc(cat)}" data-name="${esc(n)}" onclick="selectSub(this)">
           <div class="sub-name">${esc(n)}</div>
           <div class="sub-specs">${specRows}</div>
           ${item.notes ? `<div style="font-size:9px;color:var(--text-dim);margin-top:4px;font-style:italic">${esc(item.notes)}</div>` : ''}
@@ -645,13 +647,19 @@
         document.getElementById(panelId).classList.add('active');
     }
 
-    function selectSub(cat, name, el) {
+    function selectSub(el) {
+        // Walk up to the element that actually has data-cat
+        const card = el.closest('[data-cat]');
+        if (!card) return;
+        const cat  = card.dataset.cat;
+        const name = card.dataset.name;
+        console.log("selectSub — cat:", cat, "name:", name, "activeSatId:", activeSatId);
         const sat = satellites.find(s => s.id === activeSatId);
         if (!sat) return;
         sat.subsystems[cat] = name;
-        // Update UI selection in the current tab panel
-        el.closest('.sub-grid').querySelectorAll('.sub-card,.sub-none').forEach(c => c.classList.remove('selected'));
-        el.classList.add('selected');
+        card.closest('.sub-grid').querySelectorAll('.sub-card,.sub-none')
+            .forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
     }
 
     // ── Live update helpers ───────────────────────────────────────────
@@ -740,6 +748,9 @@
 
     function buildPayload() {
         const epoch = document.getElementById('epochInput').value;
+        satellites.forEach(s => {
+            console.log("Sat:", s.name, "subsystems:", JSON.stringify(s.subsystems));
+        });
         return {
             satcomEnabled:      document.getElementById('satcomToggle').checked,
             eoDetectionEnabled: document.getElementById('eoToggle').checked,

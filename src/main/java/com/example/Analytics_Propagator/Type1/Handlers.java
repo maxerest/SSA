@@ -155,13 +155,8 @@ public class Handlers {
                         double duration = date.durationFrom(startDate);
                         Visulations.export_observation_to_csv(
                                 name, startDate, date, duration, sat.get_Name());
-                        double totalData_MB = sat.get_sensor()
-                                .getAllSensors()
-                                .values()
-                                .stream()
-                                .mapToDouble(sensor -> sensor.getGeneratedData_MB(duration))
-                                .sum();
-                        sat.add_observation(new EO_observations(startDate,s.getDate(),totalData_MB));
+                        double totalData_MB = sat.get_sensor().getGeneratedData_MB(duration);
+                        sat.add_observation(new EO_observations(startDate, s.getDate(), totalData_MB));
                     }
                 }
 

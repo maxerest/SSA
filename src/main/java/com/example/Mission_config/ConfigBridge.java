@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 public class ConfigBridge {
 
     private static final String SAVE_PATH        = "src/main/resources/mission_config.json";
-    private static final String SUBSYSTEMS_ROOT  = "src/main/resources/subsystems";
 
     private final Consumer<MissionConfig> onConfigReady;
     private final CountDownLatch latch;
@@ -42,8 +41,6 @@ public class ConfigBridge {
         Platform.runLater(() -> {
             try {
                 MissionConfig config = parseConfig(jsonString);
-
-                System.out.println("here");
                 System.out.println("[Configurator] Config received: " + config);
                 onConfigReady.accept(config);
                 latch.countDown();
@@ -79,9 +76,9 @@ public class ConfigBridge {
     /**
      * Scans src/main/resources/subsystems/ and returns a JSON object:
      * {
-     *   "PROPULSION": [ {name, type, mass_kg, power_w, ...}, ... ],
-     *   "EO_SENSOR":  [ ... ],
-     *   "SATCOM":     [ ... ],
+     *   "Motors": [ {name, type, mass_kg, power_w, ...}, ... ],
+     *   "Eo_sensors":  [ ... ],
+     *   "Antennas":     [ ... ],
      *   ...
      * }
      * Categories are derived from the 'type' column in each CSV.
@@ -89,7 +86,15 @@ public class ConfigBridge {
      */
     public String getSubsystemsJson() {
         Map<String, List<Map<String, String>>> result = new LinkedHashMap<>();
-        File root = Paths.get(SUBSYSTEMS_ROOT).toAbsolutePath().toFile();
+        // Try classpath first
+        java.net.URL dirUrl = ConfigBridge.class.getClassLoader().getResource("subsystems");
+        File root;
+        if (dirUrl != null) {
+            root = new File(dirUrl.getFile());
+           } else {
+            // Fallback to working directory
+            root = Paths.get("src/main/resources/subsystems").toAbsolutePath().toFile();
+        }
 
         if (!root.exists() || !root.isDirectory()) {
             System.err.println("[ConfigBridge] Subsystems folder not found: " + root);
@@ -124,6 +129,7 @@ public class ConfigBridge {
             }
         }
 
+        System.out.println(result);
         // Serialize to JSON manually (no external dependency)
         return mapToJson(result);
     }
@@ -165,7 +171,6 @@ public class ConfigBridge {
             for (Map.Entry<String, Object> e : subs.entrySet()) {
                 subsStr.put(e.getKey(), e.getValue() == null ? "" : e.getValue().toString());
             }
-
             configs.add(new MissionConfig.SatConfig(name, mass, alt, ecc, inc, raan, omega, nu, subsStr));
         }
 

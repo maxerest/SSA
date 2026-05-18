@@ -26,7 +26,7 @@ public class Satellite extends Orbiting_object {
     private String currently_observing=null;
     private final Vector3D boresight = new Vector3D(0,0,1);
     private final double agility = Math.toRadians(60); // Capability of the satellite to look of Nadir to point
-    private final EO_sensors sensor = new EO_sensors();
+    private EO_sensors.Sensor sensor;
     private final List<EO_observations> list_observations_on_board= new LinkedList<>();
     // Parametres satellite
     private double area=2;    // m^2
@@ -51,8 +51,8 @@ public class Satellite extends Orbiting_object {
         this.srpCrossSection = builder.srpCrossSection;
         this.srpCoeff = builder.srpCoeff;
         this.map_parametres_antennes.put("Antenna 1",new AntennaParameters());
-        if(EO_detection.EO_detection){
-            sensor.addSensor(EO_sensors.SensorFactory.createSAR("SAR_1"));
+        this.sensor = builder.sensor;
+        if(EO_detection.EO_detection){;
         }
         //Change this if needed to do different type of Modcod
         MODCOD= com.example.Orbiting_object.Satellite_sub_systems.MODCOD.MODCODLibrary.getMODCOD("64-QAM 7/8");;
@@ -93,6 +93,7 @@ public class Satellite extends Orbiting_object {
         private double cd = 2.2;
         private double srpCrossSection = 2;
         private double srpCoeff = 1.30;
+        private EO_sensors.Sensor sensor;
 
         @Override
         public Builder nom_sat(String name) { super.nom_sat(name); return this; }
@@ -116,13 +117,18 @@ public class Satellite extends Orbiting_object {
         public Builder Detectionaltitude(Double d) { super.Detectionaltitude(d); return this; }
         @Override
         public  Builder s_initialState(SpacecraftState s) {super.s_initialState(s);return this;}
-        // Delegate to parent Builder for orbital parameters
+
         public Builder motor_name(String s) { this.motor_name = s; return this; }
         public Builder area(double a) { this.area = a; return this; }
         public Builder cd(double c) { this.cd = c; return this; }
         public Builder srpCrossSection(double s) { this.srpCrossSection = s; return this; }
         public Builder srpCoeff(double s) { this.srpCoeff = s; return this; }
-        public Satellite build() {super.build(); return new Satellite(this); }
+        public Builder eo_sensor(EO_sensors.Sensor eo_s) { this.sensor = eo_s;
+
+            return this; }
+        public Satellite build() {super.build();
+
+            return new Satellite(this); }
     }
 
     public double getCd() {
@@ -154,10 +160,9 @@ public class Satellite extends Orbiting_object {
     public Map<String, AntennaParameters> getMap_parametres_antennes() {
         return map_parametres_antennes;
     }
-    public EO_sensors get_sensor(){return sensor;}
-    public FieldOfView get_sensor_FoV(String name){
-        return this.sensor.getSensor(name).getFieldOfView();
-    }
+    public EO_sensors.Sensor get_sensor(){return sensor;}
+    private final Map<String, EO_sensors.Sensor> activeSensors = new LinkedHashMap<>();
+
     public double getSrpCoeff() {return srpCoeff;}
     public List<Manoeuvre> getListe_manoeuvre_sat(){return liste_manoeuvre_sat;}
     public List<SpacecraftState> get_liste_state_propa(){return liste_state_propa;}

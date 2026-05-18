@@ -1,0 +1,7 @@
+name,sensorType,type_of_FOV,fieldOfView(°),imageSize_MB,imageAcquisitionTime_sec,dataRate_Mbps,power_consumption_W,wavelength_um,numberOfBands
+SAR_Main,SAR,circular,20.0,800.0,60.0,106.67,250.0,0.03,1
+Sounder_1,SOUNDER,circular,12.0,400.0,240.0,13.33,150.0,15.0,20
+Pushbroom_A,PUSHBROOM,elliptical,15.0/5.25,1200.0,1020.0,9.41,120.0,0.55,4
+EO_Cam_1,ELECTRO_OPTICAL,circular,5.0,50.0,5.0,80.0,80.0,0.5,3
+TIR_Sensor,TIR,elliptical,14.0/4.75,1200.0,1020.0,9.41,200.0,10.0,1
+RF_Wide,RF,circular,60.0,900.0,180.0,40.0,300.0,0.03,2
