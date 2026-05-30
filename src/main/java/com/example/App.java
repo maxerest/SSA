@@ -40,7 +40,7 @@ public class App
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
         final boolean visualisation_2D = true;
-        final boolean visualisation_3D = false;
+        final boolean visualisation_3D = true;
 
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
