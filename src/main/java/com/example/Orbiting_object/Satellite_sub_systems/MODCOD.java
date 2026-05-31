@@ -207,22 +207,6 @@ public class MODCOD {
         }
     }
 
-    /**
-     * Integration with Satcom - calculate data rate from link budget
-     */
-    public static double calculateDownlinkDataRate(
-            Ground_station.GroundStation_physical GS,
-            Satellite sat,
-            double bandwidth_MHz) {
-
-        // Get SNR from link budget
-        double snr_dB = Satcom.calculate_budget_link(GS, sat);
-
-        // Calculate data rate based on SNR and bandwidth
-        DataRateCalculator calculator = new DataRateCalculator(snr_dB, bandwidth_MHz);
-
-        return calculator.getDataRate_Mbps();
-    }
 
     /**
      * Calculate transmission time for given data volume

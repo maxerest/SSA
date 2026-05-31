@@ -101,7 +101,7 @@ public class SatelliteTrackerUI extends Application {
             }).start();
         });
 
-        Scene scene = new Scene(webView, 1200, 700);
+        Scene scene = new Scene(webView, 1000, 600);
         stage.setTitle("Satellite Ground Track");
         stage.setScene(scene);
         stage.show();

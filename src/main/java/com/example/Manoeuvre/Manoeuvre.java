@@ -34,7 +34,6 @@ import java.util.List;
 
 public class Manoeuvre {
     private  ManeuverTriggers triggers;
-    private static List<Motor> liste_motor=new LinkedList<>();
     private double start_date;
     private double duration;
 
@@ -67,74 +66,6 @@ public class Manoeuvre {
         propagator.addForceModel(new Maneuver(attitudeOverride, triggers, propulsionModel));
 
         
-    }
-    // Builder class
-
-    public static class Motor{
-        private String name;
-        private double ISP;
-        private double thrust;
-
-        public enum type_motor {
-            motor_1("Moteur_1", 240, 425),
-            motor_2("Moteur_2", 1000, 0.2),
-            motor_3("Moteur_3", 3000, 0.1);
-            private final String name;
-            private final double ISP;
-            private final double thrust;
-
-            type_motor(String name, double ISP, double thrust) {
-                this.name = name;
-                this.ISP = ISP;
-                this.thrust = thrust;
-            }
-
-            public String getName() {
-                return name;
-            }
-
-            public double getISP() {
-                return ISP;
-            }
-
-            public double getThrust() {
-                return thrust;
-            }
-
-        }
-        Motor(String name,double ISP,double thrust){
-            this.name=name;
-            this.ISP=ISP;
-            this.thrust=thrust;
-        }
-
-        public static void initialize_list(){
-            for (type_motor t_motor : type_motor.values()){
-                liste_motor.add(new Motor(t_motor.getName(),t_motor.getISP(),t_motor.getThrust()));
-            }
-        }
-        public static void add_motor(String name, double ISP, double thrust){
-            liste_motor.add(new Motor(name,ISP,thrust));
-        }
-
-        public static double getthrust(String name){
-            for (Motor motor : liste_motor) {
-                if (motor.name.equals(name)) {
-                    return motor.thrust;
-                }
-            }
-            return 0.0;
-        }
-
-        public static double getISP(String name){
-            for (Motor motor : liste_motor) {
-                if (motor.name.equals(name)) {
-                    return motor.ISP;
-                }
-            }
-            return 0;
-        }
-
     }
 
 }

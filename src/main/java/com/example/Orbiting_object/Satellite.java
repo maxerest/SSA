@@ -2,9 +2,7 @@ package com.example.Orbiting_object;
 
 import com.example.Ground_stations.EO_detection;
 import com.example.Manoeuvre.Manoeuvre;
-import com.example.Orbiting_object.Satellite_sub_systems.AntennaParameters;
-import com.example.Orbiting_object.Satellite_sub_systems.MODCOD;
-import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
+import com.example.Orbiting_object.Satellite_sub_systems.*;
 import com.example.RevisitFrequency.EO_observations;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.geometry.fov.FieldOfView;
@@ -21,7 +19,7 @@ public class Satellite extends Orbiting_object {
     private List<Manoeuvre> liste_manoeuvre_sat= new LinkedList<>();
     private List<SpacecraftState> liste_state_propa= new ArrayList<>();
     private  Map<String, Map<AbsoluteDate,Double>> map_pourcentage_collision= new LinkedHashMap<>();
-    private String motor_name="Moteur_1";
+    private Motors motor;
     //Parametre EO
     private String currently_observing=null;
     private final Vector3D boresight = new Vector3D(0,0,1);
@@ -36,26 +34,19 @@ public class Satellite extends Orbiting_object {
     private double memory_on_board=2000000; //MB
     private final double max_memory_on_board=2048000;
     // Parametres satcom
-    private Map<String,AntennaParameters> map_parametres_antennes=new LinkedHashMap<>();
-
-
-
+    private Map<String,Antenna> map_parametres_antennes=new LinkedHashMap<>();
     private MODCOD.modcod MODCOD;
 
 
     private Satellite(Builder builder) {
         super(builder);  // Initialize parent with its Builder
-        this.motor_name = builder.motor_name;
         this.area = builder.area;
         this.cd = builder.cd;
         this.srpCrossSection = builder.srpCrossSection;
         this.srpCoeff = builder.srpCoeff;
-        this.map_parametres_antennes.put("Antenna 1",new AntennaParameters());
         this.sensor = builder.sensor;
-        if(EO_detection.EO_detection){;
-        }
-        //Change this if needed to do different type of Modcod
-        MODCOD= com.example.Orbiting_object.Satellite_sub_systems.MODCOD.MODCODLibrary.getMODCOD("64-QAM 7/8");;
+        this.motor=builder.motor;
+        this.map_parametres_antennes.put(builder.antenna.getName(),builder.antenna);
     }
 
     public boolean is_firing(SpacecraftState currentState) {
@@ -88,12 +79,13 @@ public class Satellite extends Orbiting_object {
     }
 
     public static class Builder extends  Orbiting_object.Builder{
-        private String motor_name = "Motor_1";
+        private Motors motor;
         private double area = 1.0;
         private double cd = 2.2;
         private double srpCrossSection = 2;
         private double srpCoeff = 1.30;
         private EO_sensors.Sensor sensor;
+        private Antenna antenna;
 
         @Override
         public Builder nom_sat(String name) { super.nom_sat(name); return this; }
@@ -118,14 +110,13 @@ public class Satellite extends Orbiting_object {
         @Override
         public  Builder s_initialState(SpacecraftState s) {super.s_initialState(s);return this;}
 
-        public Builder motor_name(String s) { this.motor_name = s; return this; }
+        public Builder motor(Motors m) { this.motor = m; return this; }
         public Builder area(double a) { this.area = a; return this; }
         public Builder cd(double c) { this.cd = c; return this; }
         public Builder srpCrossSection(double s) { this.srpCrossSection = s; return this; }
         public Builder srpCoeff(double s) { this.srpCoeff = s; return this; }
-        public Builder eo_sensor(EO_sensors.Sensor eo_s) { this.sensor = eo_s;
-
-            return this; }
+        public Builder eo_sensor(EO_sensors.Sensor eo_s) { this.sensor = eo_s;return this; }
+        public Builder antenna(Antenna a) {if(a==null){this.antenna=new Antenna();return this;} this.antenna = a;return this; }
         public Satellite build() {super.build();
 
             return new Satellite(this); }
@@ -135,36 +126,27 @@ public class Satellite extends Orbiting_object {
         return cd;
     }
     public Vector3D getBoresight() {return  boresight;}
-    public String get_Motor_name() {
-        return motor_name;
-    }
 
     public double getArea() {
         return area;
     }
-
-    public double getMemory_on_board() {
-        return memory_on_board;
-    }
-
     public List<EO_observations> getList_observations_on_board() {
         return list_observations_on_board;
     }
 
-    public MODCOD.modcod getMODCOD() {
-        return MODCOD;
-    }
     public double getSrpCrossSection() {
         return srpCrossSection;
     }
-    public Map<String, AntennaParameters> getMap_parametres_antennes() {
+    public Map<String, Antenna> getMap_parametres_antennes() {
         return map_parametres_antennes;
     }
     public EO_sensors.Sensor get_sensor(){return sensor;}
     private final Map<String, EO_sensors.Sensor> activeSensors = new LinkedHashMap<>();
 
     public double getSrpCoeff() {return srpCoeff;}
-    public List<Manoeuvre> getListe_manoeuvre_sat(){return liste_manoeuvre_sat;}
+
+    public Motors getMotor() {return motor;}
+
     public List<SpacecraftState> get_liste_state_propa(){return liste_state_propa;}
     public Map<String, Map<AbsoluteDate,Double>> getMap_pourcentage_collision() {return map_pourcentage_collision;}
     public double getAgility() {return agility;}
@@ -175,11 +157,9 @@ public class Satellite extends Orbiting_object {
             System.out.println("Echec de l'ajout de la manoeuvre");
         }
     }
-    public void launch_manoeuvre(NumericalPropagator propagator){
+    public void launch_manoeuvre(NumericalPropagator propagator, Motors motor){
         for (Manoeuvre m : liste_manoeuvre_sat){
-            System.out.println(Manoeuvre.Motor.getthrust(this.get_Motor_name()));
-            System.out.println(Manoeuvre.Motor.getISP(this.get_Motor_name()));
-            m.launch_manoeuvre(Manoeuvre.Motor.getISP(this.get_Motor_name()),Manoeuvre.Motor.getthrust(this.get_Motor_name()),propagator);
+            m.launch_manoeuvre(motor.getISP(),motor.getThrust(),propagator);
         }
     }
     public void add_state (SpacecraftState s){
@@ -191,20 +171,6 @@ public class Satellite extends Orbiting_object {
         try{
             this.map_pourcentage_collision.computeIfAbsent(nom_sat, k -> new LinkedHashMap<>());
             this.map_pourcentage_collision.get(nom_sat).put(date,percentage_collision);
-        }catch (Exception e){
-            System.out.println("Problème à l'ajout d'un % de collision pour un sat sur le sat : "+this.nom_sat);
-            System.out.println(e);
-        }
-    }
-
-    public void remove_last_map_percentage_collison(){
-        try{
-            List<String> allKeys = new ArrayList<>(map_pourcentage_collision.keySet());
-            if (allKeys.size()>2){
-                String actualSecondLastKey = allKeys.get(allKeys.size() - 2);
-                this.map_pourcentage_collision.remove(actualSecondLastKey);
-            }
-
         }catch (Exception e){
             System.out.println("Problème à l'ajout d'un % de collision pour un sat sur le sat : "+this.nom_sat);
             System.out.println(e);

@@ -75,7 +75,7 @@ public class Propagator_1
     * @param liste_par_sats_real_orbit : liste des paramètres des satellites avec orbites réelles (sans bruit)
     **/
 
-   public static void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit,boolean satcom_link){
+   public static void propagator_real_orbit(List<Satellite> liste_par_sats_real_orbit){
        String name_file="real_sats";
        Visulations.create_CSV_files(name_file);
        if (EO_detection.EO_detection){
@@ -106,7 +106,7 @@ public class Propagator_1
             propagator.setAttitudeProvider(nadirLaw);
             EO_detection.EO_usage_detection(propagator,sat);
         }
-        sat.launch_manoeuvre(propagator);
+        sat.launch_manoeuvre(propagator,sat.getMotor());
         propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
     }
 

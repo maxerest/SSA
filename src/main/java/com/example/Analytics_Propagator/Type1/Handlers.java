@@ -3,8 +3,6 @@ package com.example.Analytics_Propagator.Type1;
 import com.example.Ground_stations.Ground_station;
 import com.example.Ground_stations.Satcom;
 import com.example.Orbiting_object.Satellite;
-import com.example.Orbiting_object.Satellite_sub_systems.AntennaParameters;
-import com.example.Orbiting_object.Satellite_sub_systems.MODCOD;
 import com.example.Parametres;
 import com.example.RevisitFrequency.EO_observations;
 import com.example.View.Visulations;

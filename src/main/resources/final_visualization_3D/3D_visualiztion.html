@@ -344,7 +344,7 @@
     texLoader.load(
         'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
         tex => { earthMat.map = tex; earthMat.needsUpdate = true; },
-        undefined, () => {}
+        undefined, () => {window.GlobeInitialized=true}
     );
     const earthMesh = new THREE.Mesh(earthGeo, earthMat);
     scene.add(earthMesh);
@@ -352,7 +352,7 @@
     // Atmosphere glow
     const atmGeo = new THREE.SphereGeometry(EARTH_R * 1.025, 64, 64);
     const atmMat = new THREE.MeshPhongMaterial({
-        color: 0x3399ff, transparent: true, opacity: 0.07,
+        color: 0x3399ff, transparent: true, opacity: 0.05,
         side: THREE.FrontSide, depthWrite: false,
     });
     scene.add(new THREE.Mesh(atmGeo, atmMat));
@@ -891,6 +891,7 @@
     buildLegend();
     updateDatetimeBar();
     console.log('[3D Visualizer] Ready.');
+    window.GlobeInitialized = false;
 </script>
 </body>
 </html>

@@ -15,11 +15,10 @@ import org.orekit.utils.IERSConventions;
 
 
 public class Parametres
-{   
-    public String nom_sat;
-    //Gestion temps
+{
+    //Gestion temps, both values are imported from the congif bridge
     public static AbsoluteDate date_orekit;
-    public static double duration =Constants.JULIAN_DAY; //Constants.JULIAN_DAY;
+    public static double duration;
 
     // définition de la Terre
     public static Frame frame = FramesFactory.getEME2000();
@@ -28,8 +27,6 @@ public class Parametres
     
     // Ground Station elevation limit
     public static double elevation =  FastMath.toRadians(10.0);
-  
-    //Seuil de detection altitude
-    public Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS +100000e3;
+
     
 }

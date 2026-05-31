@@ -11,23 +11,11 @@
      */
     public class MissionConfig {
 
-        // ── Mission-level flags ────────────────────────────────────────────────
-        public final boolean satcomEnabled;
-        public final boolean eoDetectionEnabled;
-
-        // ── Simulation epoch ───────────────────────────────────────────────────
-        public final AbsoluteDate epochIso;   // ISO-8601, e.g. "2025-06-01T00:00:00Z"
-
         // ── Satellites ─────────────────────────────────────────────────────────
         public final List<SatConfig> satellites;
 
-        public MissionConfig(boolean satcomEnabled,
-                             boolean eoDetectionEnabled,
-                             AbsoluteDate  epochIso,
+        public MissionConfig(
                              List<SatConfig> satellites) {
-            this.satcomEnabled      = satcomEnabled;
-            this.eoDetectionEnabled = eoDetectionEnabled;
-            this.epochIso           = epochIso;
             this.satellites         = List.copyOf(satellites);
         }
 
@@ -87,9 +75,4 @@
             }
         }
 
-        @Override
-        public String toString() {
-            return String.format("MissionConfig{satcom=%b, eo=%b, epoch='%s', sats=%d}",
-                    satcomEnabled, eoDetectionEnabled, epochIso, satellites.size());
-        }
     }

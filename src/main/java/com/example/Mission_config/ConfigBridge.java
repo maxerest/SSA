@@ -1,5 +1,7 @@
 package com.example.Mission_config;
 
+import com.example.Ground_stations.EO_detection;
+import com.example.Ground_stations.Satcom;
 import com.example.Parametres;
 import javafx.application.Platform;
 import org.orekit.time.AbsoluteDate;
@@ -139,6 +141,9 @@ public class ConfigBridge {
     }
 
     // ── JSON parsing ───────────────────────────────────────────────────────
+    /*
+    The goal of this method is to go from the config format to as format exploitable by the Java program
+     */
     @SuppressWarnings("unchecked")
     private MissionConfig parseConfig(String json) throws Exception {
         // Lightweight JSON parsing without external dependencies
@@ -149,8 +154,9 @@ public class ConfigBridge {
         SimpleJsonParser p = new SimpleJsonParser(json);
         Map<String, Object> root = p.parseObject();
 
-        boolean satcom = getBool(root, "satcomEnabled");
-        boolean eo     = getBool(root, "eoDetectionEnabled");
+        Satcom.activated_satcom = getBool(root, "satcomEnabled");
+        EO_detection.EO_detection     = getBool(root, "eoDetectionEnabled");
+        Parametres.duration = getDouble(root, "duration_mission");
         AbsoluteDate epoch   = getAbsDate(root, "epoch");
         Parametres.date_orekit=epoch;
         List<Map<String, Object>> satList = (List<Map<String, Object>>) root.getOrDefault("satellites", List.of());
@@ -174,7 +180,7 @@ public class ConfigBridge {
             configs.add(new MissionConfig.SatConfig(name, mass, alt, ecc, inc, raan, omega, nu, subsStr));
         }
 
-        return new MissionConfig(satcom, eo, epoch, configs);
+        return new MissionConfig(configs);
     }
 
     private boolean getBool(Map<String, Object> m, String k) {

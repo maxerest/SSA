@@ -2,27 +2,21 @@ package com.example.Ground_stations;
 
 import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Orbiting_object.Satellite;
-import com.example.Orbiting_object.Satellite_sub_systems.AntennaParameters;
+import com.example.Orbiting_object.Satellite_sub_systems.Antenna;
 import com.example.Orbiting_object.Satellite_sub_systems.MODCOD;
-import com.example.Parametres;
-import org.hipparchus.ode.events.Action;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.events.ElevationDetector;
 import org.orekit.propagation.events.EventDetector;
 import org.orekit.propagation.numerical.NumericalPropagator;
 
-import java.util.Map;
-import java.util.Set;
-
 public class Satcom {
+    public static boolean activated_satcom;
     // === CONSTANTS ===
     private static final double BOLTZMANN = 1.38064852e-23; // J/K
     private static final double C = 299792458.0; // m/s
     private static final double EARTH_RADIUS = 6371000.0; // meters
 
-    public static double calculate_budget_link(Ground_station.GroundStation_physical GS, Satellite S){
-        String name = "Antenna 1";
-
+    public static double calculate_budget_link(Ground_station.GroundStation_physical GS, Satellite S,Antenna antenna){
       /*  // Calculate atmospheric losses
         double rainAttenuationDb = calculateRainAttenuation(frequencyGhz, elevationAngleDeg, rainRatePercentile);
         double gaseousAttenuationDb = calculateGaseousAbsorption(frequencyGhz, elevationAngleDeg);*/
@@ -30,13 +24,13 @@ public class Satcom {
         // Miscellaneous losses (polarization, coupling, etc.)
         double miscLossesDb = 1.0;
         // Perte de free path
-        double pathLossDb = free_path_loss_calculation(GS,S);
+        double pathLossDb = free_path_loss_calculation(GS,S,antenna);
 
         //double totalLossesDb = pathLossDb + rainAttenuationDb + gaseousAttenuationDb + miscLossesDb;
         //to delete when it is done
         double totalLossesDb = pathLossDb  + miscLossesDb;
         //Calculate recevied power
-        double eirpDbm = calculateEIRP(S.getMap_parametres_antennes().get(name));
+        double eirpDbm = calculateEIRP(antenna);
         double receivedPowerDbm = eirpDbm - totalLossesDb + GS.getAntenna_gain();
 
         // Noise power (separate calculation, in dBm)
@@ -48,17 +42,14 @@ public class Satcom {
     /**
      * Calculate EIRP
      */
-    private static double calculateEIRP(AntennaParameters antenna) {
+    private static double calculateEIRP(Antenna antenna) {
         return antenna.getTxPowerDbm() + antenna.getGain();
     }
 
-    private static double free_path_loss_calculation (Ground_station.GroundStation_physical GS, Satellite S){
-            //Name of the antenna to be used for the calculation, might be interesting to be able to change it in the futur.
-            String name = S.getMap_parametres_antennes().keySet().iterator().next();
-            //Distance between the GS and the satellite
+    private static double free_path_loss_calculation (Ground_station.GroundStation_physical GS, Satellite S,Antenna antenna){
             SpacecraftState Sc_state=S.get_liste_state_propa().getLast();
             double distance = GS.getBaseFrame().getPosition(Sc_state.getDate(),GS.getBaseFrame()).distance(Sc_state.getPosition());
-            double frequencyHz = S.getMap_parametres_antennes().get(name).getFrequency() * 1e9;
+            double frequencyHz = antenna.getFrequency() * 1e9;
             return 20.0 * Math.log10(4.0 * Math.PI * distance / (C / frequencyHz));
         }
 
@@ -91,7 +82,7 @@ public class Satcom {
         for (Ground_station.GroundStation_physical GS : Ground_station.liste_GS  ){
             final EventDetector station_visibility =
                     new ElevationDetector(maxcheck, threshold, GS.getBaseFrame())
-                            .withConstantElevation(Parametres.elevation)
+                            .withConstantElevation(GS.elevation_mask)
                             .withHandler(new Handlers.satcom_handler(sat, GS.name));
             propagator.addEventDetector(station_visibility);
         }
@@ -129,7 +120,7 @@ public class Satcom {
         try {
 
             // Get bandwidth from antenna parameters
-            AntennaParameters antenna = sat.getMap_parametres_antennes()
+            Antenna antenna = sat.getMap_parametres_antennes()
                     .values()
                     .stream()
                     .findFirst()
@@ -138,7 +129,7 @@ public class Satcom {
             GS.setNoiseBandwidthMhz(bandwidth_MHz);
 
             // Calculate SNR from link budget
-            double snr_dB = Satcom.calculate_budget_link(GS, sat);
+            double snr_dB = Satcom.calculate_budget_link(GS, sat,antenna);
             // Calculate data rate based on SNR and MODCOD
             double dataRate_Mbps = Satcom.calculateDataRate_Mbps(snr_dB, bandwidth_MHz);
 

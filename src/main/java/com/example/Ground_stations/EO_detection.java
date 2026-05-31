@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EO_detection {
-    public static boolean EO_detection=false; // false on default but gets change if needed from main
+    public static boolean EO_detection; // false on default but gets change if needed from main
     public static Map<String, List<TreeMap<AbsoluteDate,AbsoluteDate>>> Map_area_history = new HashMap<>();
     public static Map<String,List<GeodeticPoint>> Map_area_positions = new HashMap<>();
 
@@ -40,6 +40,10 @@ public class EO_detection {
     public static void EO_usage_detection(NumericalPropagator propagator, Satellite sat) {
         for (String name : Map_area_positions.keySet()) {
             int i = 0;
+                if(sat.get_sensor() ==null){
+                    System.out.println(sat.get_Name()+": sensor field of view is null and is skipped");
+                    return;
+                }
                 FieldOfView fov=sat.get_sensor().getFieldOfView();
                 for (GeodeticPoint point : Map_area_positions.get(name)) {
 

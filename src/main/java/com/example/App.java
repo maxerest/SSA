@@ -8,13 +8,17 @@ import com.example.Ground_stations.Satcom;
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
+import com.example.Orbiting_object.Satellite_sub_systems.Antenna;
 import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
+import com.example.Orbiting_object.Satellite_sub_systems.Motors;
 import com.example.SSA.Patera_detection;
 import com.example.TLE.My_TLE;
 import com.example.View.SatelliteTrackerUI;
+import com.example.View.View3D.SatelliteTracker3D;
 import com.example.View.Visulations;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.stage.Stage;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
@@ -35,8 +39,6 @@ public class App
 {
     public static List<Satellite> liste_par_sats_real_orbit;
     public static void main(String[] args) throws IOException {
-        //TODO do the possibility to do from config or from here
-        boolean config_or_manual = true; //true is config, false is sat in this file
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
         final boolean visualisation_2D = true;
@@ -45,9 +47,9 @@ public class App
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
 
-
+        //Start from the config of the mission
         ConfigBridge bridge = new ConfigBridge(config -> {
-            System.out.println("[App] Mission config received: " + config);
+            System.out.println("[App] Mission config received");
             // Hide configurator window
             for (javafx.stage.Window window : new ArrayList<>(javafx.stage.Window.getWindows())) {
                 window.hide();
@@ -62,17 +64,21 @@ public class App
                         Platform.runLater(() -> {
                             try {
                                 System.out.println("[App] Opening 2DUI...");
-                                new SatelliteTrackerUI().start(new javafx.stage.Stage());
+                                new SatelliteTrackerUI().start(new Stage());
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         });
                     }
-                    if (visualisation_3D){
+                    if (visualisation_3D) {
+
+
                         Platform.runLater(() -> {
                             try {
+
                                 System.out.println("[App] Opening 3DUI...");
-                                new SatelliteTrackerUI().start(new javafx.stage.Stage());
+                                new SatelliteTracker3D().start(new Stage());
+
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -116,7 +122,7 @@ public class App
             .arg_periastre(p.get_arg_periastre())
             .anomalie(p.get_anomalie())
             .type_anomalie(p.get_type_anomalie())
-            .motor_name(p.get_Motor_name())
+            .motor(p.getMotor())
             .build();
 
         liste_par_sats_noise_orbit.add(noisyP);
@@ -133,12 +139,10 @@ public class App
         boolean py_3d_visualizations=false;
         boolean py_graphs_visualizations=false;
         boolean check_collision = false;
-        boolean satcom_gs_communication =missionConfig.satcomEnabled;
-        boolean EO_detection=missionConfig.eoDetectionEnabled;
-        int nb_sat =missionConfig.satellites.size();
         // Definition des GS
         Ground_station.loadStationsFromCSV();
-        Manoeuvre.Motor.initialize_list();
+        Motors.loadMotorsFromCSV();
+
         // Delete past CSV files
         Visulations.deleteAllCsvFiles();
         if (TLE_visualisation)
@@ -150,17 +154,18 @@ public class App
             }
         }
         if (propagate_real_orbit){
-            if (satcom_gs_communication){
+            if (Satcom.activated_satcom){
                 Ground_station.satcom_activated=true;
+                Antenna.loadAntennaFromCSV();
                 Visulations.init_satcom_csv();
             }
-            if (EO_detection){
+            if (EO_detection.EO_detection){
                 new EO_detection();
                 EO_sensors.loadSensorsFromCSV();
             }
             // Definition des satellites
             liste_par_sats_real_orbit = real_orbit(missionConfig);
-            Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit, satcom_gs_communication);
+            Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
             List<Satellite> liste_par_sats_noisy_orbit;
 
             if (check_collision){
@@ -184,7 +189,7 @@ public class App
         if(py_graphs_visualizations){
             //Visulations.Python_graph_orbital_param();
         }
-        if(EO_detection){
+        if(EO_detection.EO_detection){
             Visulations.Python_EO_detection();
         }
     }
@@ -201,8 +206,9 @@ public class App
                     .arg_periastre(satConfig.argPerigee)
                     .anomalie(satConfig.trueAnomaly)
                     .type_anomalie(PositionAngleType.TRUE)
-                    .motor_name(satConfig.motorName())
+                    .motor(Motors.motor_catalogue.get(satConfig.subsystems.get("Motor")))
                     .eo_sensor(EO_sensors.sensor_catalogue.get(satConfig.subsystems.get("EO_SENSORS")))
+                    .antenna(Antenna.antenna_catalogue.get(satConfig.subsystems.get("ANTENNAS")))
                     .build());
         }
         return liste_par_sats;

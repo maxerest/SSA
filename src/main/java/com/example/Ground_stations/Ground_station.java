@@ -29,11 +29,13 @@ import org.orekit.estimation.measurements.ObservableSatellite;
 
 
 public class Ground_station {
+    public static String URL_GS="src/main/resources/Satcom/GS_coordinates.csv";
     public static List<GroundStation_physical> liste_GS=new ArrayList<>();
     public static boolean satcom_activated=false; // false on default but gets change if needed from main
 
     public static class GroundStation_physical extends GroundStation {
         String name;
+        double elevation_mask=FastMath.toRadians(10.0);
         double antenna_size;
         double antenna_gain;
         double teta3dB=0.2;
@@ -54,7 +56,7 @@ public class Ground_station {
         public String getName() {
             return name;
         }
-
+        public double getElevation_mask() {return elevation_mask;}
         public double getAntenna_size() {
             return antenna_size;
         }
@@ -140,7 +142,7 @@ public class Ground_station {
                 Parametres.frame,                    // satellite frame
                 current_date                         // observation time
         );
-        return elevation > Parametres.elevation;
+        return elevation > station.getElevation_mask();
     }
     public static List<GroundStation_physical> get_list_visible_GS(SpacecraftState s){
         List<GroundStation_physical> list_visible_station=new ArrayList<>();

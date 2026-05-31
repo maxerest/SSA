@@ -143,7 +143,6 @@ public class My_TLE {
                         .arg_periastre(entry.getValue().getPerigeeArgument())
                         .anomalie(entry.getValue().getMeanAnomaly())
                         .type_anomalie(PositionAngleType.MEAN)
-                        .motor_name("Moteur_2")
                         .build());
                 list_spacecraftState.add(satelliteList.getLast().get_s_initialState());
             }

@@ -1,0 +1,11 @@
+name,ISP,thrust,electrical_consumption
+BHT-200 Hall Thruster,1390,0.013,200
+SPT-100 Hall Thruster,1600,0.083,1350
+PPS-1350 Hall Thruster,1650,0.090,1500
+NSTAR Ion Thruster,3100,0.092,2300
+NEXT Ion Thruster,4190,0.236,6900
+T5 Ion Thruster,3800,0.018,525
+BIT-3 RF Ion Thruster,3000,0.001,75
+μ10 Ion Engine,3500,0.008,350
+RIT-2X Gridded Ion Thruster,4300,0.250,5700
+ENPULSION NANO R3 FEEP,3000,0.00035,60

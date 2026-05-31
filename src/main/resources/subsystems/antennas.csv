@@ -1,2 +1,7 @@
 name,gain,noise_figure,frequency,bandwidth,efficiency,txPowerDbm,teta3dB
-antenna1,1000
+High-Gain X-Band Reflector,28.0,0.9,8450000000,500000000,0.65,40,3.5
+Ka-Band Reflector,42.0,1.1,26000000000,1000000000,0.60,43,0.8
+L-Band Patch Antenna,6.0,2.0,1575000000,20000000,0.80,30,65
+Inter-Satellite Link Antenna,23.0,1.4,24000000000,500000000,0.75,39,7
+Earth Observation X-Band Downlink,18.0,1.3,8200000000,375000000,0.83,38,15
+Synthetic Aperture Radar Antenna,30.0,1.2,9650000000,600000000,0.72,41,2.5
