@@ -8,14 +8,21 @@
         :root {
             --bg:         #07090f;
             --panel:      #0d1117;
+            --panel2:     #0a0d14;
             --border:     #1c2333;
+            --border2:    #242d3f;
             --accent:     #1e90ff;
             --accent2:    #00e5b0;
+            --accent3:    #7c6af7;
             --warn:       #f59e0b;
             --danger:     #ef4444;
+            --success:    #22c55e;
             --text:       #c9d1d9;
             --text-dim:   #586069;
+            --text-mid:   #8b949e;
             --ctrl-h:     46px;
+            --left-w:     240px;
+            --right-w:    300px;
             --font-mono:  'Courier New', monospace;
             --font-ui:    'Segoe UI', system-ui, sans-serif;
         }
@@ -32,7 +39,7 @@
             overflow: hidden;
         }
 
-        /* ── Datetime bar ───────────────────────────────────────────── */
+        /* ── Datetime bar ── */
         #datetimeBar {
             height: 28px;
             background: #0a0e18;
@@ -45,12 +52,13 @@
             font-family: var(--font-mono);
             letter-spacing: .04em;
             flex-shrink: 0;
+            z-index: 10;
         }
         .epoch-label { color: var(--text-dim); text-transform: uppercase; }
         .epoch-val   { color: var(--accent2); }
         .no-epoch    { color: var(--text-dim); font-style: italic; }
 
-        /* ── Controls bar ───────────────────────────────────────────── */
+        /* ── Controls bar ── */
         #controls {
             height: var(--ctrl-h);
             background: var(--panel);
@@ -61,15 +69,12 @@
             gap: 10px;
             flex-shrink: 0;
             flex-wrap: wrap;
+            z-index: 10;
         }
         #controls label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
         #controls input[type=range] { accent-color: var(--accent); cursor: pointer; }
 
-        .ctrl-sep {
-            width: 1px; height: 24px;
-            background: var(--border);
-            flex-shrink: 0;
-        }
+        .ctrl-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
 
         button {
             background: #161b22;
@@ -85,7 +90,7 @@
         button:hover { background: #21262d; border-color: var(--accent); }
         button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-        /* ── Status / stats ─────────────────────────────────────────── */
+        /* ── Status row ── */
         #statusRow {
             display: flex;
             gap: 10px;
@@ -95,20 +100,131 @@
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
             min-height: 26px;
+            z-index: 10;
         }
         #status { font-size: 11px; color: var(--text-dim); flex: 1; }
-        #statsRow {
-            font-size: 11px;
-            font-family: var(--font-mono);
-            color: var(--text-dim);
-            display: flex;
-            gap: 16px;
-        }
+        #statsRow { font-size: 11px; font-family: var(--font-mono); color: var(--text-dim); display: flex; gap: 16px; }
         .stat-item { display: flex; gap: 5px; }
         .stat-label { color: var(--text-dim); }
         .stat-val   { color: var(--text); }
 
-        /* ── Canvas area ────────────────────────────────────────────── */
+        /* ── Main layout ── */
+        #mainLayout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ── Left panel — satellite list ── */
+        #leftPanel {
+            width: var(--left-w);
+            min-width: var(--left-w);
+            background: var(--panel2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        #leftPanelHeader {
+            padding: 10px 12px 8px;
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            font-family: var(--font-mono);
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            background: #090c13;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #leftPanelHeader::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent2);
+            box-shadow: 0 0 6px var(--accent2);
+            flex-shrink: 0;
+        }
+        #satList {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 0;
+        }
+        #satList::-webkit-scrollbar { width: 4px; }
+        #satList::-webkit-scrollbar-track { background: transparent; }
+        #satList::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+        .sat-card {
+            margin: 4px 8px;
+            padding: 8px 10px;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+            position: relative;
+            overflow: hidden;
+        }
+        .sat-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            border-radius: 5px 0 0 5px;
+        }
+        .sat-card:hover { background: #111720; border-color: var(--border2); }
+        .sat-card.selected { border-color: var(--accent); background: #0d1825; }
+        .sat-card.selected::before { background: var(--accent); }
+        .sat-card.detected::before { background: var(--success); }
+        .sat-card.not-detected::before { background: var(--danger); }
+
+        .sat-card-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sat-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .sat-card-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 2px;
+            font-family: var(--font-mono);
+        }
+        .sat-card-row span:last-child { color: var(--text-mid); }
+        .sat-card-next {
+            margin-top: 5px;
+            font-size: 10px;
+            color: var(--text-dim);
+            border-top: 1px solid var(--border);
+            padding-top: 4px;
+        }
+        .sat-card-next .next-label {
+            color: var(--text-dim);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+        .sat-card-next .next-val {
+            color: var(--accent2);
+            font-family: var(--font-mono);
+            font-size: 10px;
+        }
+        .sat-card-next .next-val.none { color: var(--text-dim); font-style: italic; }
+
+        /* ── Canvas area ── */
         #canvasWrap {
             flex: 1;
             position: relative;
@@ -119,7 +235,7 @@
             width: 100%; height: 100%;
         }
 
-        /* ── HUD overlays ───────────────────────────────────────────── */
+        /* ── HUD ── */
         #hudTopRight {
             position: absolute;
             top: 12px; right: 14px;
@@ -132,7 +248,7 @@
             text-shadow: 0 0 6px rgba(245,230,66,.5);
         }
 
-        /* ── Legend ─────────────────────────────────────────────────── */
+        /* ── Legend ── */
         #legend {
             position: absolute;
             bottom: 14px; left: 14px;
@@ -141,56 +257,151 @@
             gap: 5px;
             pointer-events: none;
         }
-        .legend-item {
+        .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text); }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+        /* ── Right panel — satellite detail ── */
+        #rightPanel {
+            width: var(--right-w);
+            min-width: var(--right-w);
+            background: var(--panel2);
+            border-left: 1px solid var(--border);
             display: flex;
-            align-items: center;
-            gap: 7px;
-            font-size: 11px;
-            color: var(--text);
-        }
-        .legend-dot {
-            width: 10px; height: 10px;
-            border-radius: 50%;
+            flex-direction: column;
+            overflow: hidden;
             flex-shrink: 0;
         }
-
-        /* ── Sat info popup ─────────────────────────────────────────── */
-        #satInfoPopup {
-            position: absolute;
-            top: 12px; left: 14px;
-            background: rgba(13,17,23,.92);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 10px 14px;
-            min-width: 200px;
-            max-width: 280px;
+        #rightPanelHeader {
+            padding: 10px 12px 8px;
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            font-family: var(--font-mono);
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            background: #090c13;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        #rightPanelTitle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #rightPanelTitle::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent3);
+            box-shadow: 0 0 6px var(--accent3);
+            flex-shrink: 0;
+        }
+        #rightPanelSatName {
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600;
+        }
+        #rightPanelEmpty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
             font-size: 12px;
-            backdrop-filter: blur(8px);
+            gap: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        #rightPanelEmpty svg { opacity: .25; }
+        #rightPanelContent {
+            flex: 1;
+            overflow-y: auto;
             display: none;
         }
-        #satInfoPopup.visible { display: block; }
-        #satInfoHeader {
+        #rightPanelContent.visible { display: block; }
+        #rightPanelContent::-webkit-scrollbar { width: 4px; }
+        #rightPanelContent::-webkit-scrollbar-track { background: transparent; }
+        #rightPanelContent::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+        /* ── Detail sections ── */
+        .detail-section {
+            border-bottom: 1px solid var(--border);
+            padding: 10px 12px;
+        }
+        .detail-section-title {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .detail-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        .detail-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            padding: 3px 0;
+            font-size: 11px;
+            gap: 8px;
         }
-        #satInfoTitle { font-weight: 600; color: var(--accent); }
-        #satInfoClose {
-            background: none; border: none;
-            color: var(--text-dim); cursor: pointer;
-            font-size: 14px; padding: 0 2px;
+        .detail-key {
+            color: var(--text-dim);
+            font-size: 10px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
-        #satInfoClose:hover { color: var(--text); }
-        .info-row {
+        .detail-val {
+            color: var(--text);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-align: right;
+            word-break: break-all;
+        }
+        .detail-val.good  { color: var(--success); }
+        .detail-val.bad   { color: var(--danger); }
+        .detail-val.warn  { color: var(--warn); }
+        .detail-val.accent { color: var(--accent2); }
+
+        /* detection event list */
+        .event-list { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+        .event-item {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 10px;
+        }
+        .event-item-header {
             display: flex;
             justify-content: space-between;
-            padding: 2px 0;
-            border-bottom: 1px solid #1c2333;
-            gap: 12px;
+            align-items: center;
+            margin-bottom: 3px;
         }
-        .info-key { color: var(--text-dim); }
-        .info-val { color: var(--text); font-family: var(--font-mono); }
+        .event-name { color: var(--accent2); font-weight: 600; font-family: var(--font-mono); }
+        .event-time { color: var(--text-dim); font-family: var(--font-mono); }
+        .event-badge {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: .06em;
+        }
+        .badge-eo    { background: rgba(124,106,247,.2); color: var(--accent3); border: 1px solid rgba(124,106,247,.3); }
+        .badge-satcom { background: rgba(0,229,176,.15); color: var(--accent2); border: 1px solid rgba(0,229,176,.25); }
+        .badge-none  { background: rgba(88,96,105,.15); color: var(--text-dim); border: 1px solid var(--border); }
+        .no-events { color: var(--text-dim); font-size: 11px; font-style: italic; padding: 4px 0; }
     </style>
 </head>
 <body>
@@ -226,60 +437,89 @@
     <div id="statsRow"></div>
 </div>
 
-<!-- 3D canvas -->
-<div id="canvasWrap">
-    <canvas id="glCanvas"></canvas>
-    <div id="hudTopRight"></div>
-    <div id="legend"></div>
+<!-- Main 3-column layout -->
+<div id="mainLayout">
 
-    <!-- Sat info popup -->
-    <div id="satInfoPopup">
-        <div id="satInfoHeader">
-            <span id="satInfoTitle">—</span>
-            <button id="satInfoClose">✕</button>
-        </div>
-        <div id="satInfoBody"></div>
+    <!-- LEFT: satellite summary list -->
+    <div id="leftPanel">
+        <div id="leftPanelHeader">Fleet Overview</div>
+        <div id="satList"><div style="padding:16px 12px;font-size:11px;color:var(--text-dim);font-style:italic;">No satellites loaded</div></div>
     </div>
+
+    <!-- CENTER: 3D canvas -->
+    <div id="canvasWrap">
+        <canvas id="glCanvas"></canvas>
+        <div id="hudTopRight"></div>
+        <div id="legend"></div>
+    </div>
+
+    <!-- RIGHT: satellite detail panel -->
+    <div id="rightPanel">
+        <div id="rightPanelHeader">
+            <div id="rightPanelTitle">Satellite Detail</div>
+            <span id="rightPanelSatName"></span>
+        </div>
+        <div id="rightPanelEmpty">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <circle cx="20" cy="20" r="10" stroke="#586069" stroke-width="1.5"/>
+                <line x1="20" y1="4" x2="20" y2="10" stroke="#586069" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="20" y1="30" x2="20" y2="36" stroke="#586069" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="4" y1="20" x2="10" y2="20" stroke="#586069" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="30" y1="20" x2="36" y2="20" stroke="#586069" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="20" cy="20" r="3" fill="#586069"/>
+            </svg>
+            <span>Click a satellite on the globe<br>or in the fleet list to inspect</span>
+        </div>
+        <div id="rightPanelContent"></div>
+    </div>
+
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
+<script>
+    if (typeof THREE === 'undefined') {
+        document.getElementById('status').textContent = 'ERROR: Three.js failed to load';
+    } else {
+        const testCanvas = document.createElement('canvas');
+        const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+        if (!gl) {
+            document.getElementById('status').textContent = 'ERROR: WebGL not supported in this WebView';
+        }
+    }
+</script>
 <script>
     // ================================================================
     // CONFIG
     // ================================================================
-    const EARTH_R      = 6_378_100;   // metres
-    const TRAIL_LENGTH = 40;          // trail dot count
+    const EARTH_R      = 6_378_100;
+    const TRAIL_LENGTH = 40;
     const SAT_COLORS   = [
         '#e74c3c','#3498db','#2ecc71','#f1c40f',
         '#e91e63','#00bcd4','#ff9800','#9c27b0',
     ];
 
     // ================================================================
-    // STATE  (mirrors state.js of the 2D visualiser)
+    // STATE
     // ================================================================
-    let sats         = {};       // { satName: { points, stationNames, color, ... } }
-    let times        = [];       // sorted unique timestamps (seconds)
-    let idx          = 0;
-    let obsEpoch     = null;     // ms
-    let groundStations = [];
-    let playing      = false;
-    let timer        = null;
+    let sats            = {};
+    let orbitalParams   = {};   // { satName: [ {a, e, i, t, ...} ] }
+    let times           = [];
+    let idx             = 0;
+    let obsEpoch        = null;
+    let groundStations  = [];
+    let playing         = false;
+    let timer           = null;
     let speedMultiplier = 1;
-    let showTrails   = true;
-    let showCones    = true;
-    let selectedSat  = null;
-
+    let showTrails      = true;
+    let showCones       = true;
+    let selectedSat     = null;
+    let satcomLinks = [];   // parsed from satcom_link.csv
     // ================================================================
     // UTILS
     // ================================================================
     function sliderToSpeed(v) {
         if (v === 0) return 1;
         return v > 0 ? Math.pow(2, v) : 1 / Math.pow(2, -v);
-    }
-
-    function ecefToThree(x, y, z) {
-        // Three.js uses Y-up; ECEF: X→right, Y→up, Z→viewer
-        return new THREE.Vector3(x, z, -y);
     }
 
     function latLonToECEF(lat, lon, altM = 0) {
@@ -294,10 +534,10 @@
     }
 
     // ================================================================
-    // THREE.JS SCENE SETUP
+    // THREE.JS SCENE
     // ================================================================
-    const canvas  = document.getElementById('glCanvas');
-    const wrap    = document.getElementById('canvasWrap');
+    const canvas   = document.getElementById('glCanvas');
+    const wrap     = document.getElementById('canvasWrap');
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x07090f, 1);
@@ -306,58 +546,39 @@
     const camera = new THREE.PerspectiveCamera(45, 1, 1e4, 1e10);
     camera.position.set(0, 0, EARTH_R * 3.2);
 
-    // Ambient + directional light
     scene.add(new THREE.AmbientLight(0xffffff, 0.35));
     const sun = new THREE.DirectionalLight(0xfff8e7, 1.1);
     sun.position.set(1, 0.5, 1).normalize();
     scene.add(sun);
 
-    // ── Stars background ─────────────────────────────────────────────
+    // Stars
     (function buildStars() {
-        const N  = 3000;
-        const pos = new Float32Array(N * 3);
+        const N = 3000, pos = new Float32Array(N * 3);
         for (let i = 0; i < N; i++) {
-            const phi   = Math.acos(2 * Math.random() - 1);
-            const theta = 2 * Math.PI * Math.random();
-            const r     = EARTH_R * 40;
-            pos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
-            pos[i * 3 + 1] = r * Math.cos(phi);
-            pos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+            const phi = Math.acos(2 * Math.random() - 1), theta = 2 * Math.PI * Math.random(), r = EARTH_R * 40;
+            pos[i*3] = r*Math.sin(phi)*Math.cos(theta); pos[i*3+1] = r*Math.cos(phi); pos[i*3+2] = r*Math.sin(phi)*Math.sin(theta);
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        scene.add(new THREE.Points(geo,
-            new THREE.PointsMaterial({ color: 0xffffff, size: EARTH_R * 0.003, sizeAttenuation: true })));
+        scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: EARTH_R * 0.003, sizeAttenuation: true })));
     })();
 
-    // ── Earth sphere ─────────────────────────────────────────────────
+    // Earth
     const earthGeo = new THREE.SphereGeometry(EARTH_R, 64, 64);
-    // Load real texture if available, else procedural fallback
+    const earthMat = new THREE.MeshPhongMaterial({ color: 0x1a6fa0, emissive: 0x0a1a2e, specular: 0x2244aa, shininess: 12 });
     const texLoader = new THREE.TextureLoader();
-    const earthMat  = new THREE.MeshPhongMaterial({
-        color: 0x1a6fa0,
-        emissive: 0x0a1a2e,
-        specular: 0x2244aa,
-        shininess: 12,
-    });
-    // Try online texture (fails silently in offline envs)
-    texLoader.load(
-        'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-        tex => { earthMat.map = tex; earthMat.needsUpdate = true; },
-        undefined, () => {window.GlobeInitialized=true}
+    texLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+        tex => { earthMat.map = tex; earthMat.needsUpdate = true; window.GlobeInitialized = true; },
+        undefined,
+        () => { window.GlobeInitialized = true; }
     );
-    const earthMesh = new THREE.Mesh(earthGeo, earthMat);
-    scene.add(earthMesh);
+    scene.add(new THREE.Mesh(earthGeo, earthMat));
+    scene.add(new THREE.Mesh(
+        new THREE.SphereGeometry(EARTH_R * 1.025, 64, 64),
+        new THREE.MeshPhongMaterial({ color: 0x3399ff, transparent: true, opacity: 0.05, side: THREE.FrontSide, depthWrite: false })
+    ));
 
-    // Atmosphere glow
-    const atmGeo = new THREE.SphereGeometry(EARTH_R * 1.025, 64, 64);
-    const atmMat = new THREE.MeshPhongMaterial({
-        color: 0x3399ff, transparent: true, opacity: 0.05,
-        side: THREE.FrontSide, depthWrite: false,
-    });
-    scene.add(new THREE.Mesh(atmGeo, atmMat));
-
-    // ── Orbit controls (manual implementation, no import needed) ─────
+    // Orbit controls
     let isDragging = false, prevMouse = { x: 0, y: 0 };
     let spherical  = { theta: 0, phi: Math.PI / 2, r: EARTH_R * 3.2 };
 
@@ -366,30 +587,23 @@
     canvas.addEventListener('mouseleave', () => isDragging = false);
     canvas.addEventListener('mousemove',  e => {
         if (!isDragging) return;
-        const dx = (e.clientX - prevMouse.x) * 0.005;
-        const dy = (e.clientY - prevMouse.y) * 0.005;
-        spherical.theta -= dx;
-        spherical.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy));
+        spherical.theta -= (e.clientX - prevMouse.x) * 0.005;
+        spherical.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + (e.clientY - prevMouse.y) * 0.005));
         prevMouse = { x: e.clientX, y: e.clientY };
         updateCamera();
     });
     canvas.addEventListener('wheel', e => {
         spherical.r = Math.max(EARTH_R * 1.5, Math.min(EARTH_R * 8, spherical.r * (1 + e.deltaY * 0.001)));
         updateCamera();
-    }, { passive: true });
+        e.preventDefault();
+    }, { passive: false });
 
-    // Touch support
     let touchStart = null;
-    canvas.addEventListener('touchstart', e => {
-        if (e.touches.length === 1)
-            touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    });
+    canvas.addEventListener('touchstart', e => { if (e.touches.length === 1) touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
     canvas.addEventListener('touchmove', e => {
         if (!touchStart || e.touches.length !== 1) return;
-        const dx = (e.touches[0].clientX - touchStart.x) * 0.005;
-        const dy = (e.touches[0].clientY - touchStart.y) * 0.005;
-        spherical.theta -= dx;
-        spherical.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy));
+        spherical.theta -= (e.touches[0].clientX - touchStart.x) * 0.005;
+        spherical.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + (e.touches[0].clientY - touchStart.y) * 0.005));
         touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         updateCamera();
         e.preventDefault();
@@ -399,127 +613,99 @@
         camera.position.set(
             spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta),
             spherical.r * Math.cos(spherical.phi),
-            spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta),
+            spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta)
         );
         camera.lookAt(0, 0, 0);
     }
     updateCamera();
 
-    // ── Raycaster for satellite click ─────────────────────────────────
-    const raycaster  = new THREE.Raycaster();
-    const mouseNDC   = new THREE.Vector2();
-    const satMeshMap = new Map();   // mesh uuid → satName
+    // Raycaster
+    const raycaster = new THREE.Raycaster();
+    const mouseNDC  = new THREE.Vector2();
+    const satMeshMap = new Map();
 
     canvas.addEventListener('click', e => {
+        if (isDragging) return;
         const rect = canvas.getBoundingClientRect();
         mouseNDC.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
         mouseNDC.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
         raycaster.setFromCamera(mouseNDC, camera);
-        const hits = raycaster.intersectObjects([...satMeshMap.keys()].map(id =>
-            scene.getObjectByProperty('uuid', id)).filter(Boolean));
+        const meshes = [...satMeshMap.keys()].map(id => scene.getObjectByProperty('uuid', id)).filter(Boolean);
+        const hits = raycaster.intersectObjects(meshes);
         if (hits.length) {
             const name = satMeshMap.get(hits[0].object.uuid);
-            if (name) openSatInfoPopup(name);
+            if (name) selectSat(name);
         }
     });
 
     // ================================================================
     // SCENE OBJECTS
     // ================================================================
-    const satObjects   = {};   // satName → { mesh, trailPts[], cones[], trailGeo }
-    const gsObjects    = [];
+    const satObjects = {};
+    const gsObjects  = [];
 
-    function hexToColor(hex) {
-        return new THREE.Color(hex);
-    }
-
-    // ── Ground station helpers ────────────────────────────────────────
-    function buildConeMesh(ecefPos, colorHex, activated) {
+    function buildConeMesh(ecefPos, activated) {
         const outward = new THREE.Vector3(...ecefPos).normalize();
         const top     = new THREE.Vector3(...ecefPos).addScaledVector(outward, 2_000_000);
         const radius  = 2_000_000 * Math.tan(75 * Math.PI / 180);
-
-        const pts     = [];
-        const N       = 48;
-        const arbitrary = Math.abs(outward.z) < 0.9
-            ? new THREE.Vector3(0, 0, 1)
-            : new THREE.Vector3(1, 0, 0);
+        const N = 48;
+        const arbitrary = Math.abs(outward.z) < 0.9 ? new THREE.Vector3(0,0,1) : new THREE.Vector3(1,0,0);
         const u = new THREE.Vector3().crossVectors(outward, arbitrary).normalize();
         const v = new THREE.Vector3().crossVectors(outward, u);
-
+        const pts = [];
         for (let i = 0; i < N; i++) {
             const a = (2 * Math.PI * i) / N;
-            pts.push(top.clone()
-                .addScaledVector(u, radius * Math.cos(a))
-                .addScaledVector(v, radius * Math.sin(a)));
+            pts.push(top.clone().addScaledVector(u, radius * Math.cos(a)).addScaledVector(v, radius * Math.sin(a)));
         }
-
-        // Tip = ecefPos
-        const tip   = new THREE.Vector3(...ecefPos);
-        const verts = [];
-        for (let i = 0; i < N; i++) {
-            const next = (i + 1) % N;
-            verts.push(tip, pts[i], pts[next]);
-        }
+        const tip = new THREE.Vector3(...ecefPos), verts = [];
+        for (let i = 0; i < N; i++) { const next = (i+1)%N; verts.push(tip, pts[i], pts[next]); }
         const geo = new THREE.BufferGeometry();
         const arr = new Float32Array(verts.length * 3);
         verts.forEach((v3, i) => { arr[i*3]=v3.x; arr[i*3+1]=v3.y; arr[i*3+2]=v3.z; });
         geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
-        const mat = new THREE.MeshBasicMaterial({
+        return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
             color: activated ? 0x00cc66 : 0xff3333,
-            transparent: true, opacity: 0.18,
-            side: THREE.DoubleSide, depthWrite: false,
-        });
-        return new THREE.Mesh(geo, mat);
+            transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false
+        }));
     }
 
     function addGroundStation(name, lat, lon, alt, activated) {
         const [x, y, z] = latLonToECEF(lat, lon, alt * 1000);
-        const pos = new THREE.Vector3(x, y, z);
-
         const sphere = new THREE.Mesh(
             new THREE.SphereGeometry(80_000, 16, 16),
             new THREE.MeshPhongMaterial({ color: activated ? 0x00ff88 : 0xff4444, emissive: activated ? 0x003322 : 0x220000 })
         );
-        sphere.position.copy(pos);
+        sphere.position.set(x, y, z);
         scene.add(sphere);
-
-        const cone = buildConeMesh([x, y, z], activated ? '#00ff88' : '#ff4444', activated);
+        const cone = buildConeMesh([x, y, z], activated);
         cone.visible = showCones;
         scene.add(cone);
-
         gsObjects.push({ name, sphere, cone, activated });
     }
 
-    // ── Satellite scene objects ───────────────────────────────────────
     function createSatObjects(satName, colorHex) {
-        const color = hexToColor(colorHex);
-        const mat   = new THREE.MeshPhongMaterial({
-            color, emissive: color.clone().multiplyScalar(0.3), shininess: 60,
-        });
-        const mesh  = new THREE.Mesh(new THREE.SphereGeometry(100_000, 12, 12), mat);
+        const color = new THREE.Color(colorHex);
+        const mesh  = new THREE.Mesh(
+            new THREE.SphereGeometry(100_000, 12, 12),
+            new THREE.MeshPhongMaterial({ color, emissive: color.clone().multiplyScalar(0.3), shininess: 60 })
+        );
         scene.add(mesh);
         satMeshMap.set(mesh.uuid, satName);
 
-        // Trail: a Points object, positions updated each frame
         const trailArr = new Float32Array(TRAIL_LENGTH * 3);
         const trailGeo = new THREE.BufferGeometry();
         trailGeo.setAttribute('position', new THREE.BufferAttribute(trailArr, 3));
-        const trailMat = new THREE.PointsMaterial({
-            color, size: 50_000, sizeAttenuation: true,
-            transparent: true, opacity: 0.55,
-        });
-        const trailPts = new THREE.Points(trailGeo, trailMat);
+        const trailPts = new THREE.Points(trailGeo, new THREE.PointsMaterial({
+            color, size: 50_000, sizeAttenuation: true, transparent: true, opacity: 0.55
+        }));
         trailPts.visible = showTrails;
         scene.add(trailPts);
 
-        const history = [];  // array of [x,y,z] (most-recent first)
-
-        satObjects[satName] = { mesh, trailPts, trailGeo, trailArr, history, colorHex };
+        satObjects[satName] = { mesh, trailPts, trailGeo, trailArr, history: [], colorHex };
     }
 
     // ================================================================
-    // CSV PARSING  (matches parsers.js pattern)
+    // CSV PARSING
     // ================================================================
     function parseCSV(text) {
         const lines   = text.trim().split('\n');
@@ -539,7 +725,6 @@
         const { rows } = parseCSV(text);
         if (!rows.length) return;
 
-        // Group by satellite name
         const grouped = {};
         rows.forEach(r => {
             const name = r['name_sat'] || r['name'] || 'Unknown';
@@ -547,37 +732,29 @@
             grouped[name].push(r);
         });
 
-        // Determine epoch from first timestamp
-        const firstRow = rows[0];
-        const t0 = parseFloat(firstRow['t'] || 0);
-        // If epoch not set via Java bridge, default to "now minus t0"
-        if (obsEpoch === null) {
-            obsEpoch = Date.now() - t0 * 1000;
-        }
+        const t0 = parseFloat(rows[0]['t'] || 0);
+        if (obsEpoch === null) obsEpoch = Date.now() - t0 * 1000;
 
-        // Build sats
-        sats   = {};
-        times  = [];
+        sats  = {};
+        times = [];
         const timeSet = new Set();
 
-        const satNames = Object.keys(grouped);
-        satNames.forEach((satName, colorIdx) => {
+        Object.keys(grouped).forEach((satName, colorIdx) => {
             const colorHex = SAT_COLORS[colorIdx % SAT_COLORS.length];
             const pts = grouped[satName].map(r => {
                 const t = parseFloat(r['t'] || 0);
                 timeSet.add(t);
-                const firing  = parseFloat(r['firing'] || 0);
-                const detStr  = (r['detected_by_gs'] || r['detected_by_gs'] || '').toLowerCase();
-                const detected = detStr === 'true' || detStr === '1' ? 1 : 0;
+                const detStr  = (r['detected_by_gs'] || '').toLowerCase();
                 return {
                     x: parseFloat(r['x']), y: parseFloat(r['y']), z: parseFloat(r['z']),
-                    t, firing, detected,
-                    station: r['nom_station'] || '',
+                    t,
+                    firing:   parseFloat(r['firing'] || 0),
+                    detected: detStr === 'true' || detStr === '1' ? 1 : 0,
+                    station:  r['nom_station'] || '',
                 };
             });
             sats[satName] = { pts, colorHex, isNoisy: satName.toLowerCase().includes('noisy') };
 
-            // (Re)create scene objects
             if (satObjects[satName]) {
                 scene.remove(satObjects[satName].mesh);
                 scene.remove(satObjects[satName].trailPts);
@@ -593,18 +770,38 @@
         sl.min = 0; sl.max = times.length - 1; sl.value = 0;
 
         document.getElementById('status').textContent =
-            `${satNames.length} satellite(s), ${times.length} time steps loaded.`;
+            `${Object.keys(sats).length} satellite(s), ${times.length} time steps loaded.`;
 
         buildLegend();
         updateDatetimeBar();
+        buildSatList();
         tick();
     }
 
+    function loadOrbitalCSV(text) {
+        const { rows } = parseCSV(text);
+        orbitalParams = {};
+        rows.forEach(r => {
+            const name = r['name_sat'] || r['name'] || 'Unknown';
+            if (!orbitalParams[name]) orbitalParams[name] = [];
+            orbitalParams[name].push({
+                t: parseFloat(r['t'] || 0),
+                a: parseFloat(r['a'] || 0),
+                e: parseFloat(r['e'] || 0),
+                i: parseFloat(r['i'] || 0),
+                firing:   parseFloat(r['firing'] || 0),
+                detected: (r['detected_by_gs'] || '').toLowerCase(),
+                station:  r['nom_station'] || '',
+            });
+        });
+        console.log('[3D] Orbital params loaded for:', Object.keys(orbitalParams).join(', '));
+        buildSatList();
+        if (selectedSat) refreshRightPanel(selectedSat);
+    }
+
     function loadGSCSV(text) {
-        // Remove old GS objects
         gsObjects.forEach(o => { scene.remove(o.sphere); scene.remove(o.cone); });
         gsObjects.length = 0;
-
         const { rows } = parseCSV(text);
         rows.forEach((r, i) => {
             const name      = r['name'] || `GS_${i}`;
@@ -615,8 +812,247 @@
             addGroundStation(name, lat, lon, alt, activated);
         });
         document.getElementById('status').textContent =
-            document.getElementById('status').textContent +
-            ` | ${gsObjects.length} ground station(s) loaded.`;
+            document.getElementById('status').textContent + ` | ${gsObjects.length} GS loaded.`;
+    }
+    function loadSatcomCSV(text) {
+        const { rows } = parseCSV(text);
+        satcomLinks = rows.map(r => ({
+            gs:       r['gs_name'] || r['gs name'] || '',
+            start:    r['start_time'] || '',
+            end:      r['end_time'] || '',
+            duration: parseFloat(r['duration_s'] || 0),
+            sat:      r['name_sat_doing_observation'] || '',
+            dataMB:   parseFloat(r['total_data_downlinkable(mb)'] || r['total_data_downlinkable(MB)'] || 0),
+        }));
+        console.log('[3D] Satcom links loaded:', satcomLinks.length);
+        if (selectedSat) refreshRightPanel(selectedSat);
+    }
+    // ================================================================
+    // ORBITAL PARAM HELPERS
+    // ================================================================
+    function getOrbitalAtTime(satName, t) {
+        const params = orbitalParams[satName];
+        if (!params || !params.length) return null;
+        return params.reduce((best, p) =>
+            Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best, params[0]);
+    }
+
+    // Returns next detection event after current time idx
+    function getNextDetection(satName, type) {
+        // type: 'eo' = EO detection (firing=1), 'satcom' = GS detection (detected=true)
+        const sat = sats[satName];
+        if (!sat) return null;
+        const currentT = times[idx];
+
+        for (let i = idx + 1; i < times.length; i++) {
+            const t = times[i];
+            const pt = sat.pts.find(p => p.t === t);
+            if (!pt) continue;
+            if (type === 'eo'     && pt.firing   > 0)  return { t, station: pt.station };
+            if (type === 'satcom' && pt.detected === 1) return { t, station: pt.station };
+        }
+        return null;
+    }
+
+    function formatDeltaT(tSec) {
+        if (tSec === null || tSec === undefined) return '—';
+        const d = tSec - times[idx];
+        if (d <= 0) return 'now';
+        const h = Math.floor(d / 3600), m = Math.floor((d % 3600) / 60), s = Math.floor(d % 60);
+        if (h > 0) return `T+${h}h${String(m).padStart(2,'0')}m`;
+        if (m > 0) return `T+${m}m${String(s).padStart(2,'0')}s`;
+        return `T+${s}s`;
+    }
+
+    // ================================================================
+    // LEFT PANEL — satellite list
+    // ================================================================
+    function buildSatList() {
+        const list = document.getElementById('satList');
+        const satNames = Object.keys(sats);
+        if (!satNames.length) {
+            list.innerHTML = '<div style="padding:16px 12px;font-size:11px;color:var(--text-dim);font-style:italic;">No satellites loaded</div>';
+            return;
+        }
+        list.innerHTML = satNames.map(name => buildSatCardHTML(name)).join('');
+        satNames.forEach(name => {
+            document.getElementById(`satcard-${CSS.escape(name)}`).addEventListener('click', () => selectSat(name));
+        });
+    }
+
+    function buildSatCardHTML(satName) {
+        const sat = sats[satName];
+        if (!sat) return '';
+        const t       = times[idx] || 0;
+        const closest = sat.pts.reduce((b, p) => Math.abs(p.t-t) < Math.abs(b.t-t) ? p : b, sat.pts[0]);
+        const r       = Math.sqrt(closest.x**2 + closest.y**2 + closest.z**2);
+        const altKm   = ((r - EARTH_R) / 1000).toFixed(1);
+        const orb     = getOrbitalAtTime(satName, t);
+        const smaKm   = orb ? (orb.a / 1000).toFixed(1) : '—';
+
+        const nextEO     = getNextDetection(satName, 'eo');
+        const nextSatcom = getNextDetection(satName, 'satcom');
+
+        const detected = closest.detected === 1;
+        const cardClass = `sat-card ${detected ? 'detected' : 'not-detected'} ${selectedSat === satName ? 'selected' : ''}`;
+
+        return `<div class="${cardClass}" id="satcard-${satName}">
+            <div class="sat-card-name">
+                <div class="sat-dot" style="background:${sat.colorHex}"></div>
+                ${satName}
+            </div>
+            <div class="sat-card-row"><span>Alt</span><span>${altKm} km</span></div>
+            <div class="sat-card-row"><span>SMA</span><span>${smaKm} km</span></div>
+            <div class="sat-card-next">
+                <div><span class="next-label">Next EO </span><span class="next-val ${nextEO ? '' : 'none'}">${nextEO ? formatDeltaT(nextEO.t) : 'none'}</span></div>
+                <div><span class="next-label">Next DL </span><span class="next-val ${nextSatcom ? '' : 'none'}">${nextSatcom ? `${formatDeltaT(nextSatcom.t)}${nextSatcom.station ? ' · '+nextSatcom.station : ''}` : 'none'}</span></div>
+            </div>
+        </div>`;
+    }
+
+    function refreshSatList() {
+        const satNames = Object.keys(sats);
+        satNames.forEach(name => {
+            const el = document.getElementById(`satcard-${name}`);
+            if (!el) return;
+            el.outerHTML = buildSatCardHTML(name);
+            document.getElementById(`satcard-${name}`)?.addEventListener('click', () => selectSat(name));
+        });
+    }
+
+    // ================================================================
+    // RIGHT PANEL — satellite detail
+    // ================================================================
+    function selectSat(satName) {
+        selectedSat = satName;
+        // Update left panel selection highlight
+        document.querySelectorAll('.sat-card').forEach(el => el.classList.remove('selected'));
+        const card = document.getElementById(`satcard-${satName}`);
+        if (card) card.classList.add('selected');
+        // Show right panel
+        document.getElementById('rightPanelEmpty').style.display = 'none';
+        const content = document.getElementById('rightPanelContent');
+        content.classList.add('visible');
+        document.getElementById('rightPanelSatName').textContent = satName;
+        refreshRightPanel(satName);
+    }
+
+    function refreshRightPanel(satName) {
+        if (!satName || !sats[satName]) return;
+        const sat     = sats[satName];
+        const t       = times[idx] || 0;
+        const closest = sat.pts.reduce((b, p) => Math.abs(p.t-t) < Math.abs(b.t-t) ? p : b, sat.pts[0]);
+        const r       = Math.sqrt(closest.x**2 + closest.y**2 + closest.z**2);
+        const altKm   = ((r - EARTH_R) / 1000).toFixed(2);
+        const orb     = getOrbitalAtTime(satName, t);
+
+        let velKms = '—';
+        const ptIdx = sat.pts.findIndex(p => p.t === closest.t);
+        if (ptIdx > 0) {
+            const prev = sat.pts[ptIdx - 1];
+            const dt = closest.t - prev.t;
+            if (dt > 0) {
+                const dx = closest.x - prev.x, dy = closest.y - prev.y, dz = closest.z - prev.z;
+                velKms = (Math.sqrt(dx*dx + dy*dy + dz*dz) / dt / 1000).toFixed(3);
+            }
+        }
+
+        const eoEvents = sat.pts.filter(p => p.firing > 0);
+        const nextEO     = getNextDetection(satName, 'eo');
+        const nextSatcom = getNextDetection(satName, 'satcom');
+
+        // Satcom links from dedicated CSV
+        const links    = satcomLinks.filter(l => l.sat === satName);
+        const totalData = links.reduce((s, l) => s + l.dataMB, 0);
+
+        const content = document.getElementById('rightPanelContent');
+        content.innerHTML = `
+
+        <div class="detail-section">
+            <div class="detail-section-title">Position</div>
+            <div class="detail-row"><span class="detail-key">X</span><span class="detail-val">${(closest.x/1000).toFixed(2)} km</span></div>
+            <div class="detail-row"><span class="detail-key">Y</span><span class="detail-val">${(closest.y/1000).toFixed(2)} km</span></div>
+            <div class="detail-row"><span class="detail-key">Z</span><span class="detail-val">${(closest.z/1000).toFixed(2)} km</span></div>
+            <div class="detail-row"><span class="detail-key">Altitude</span><span class="detail-val accent">${altKm} km</span></div>
+            <div class="detail-row"><span class="detail-key">Velocity</span><span class="detail-val">${velKms} km/s</span></div>
+            <div class="detail-row"><span class="detail-key">Sim time T</span><span class="detail-val">${closest.t.toFixed(0)} s</span></div>
+        </div>
+
+        <div class="detail-section">
+            <div class="detail-section-title">Orbital Parameters</div>
+            ${orb ? `
+            <div class="detail-row"><span class="detail-key">Semi-major axis</span><span class="detail-val accent">${(orb.a/1000).toFixed(3)} km</span></div>
+            <div class="detail-row"><span class="detail-key">Eccentricity</span><span class="detail-val">${orb.e.toFixed(6)}</span></div>
+            <div class="detail-row"><span class="detail-key">Inclination</span><span class="detail-val">${(orb.i * 180 / Math.PI).toFixed(4)}°</span></div>
+            <div class="detail-row"><span class="detail-key">Orbit type</span><span class="detail-val">${orb.e < 0.01 ? 'Circular' : orb.e < 0.1 ? 'Near-circular' : 'Elliptical'}</span></div>
+            ` : '<div class="detail-row"><span class="detail-key" style="font-style:italic;color:var(--text-dim)">No orbital data loaded</span></div>'}
+        </div>
+
+        <div class="detail-section">
+            <div class="detail-section-title">Current Status</div>
+            <div class="detail-row"><span class="detail-key">GS Detection</span>
+                <span class="detail-val ${closest.detected ? 'good' : 'bad'}">${closest.detected ? '✓ Detected' : '✗ Not detected'}</span></div>
+            <div class="detail-row"><span class="detail-key">EO Firing</span>
+                <span class="detail-val ${closest.firing ? 'warn' : ''}">${closest.firing ? '🔥 Active' : 'Inactive'}</span></div>
+            <div class="detail-row"><span class="detail-key">Active station</span>
+                <span class="detail-val">${closest.station && closest.station !== 'nan' ? closest.station : '—'}</span></div>
+            <div class="detail-row"><span class="detail-key">Sat type</span>
+                <span class="detail-val">${sat.isNoisy ? 'Noisy' : 'Real'}</span></div>
+        </div>
+
+        <div class="detail-section">
+            <div class="detail-section-title">Next Events</div>
+            <div class="detail-row"><span class="detail-key">Next EO pass</span>
+                <span class="detail-val ${nextEO ? 'accent' : ''}">${nextEO ? formatDeltaT(nextEO.t) : 'None remaining'}</span></div>
+            <div class="detail-row"><span class="detail-key">Next downlink</span>
+                <span class="detail-val ${nextSatcom ? 'accent' : ''}">${nextSatcom ? formatDeltaT(nextSatcom.t) : 'None remaining'}</span></div>
+            ${nextSatcom && nextSatcom.station ? `<div class="detail-row"><span class="detail-key">Via station</span><span class="detail-val">${nextSatcom.station}</span></div>` : ''}
+        </div>
+
+        <div class="detail-section">
+            <div class="detail-section-title">EO Detection Events (${eoEvents.length})</div>
+            ${eoEvents.length === 0
+            ? '<div class="no-events">No EO detections in simulation</div>'
+            : `<div class="event-list">
+                    ${eoEvents.slice(0, 20).map(p => `
+                        <div class="event-item">
+                            <div class="event-item-header">
+                                <span class="event-name">T = ${p.t.toFixed(0)}s</span>
+                                <span class="event-badge badge-eo">EO</span>
+                            </div>
+                        </div>`).join('')}
+                    ${eoEvents.length > 20 ? `<div style="font-size:10px;color:var(--text-dim);padding:4px 0;">+${eoEvents.length-20} more</div>` : ''}
+                   </div>`
+        }
+        </div>
+
+        <div class="detail-section">
+            <div class="detail-section-title">GS Downlink Events (${links.length})</div>
+            ${links.length === 0
+            ? '<div class="no-events">No satcom links in simulation</div>'
+            : `<div class="detail-row" style="margin-bottom:6px;">
+                       <span class="detail-key">Total data</span>
+                       <span class="detail-val accent">${totalData.toFixed(1)} MB</span>
+                   </div>
+                   <div class="event-list">
+                   ${links.map(l => {
+                const startISO = l.start.substring(0,19).replace('T',' ');
+                const endISO   = l.end.substring(0,19).replace('T',' ');
+                const durMin   = (l.duration / 60).toFixed(1);
+                return `<div class="event-item">
+                           <div class="event-item-header">
+                               <span class="event-name">${l.gs}</span>
+                               <span class="event-badge badge-satcom">SATCOM</span>
+                           </div>
+                           <div class="event-time">${startISO} UTC</div>
+                           <div class="event-time">→ ${endISO} UTC (${durMin} min)</div>
+                           <div class="event-time" style="color:var(--accent2);margin-top:2px;">${l.dataMB.toFixed(1)} MB</div>
+                       </div>`;
+            }).join('')}
+                   </div>`
+        }
+        </div>
+    `;
     }
 
     // ================================================================
@@ -629,7 +1065,7 @@
 
     function tick() {
         if (!times.length) return;
-        const t       = times[idx];
+        const t        = times[idx];
         const satNames = Object.keys(sats);
         const labelLines = [];
 
@@ -638,80 +1074,58 @@
             const obj = satObjects[satName];
             if (!obj) return;
 
-            // Find closest point at time t
             const closest = sat.pts.reduce((best, p) =>
                 Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best, sat.pts[0]);
 
-            const pos = new THREE.Vector3(closest.x, closest.y, closest.z);
+            obj.mesh.position.set(closest.x, closest.y, closest.z);
 
-            // Move sphere
-            obj.mesh.position.copy(pos);
+            let hexColor = sat.isNoisy
+                ? (closest.detected ? '#3498db' : '#ffffff')
+                : (closest.detected ? '#2ecc71' : '#e74c3c');
 
-            // Color based on detection
-            let hexColor = sat.colorHex;
-            if (sat.isNoisy) {
-                hexColor = closest.detected ? '#3498db' : '#ffffff';
-            } else {
-                hexColor = closest.detected ? '#2ecc71' : '#e74c3c';
-            }
             obj.mesh.material.color.set(hexColor);
             obj.mesh.material.emissive.set(hexColor).multiplyScalar(0.25);
             obj.trailPts.material.color.set(hexColor);
 
-            // Update trail history
             obj.history.unshift([closest.x, closest.y, closest.z]);
             if (obj.history.length > TRAIL_LENGTH) obj.history.length = TRAIL_LENGTH;
             for (let i = 0; i < TRAIL_LENGTH; i++) {
-                const p = obj.history[i] || obj.history[obj.history.length - 1] || [0,0,0];
-                obj.trailArr[i * 3]     = p[0];
-                obj.trailArr[i * 3 + 1] = p[1];
-                obj.trailArr[i * 3 + 2] = p[2];
+                const p = obj.history[i] || obj.history[obj.history.length-1] || [0,0,0];
+                obj.trailArr[i*3] = p[0]; obj.trailArr[i*3+1] = p[1]; obj.trailArr[i*3+2] = p[2];
             }
             obj.trailGeo.attributes.position.needsUpdate = true;
 
-            // Station label
-            if (closest.detected && closest.station && closest.station !== '' && closest.station !== 'nan') {
+            if (closest.detected && closest.station && closest.station !== '' && closest.station !== 'nan')
                 labelLines.push(`${satName} → ${closest.station}`);
-            }
         });
 
-        // HUD labels
         document.getElementById('hudTopRight').textContent = labelLines.join('\n');
-
-        // Datetime bar
         updateDatetimeBar();
 
-        // Stats
         const detected = satNames.filter(n => {
             const s = sats[n];
-            const c = s.pts.reduce((b, p) => Math.abs(p.t - t) < Math.abs(b.t - t) ? p : b, s.pts[0]);
+            const c = s.pts.reduce((b, p) => Math.abs(p.t-t) < Math.abs(b.t-t) ? p : b, s.pts[0]);
             return c.detected;
         });
         document.getElementById('statsRow').innerHTML =
-            `<div class="stat-item"><span class="stat-label">VISIBLE</span>
-       <span class="stat-val">${detected.length} / ${satNames.length}</span></div>` +
-            `<div class="stat-item"><span class="stat-label">GS</span>
-       <span class="stat-val">${gsObjects.length}</span></div>`;
-
-        // Refresh selected sat popup
-        if (selectedSat) refreshSatInfoPopup(selectedSat);
+            `<div class="stat-item"><span class="stat-label">VISIBLE</span><span class="stat-val">${detected.length} / ${satNames.length}</span></div>` +
+            `<div class="stat-item"><span class="stat-label">GS</span><span class="stat-val">${gsObjects.length}</span></div>`;
 
         document.getElementById('tSlider').value = idx;
+
+        // Refresh panels
+        refreshSatList();
+        if (selectedSat) refreshRightPanel(selectedSat);
     }
 
-    // ── Playback ──────────────────────────────────────────────────────
     function restartTimer() {
         clearInterval(timer);
         if (!playing || !times.length) return;
         const interval = Math.max(16, Math.round(120 / Math.max(1, speedMultiplier)));
         const steps    = Math.max(1, Math.round(speedMultiplier));
-        timer = setInterval(() => {
-            idx = (idx + steps) % times.length;
-            tick();
-        }, interval);
+        timer = setInterval(() => { idx = (idx + steps) % times.length; tick(); }, interval);
     }
 
-    // ── Render loop (Three.js) ────────────────────────────────────────
     function resizeIfNeeded() {
         const w = wrap.clientWidth, h = wrap.clientHeight;
         if (canvas.width !== w || canvas.height !== h) {
@@ -733,26 +1147,13 @@
     function updateDatetimeBar() {
         const bar = document.getElementById('datetimeBar');
         const ms  = currentUnixMs();
-
-        if (obsEpoch === null) {
-            bar.innerHTML = '<span class="no-epoch">No epoch set — load a satellite CSV to begin</span>';
-            return;
-        }
-        if (isNaN(ms)) {
-            bar.innerHTML = '<span class="no-epoch">Epoch set — load satellite CSV to begin</span>';
-            return;
-        }
-
-        const iso        = new Date(ms).toISOString();
-        const datePart   = iso.substring(0, 10);
-        const timePart   = iso.substring(11, 19);
-        const elapsedS   = Math.round((ms - obsEpoch) / 1000);
-        const elH        = Math.floor(elapsedS / 3600);
-        const elM        = Math.floor((elapsedS % 3600) / 60);
-        const elS        = elapsedS % 60;
+        if (obsEpoch === null) { bar.innerHTML = '<span class="no-epoch">No epoch set — load a satellite CSV to begin</span>'; return; }
+        if (isNaN(ms))         { bar.innerHTML = '<span class="no-epoch">Epoch set — load satellite CSV to begin</span>'; return; }
+        const iso = new Date(ms).toISOString();
+        const elapsedS = Math.round((ms - obsEpoch) / 1000);
+        const elH = Math.floor(elapsedS/3600), elM = Math.floor((elapsedS%3600)/60), elS = elapsedS%60;
         bar.innerHTML =
-            `<span class="epoch-label">SIM DATE</span>` +
-            `<span class="epoch-val">${datePart}&nbsp;&nbsp;${timePart} UTC</span>` +
+            `<span class="epoch-label">SIM DATE</span><span class="epoch-val">${iso.substring(0,10)}&nbsp;&nbsp;${iso.substring(11,19)} UTC</span>` +
             `<span class="epoch-label" style="margin-left:16px;">ELAPSED</span>` +
             `<span class="epoch-val">T+${elH}h ${String(elM).padStart(2,'0')}m ${String(elS).padStart(2,'0')}s</span>`;
     }
@@ -761,67 +1162,20 @@
     // LEGEND
     // ================================================================
     function buildLegend() {
-        const el = document.getElementById('legend');
-        const items = [
+        document.getElementById('legend').innerHTML = [
             { color: '#2ecc71', label: 'Detected (real)' },
             { color: '#e74c3c', label: 'Not detected (real)' },
             { color: '#3498db', label: 'Detected (noisy)' },
             { color: '#ffffff', label: 'Not detected (noisy)' },
-            { color: '#00ff88', label: 'Ground station (active)' },
-            { color: '#ff4444', label: 'Ground station (inactive)' },
-        ];
-        el.innerHTML = items.map(i =>
-            `<div class="legend-item">
-       <div class="legend-dot" style="background:${i.color};"></div>
-       <span>${i.label}</span>
-     </div>`
-        ).join('');
+            { color: '#00ff88', label: 'GS active' },
+            { color: '#ff4444', label: 'GS inactive' },
+        ].map(i => `<div class="legend-item"><div class="legend-dot" style="background:${i.color}"></div><span>${i.label}</span></div>`).join('');
     }
 
     // ================================================================
-    // SAT INFO POPUP
+    // UI LISTENERS
     // ================================================================
-    function openSatInfoPopup(satName) {
-        selectedSat = satName;
-        document.getElementById('satInfoTitle').textContent = satName;
-        document.getElementById('satInfoPopup').classList.add('visible');
-        refreshSatInfoPopup(satName);
-    }
-
-    function refreshSatInfoPopup(satName) {
-        const sat = sats[satName];
-        if (!sat || !times.length) return;
-        const t       = times[idx];
-        const closest = sat.pts.reduce((b, p) => Math.abs(p.t-t) < Math.abs(b.t-t) ? p : b, sat.pts[0]);
-        const r       = Math.sqrt(closest.x**2 + closest.y**2 + closest.z**2);
-        const altKm   = ((r - EARTH_R) / 1000).toFixed(1);
-        const rows = [
-            ['X (km)',    (closest.x/1000).toFixed(1)],
-            ['Y (km)',    (closest.y/1000).toFixed(1)],
-            ['Z (km)',    (closest.z/1000).toFixed(1)],
-            ['Alt (km)',  altKm],
-            ['T (s)',     closest.t.toFixed(0)],
-            ['Detected',  closest.detected ? '✓ Yes' : '✗ No'],
-            ['Firing',    closest.firing ? '🔥 Yes' : 'No'],
-            ['Station',   closest.station || '—'],
-        ];
-        document.getElementById('satInfoBody').innerHTML = rows.map(([k,v]) =>
-            `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v}</span></div>`
-        ).join('');
-    }
-
-    document.getElementById('satInfoClose').addEventListener('click', () => {
-        selectedSat = null;
-        document.getElementById('satInfoPopup').classList.remove('visible');
-    });
-
-    // ================================================================
-    // UI EVENT LISTENERS
-    // ================================================================
-    document.getElementById('tSlider').addEventListener('input', e => {
-        idx = parseInt(e.target.value);
-        tick();
-    });
+    document.getElementById('tSlider').addEventListener('input', e => { idx = parseInt(e.target.value); tick(); });
 
     document.getElementById('speedSlider').addEventListener('input', e => {
         const v = parseInt(e.target.value);
@@ -834,8 +1188,7 @@
     document.getElementById('playBtn').addEventListener('click', () => {
         playing = !playing;
         document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
-        if (playing) restartTimer();
-        else clearInterval(timer);
+        if (playing) restartTimer(); else clearInterval(timer);
     });
 
     document.getElementById('trailToggle').addEventListener('click', function() {
@@ -852,38 +1205,45 @@
         gsObjects.forEach(o => { o.cone.visible = showCones; });
     });
 
-    // File inputs
-    document.getElementById('uploadBtn').addEventListener('click', () =>
-        document.getElementById('csvFile').click());
-    document.getElementById('uploadGSBtn').addEventListener('click', () =>
-        document.getElementById('gsFile').click());
+    document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('csvFile').click());
+    document.getElementById('uploadGSBtn').addEventListener('click', () => document.getElementById('gsFile').click());
 
     document.getElementById('csvFile').addEventListener('change', e => {
         const f = e.target.files[0]; if (!f) return;
-        const r = new FileReader();
-        r.onload = ev => loadSatCSV(ev.target.result);
-        r.readAsText(f);
+        const r = new FileReader(); r.onload = ev => loadSatCSV(ev.target.result); r.readAsText(f);
     });
     document.getElementById('gsFile').addEventListener('change', e => {
         const f = e.target.files[0]; if (!f) return;
-        const r = new FileReader();
-        r.onload = ev => loadGSCSV(ev.target.result);
-        r.readAsText(f);
+        const r = new FileReader(); r.onload = ev => loadGSCSV(ev.target.result); r.readAsText(f);
     });
 
     // ================================================================
-    // JAVA BRIDGE ENTRY POINTS  (mirrors main.js window.* exports)
+    // BRIDGE ENTRY POINTS
     // ================================================================
     window.receiveCSVContent    = text => loadSatCSV(text);
     window.receiveGSCSVContent  = text => loadGSCSV(text);
-
-    /**
-     * Called from Java: window.setSimulationEpoch("2026-04-23T14:00:00Z")
-     */
+    window.receiveOrbitalCSV    = text => loadOrbitalCSV(text);
+    window.receiveSatcomCSV = text => loadSatcomCSV(text);
     window.setSimulationEpoch = function(isoDateString) {
         obsEpoch = new Date(isoDateString).getTime();
         updateDatetimeBar();
     };
+
+    // ================================================================
+    // WEBSOCKET
+    // ================================================================
+    const ws = new WebSocket('ws://localhost:8765');
+    ws.onopen    = () => console.log('[WS] Connected to Java server');
+    ws.onmessage = (event) => {
+        const msg = event.data;
+        if      (msg.startsWith('EPOCH:'))       setSimulationEpoch(msg.slice(6));
+        else if (msg.startsWith('GS_CSV:'))      loadGSCSV(msg.slice(7));
+        else if (msg.startsWith('SAT_CSV:'))     receiveCSVContent(msg.slice(8));
+        else if (msg.startsWith('ORBITAL_CSV:')) receiveOrbitalCSV(msg.slice(12));
+        else if (msg.startsWith('SATCOM_CSV:')) loadSatcomCSV(msg.slice(11));
+    };
+    ws.onerror = (e) => console.error('[WS] Error:', e);
+    ws.onclose = ()  => console.warn('[WS] Connection closed');
 
     // ================================================================
     // INIT
@@ -891,7 +1251,7 @@
     buildLegend();
     updateDatetimeBar();
     console.log('[3D Visualizer] Ready.');
-    window.GlobeInitialized = false;
+    window.visualizerReady = true;
 </script>
 </body>
 </html>

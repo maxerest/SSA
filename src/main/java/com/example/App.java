@@ -1,11 +1,9 @@
 package com.example;
 
 import com.example.Analytics_Propagator.Least_squares_batch;
-import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Analytics_Propagator.Type1.Propagator_1;
 import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Satcom;
-import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
 import com.example.Orbiting_object.Satellite_sub_systems.Antenna;
@@ -14,7 +12,7 @@ import com.example.Orbiting_object.Satellite_sub_systems.Motors;
 import com.example.SSA.Patera_detection;
 import com.example.TLE.My_TLE;
 import com.example.View.SatelliteTrackerUI;
-import com.example.View.View3D.SatelliteTracker3D;
+import com.example.View.View3D.Visualizer3DServer;
 import com.example.View.Visulations;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -22,9 +20,7 @@ import javafx.stage.Stage;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
-import org.orekit.models.earth.EarthShape;
 import org.orekit.orbits.PositionAngleType;
-import org.orekit.utils.Constants;
 import com.example.Mission_config.ConfigBridge;
 import com.example.Mission_config.MissionConfig;
 import java.util.concurrent.CountDownLatch;
@@ -32,13 +28,13 @@ import com.example.Mission_config.MissionConfiguratorUI;
 
 import java.util.*;
 import java.io.File;
-import java.nio.file.*;
 import java.io.IOException;
 
 public class App 
 {
     public static List<Satellite> liste_par_sats_real_orbit;
     public static void main(String[] args) throws IOException {
+
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
         final boolean visualisation_2D = true;
@@ -64,25 +60,20 @@ public class App
                         Platform.runLater(() -> {
                             try {
                                 System.out.println("[App] Opening 2DUI...");
-                                new SatelliteTrackerUI().start(new Stage());
+                                Stage stage2D = new Stage();
+                                stage2D.setOnCloseRequest(e -> {
+                                    System.out.println("[App] 2D window closed — shutting down.");
+                                    Platform.exit();
+                                    System.exit(0);
+                                });
+                                new SatelliteTrackerUI().start(stage2D);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         });
                     }
                     if (visualisation_3D) {
-
-
-                        Platform.runLater(() -> {
-                            try {
-
-                                System.out.println("[App] Opening 3DUI...");
-                                new SatelliteTracker3D().start(new Stage());
-
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
+                        new Thread(() -> new Visualizer3DServer().launch()).start();
                     }
 
                 } catch (Exception e) {
@@ -96,6 +87,7 @@ public class App
 
         Platform.setImplicitExit(false);
         Application.launch(MissionConfiguratorUI.class, args);
+        System.exit(0);
     }
 
 

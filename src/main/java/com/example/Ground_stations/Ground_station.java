@@ -35,7 +35,7 @@ public class Ground_station {
 
     public static class GroundStation_physical extends GroundStation {
         String name;
-        double elevation_mask=FastMath.toRadians(10.0);
+        double elevation_mask;
         double antenna_size;
         double antenna_gain;
         double teta3dB=0.2;
@@ -45,12 +45,13 @@ public class Ground_station {
         public Map <SpacecraftState,Boolean> map_visibility_from_sat=new HashMap<>();
         public GeodeticPoint geo_point;
 
-        public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point) {
+        public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point,double elevation_mask) {
             super(baseFrame);
             this.antenna_gain=55; //dB
             this.antenna_size=10; //m
             this.name=name;
             this.geo_point=point;
+            this.elevation_mask=elevation_mask;
         }
 
         public String getName() {
@@ -104,6 +105,7 @@ public class Ground_station {
                 double lonNorm = lon > 180 ? lon - 360 : lon;
                 double alt = Double.parseDouble(parts[3].trim());
                 double station_activation= Double.parseDouble(parts[4].trim());
+                double masked_angle=FastMath.toRadians(Double.parseDouble(parts[5].trim()));
                 if (station_activation==0){
                     // Station is deactivated, skip it
                     continue;
@@ -118,7 +120,7 @@ public class Ground_station {
                         ,
                         name
                 );
-                GroundStation_physical station_gs = new GroundStation_physical(station,name,point);
+                GroundStation_physical station_gs = new GroundStation_physical(station,name,point,masked_angle);
                 
                 liste_GS.add(station_gs);
             }
