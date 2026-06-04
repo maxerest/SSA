@@ -55,9 +55,7 @@
 
         <div id="editorPanel">
 
-            <!-- ══════════════════════════════════════════
-                 MODE 1 — MANUAL
-            ═══════════════════════════════════════════ -->
+            <!-- MODE 1 — MANUAL -->
             <div id="mode-manual" class="mode-panel active">
                 <div id="emptyState">
                     <div class="empty-icon">🛰</div>
@@ -66,9 +64,7 @@
                 <div id="satEditor" style="display:none"></div>
             </div>
 
-            <!-- ══════════════════════════════════════════
-                 MODE 2 — TLE IMPORT
-            ═══════════════════════════════════════════ -->
+            <!-- MODE 2 — TLE IMPORT -->
             <div id="mode-tle" class="mode-panel">
                 <div class="section">
                     <div class="section-title">📡 TLE File Import</div>
@@ -132,9 +128,7 @@
                 </div>
             </div>
 
-            <!-- ══════════════════════════════════════════
-                 MODE 3 — CONSTELLATION BUILDER
-            ═══════════════════════════════════════════ -->
+            <!-- MODE 3 — CONSTELLATION BUILDER -->
             <div id="mode-constellation" class="mode-panel">
 
                 <div class="section">
@@ -168,9 +162,7 @@
                 <div class="section">
                     <div class="section-title">Parameters <span class="badge" id="constArchBadge">Walker Delta</span></div>
                     <div class="section-body">
-                        <div class="form-grid" id="constParamGrid">
-                            <!-- Populated by JS -->
-                        </div>
+                        <div class="form-grid" id="constParamGrid"></div>
                         <div id="constArchNote" class="field-note" style="margin-top:10px"></div>
                     </div>
                 </div>
@@ -227,18 +219,18 @@
 
     <!-- RIGHT: mission settings -->
     <div id="missionPanel">
-        <div id="missionPanelHeader" style="text-align: center;"><span>Mission Settings</span> </div>
+        <div id="missionPanelHeader" style="text-align: center;"><span>Mission Settings</span></div>
         <div id="missionPanelBody">
             <div>
                 <div style="font-size:10px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Epoch</div>
                 <div class="form-field">
-                    <label for ="epochInput">Start date (UTC)</label>
+                    <label for="epochInput">Start date (UTC)</label>
                     <input type="datetime-local" id="epochInput"/>
                 </div>
-                <div style="font-size:10px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Epoch</div>
+                <div style="font-size:10px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Duration</div>
                 <div class="form-field">
-                    <label for ="durationInput">Duration (s)</label>
-                    <input type="number" id="durationInput" min ="0"/>
+                    <label for="durationInput">Duration (s)</label>
+                    <input type="number" id="durationInput" min="0"/>
                 </div>
             </div>
             <div class="mission-divider"></div>
@@ -283,25 +275,22 @@
     // ================================================================
     const SAT_COLORS = ['#4fc3f7','#00e676','#ffb74d','#ef5350','#ce93d8',
         '#80cbc4','#fff176','#ff8a65','#90caf9','#a5d6a7'];
-    const MU  = 3.986004418e14;   // m³/s²
-    const RE  = 6_378_137;        // m
+    const MU  = 3.986004418e14;
+    const RE  = 6_378_137;
 
     let satellites     = [];
     let activeSatId    = null;
     let subsystemCatalog = {};
     let currentMode    = 'manual';
 
-    // TLE mode state
-    let tleParsed      = [];   // [{name, line1, line2, inc, raan, ecc, omega, M, mm, altKm, checked}]
-
-    // Constellation mode state
+    let tleParsed      = [];
     let constArch      = 'walker-delta';
     let constParams    = {};
-    let constGenerated = [];   // preview array of sat param objects
-    // Set to current date/time
-    document.getElementById('epochInput').value =
-        new Date().toISOString().slice(0, 16);
-    document.getElementById('durationInput').value=3600;
+    let constGenerated = [];
+
+    document.getElementById('epochInput').value = new Date().toISOString().slice(0, 16);
+    document.getElementById('durationInput').value = 3600;
+
     // ================================================================
     // INIT
     // ================================================================
@@ -322,7 +311,6 @@
         addSatellite();
     }
 
-    // Populate EO sensor + antenna dropdowns in TLE and constellation footers
     function populatePayloadPickers() {
         const EO_KEYS      = ['EO_SENSOR','EO_SENSORS','EO','OPTICAL','IMAGER','CAMERA'];
         const ANTENNA_KEYS = ['ANTENNA','ANTENNAS','SATCOM','RF','COMMS','COMMUNICATION'];
@@ -330,16 +318,13 @@
         function optionsFor(catKeys) {
             for (const key of catKeys) {
                 const items = subsystemCatalog[key] || subsystemCatalog[key.toLowerCase()];
-                if (items && items.length) {
+                if (items && items.length)
                     return items.map(i => `<option value="${esc(i.name||'')}">${esc(i.name||'')}</option>`).join('');
-                }
             }
-            // fallback: look for any catalog key that contains one of the keywords
             for (const [cat, items] of Object.entries(subsystemCatalog)) {
                 const up = cat.toUpperCase();
-                if (catKeys.some(k => up.includes(k)) && items.length) {
+                if (catKeys.some(k => up.includes(k)) && items.length)
                     return items.map(i => `<option value="${esc(i.name||'')}">${esc(i.name||'')}</option>`).join('');
-                }
             }
             return '';
         }
@@ -356,7 +341,9 @@
         });
     }
 
-    // ── Clear all satellites ──────────────────────────────────────────
+    // ================================================================
+    // CLEAR ALL
+    // ================================================================
     function clearAllSats() {
         const btn = document.getElementById('clearAllBtn');
         if (!btn.classList.contains('confirm')) {
@@ -369,8 +356,8 @@
             }, 2500);
             return;
         }
-        satellites   = [];
-        activeSatId  = null;
+        satellites  = [];
+        activeSatId = null;
         btn.classList.remove('confirm');
         btn.textContent = '✕ Clear all';
         renderSatList();
@@ -393,25 +380,35 @@
     // ================================================================
     // SATELLITE LIST
     // ================================================================
+
+    // addSatellite: push ONE sat to the array + refresh UI.
+    // For bulk inserts use _pushSat() + a single flush at the end.
     function addSatellite(params) {
+        const id  = _pushSat(params);
+        renderSatList();
+        if (!params) selectSat(id);
+        updateSummary();
+        return id;
+    }
+
+    // Internal: push a sat object without any DOM work. Returns the new id.
+    function _pushSat(params) {
         const id  = Date.now() + Math.random();
         const idx = satellites.length;
         satellites.push(Object.assign({
             id,
-            name: 'SAT_' + (idx + 1),
-            color: SAT_COLORS[idx % SAT_COLORS.length],
-            mass: 800,
-            altitudeKm: 500,
-            eccentricity: 0.001,
+            name:           'SAT_' + (idx + 1),
+            color:          SAT_COLORS[idx % SAT_COLORS.length],
+            mass:           800,
+            altitudeKm:     500,
+            eccentricity:   0.001,
             inclinationDeg: 87.4,
-            raanDeg: 0,
-            argPerigeeDeg: 0,
+            raanDeg:        0,
+            argPerigeeDeg:  0,
             trueAnomalyDeg: 0,
-            subsystems: {}
+            subsystems:     {}
         }, params || {}));
-        renderSatList();
-        if (!params) selectSat(satellites[satellites.length-1].id);
-        updateSummary();
+        return id;
     }
 
     function deleteSat(id, e) {
@@ -432,15 +429,22 @@
 
     function renderSatList() {
         const list = document.getElementById('satList');
-        list.innerHTML = '';
-        satellites.forEach(s => {
-            const div = document.createElement('div');
-            div.className = 'sat-item' + (s.id === activeSatId ? ' active' : '');
-            div.innerHTML = `<span class="sat-dot" style="background:${s.color}"></span>
-            <span class="sat-label">${esc(s.name)}</span>
-            <button class="del-btn" onclick="deleteSat(${s.id}, event)">✕</button>`;
-            div.addEventListener('click', () => selectSat(s.id));
-            list.appendChild(div);
+        // Build the whole list as one HTML string — avoids N separate DOM mutations
+        const html = satellites.map(s =>
+            `<div class="sat-item${s.id === activeSatId ? ' active' : ''}" data-id="${s.id}">
+                <span class="sat-dot" style="background:${s.color}"></span>
+                <span class="sat-label">${esc(s.name)}</span>
+                <button class="del-btn" data-del="${s.id}">✕</button>
+            </div>`
+        ).join('');
+        list.innerHTML = html;
+        // Attach events via delegation — one listener on the container
+        list.querySelectorAll('.sat-item').forEach(div => {
+            const id = parseFloat(div.dataset.id);
+            div.addEventListener('click', (e) => {
+                if (e.target.dataset.del) { deleteSat(parseFloat(e.target.dataset.del), e); return; }
+                selectSat(id);
+            });
         });
         document.getElementById('satCountBadge').textContent = satellites.length;
     }
@@ -536,7 +540,7 @@
           <div style="font-size:11px;color:var(--text-dim)">— None —</div>
         </div>`;
             items.forEach(item => {
-                const n  = item.name || '';
+                const n    = item.name || '';
                 const skip = new Set(['name','type','notes']);
                 const specRows = Object.entries(item).filter(([k]) => !skip.has(k))
                     .map(([k,v]) => `<div class="sub-spec-row"><span>${k}</span><span class="spec-val">${v}</span></div>`).join('');
@@ -577,7 +581,7 @@
         if (field === 'mass') updateSummary();
     }
 
-    function commitEditor() {}  // live updates handle state
+    function commitEditor() {}
 
     // ================================================================
     // TLE PARSING
@@ -600,18 +604,15 @@
         const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l);
         tleParsed   = [];
 
-        // Support 2LE (unnamed) and 3LE (named)
         let i = 0;
         while (i < lines.length) {
             let name, l1, l2;
             if (lines[i] && lines[i][0] !== '1' && lines[i][0] !== '2') {
-                // 3LE: name line present
                 name = lines[i].replace(/^0\s+/, '').trim();
                 l1   = lines[i+1] || '';
                 l2   = lines[i+2] || '';
                 i += 3;
             } else {
-                // 2LE: no name
                 l1   = lines[i]   || '';
                 l2   = lines[i+1] || '';
                 name = 'SAT_' + (tleParsed.length + 1);
@@ -633,14 +634,12 @@
             const ecc   = parseFloat(eccStr);
             const omega = parseFloat(l2.substring(34, 42));
             const M     = parseFloat(l2.substring(43, 51));
-            const mm    = parseFloat(l2.substring(52, 63));  // rev/day
-            // Compute semi-major axis from mean motion
-            const n   = mm * 2 * Math.PI / 86400;             // rad/s
-            const sma = Math.cbrt(MU / (n * n));               // metres
+            const mm    = parseFloat(l2.substring(52, 63));
+            const n     = mm * 2 * Math.PI / 86400;
+            const sma   = Math.cbrt(MU / (n * n));
             const altKm = (sma - RE) / 1000;
-            // Convert mean anomaly → true anomaly (approx, e small)
-            const Mrad = M * Math.PI / 180;
-            const nu   = M + (2*ecc - ecc**3/4) * Math.sin(Mrad) * 180/Math.PI;
+            const Mrad  = M * Math.PI / 180;
+            const nu    = M + (2*ecc - ecc**3/4) * Math.sin(Mrad) * 180/Math.PI;
             return { name, l1, l2, inc, raan, ecc: parseFloat(ecc.toFixed(6)),
                 omega, M, nu: ((nu % 360) + 360) % 360,
                 altKm: Math.round(altKm), checked: true };
@@ -652,25 +651,34 @@
         if (!tleParsed.length) { sect.style.display='none'; return; }
         sect.style.display = 'block';
         document.getElementById('tleParsedBadge').textContent = tleParsed.length + ' found';
-        const list = document.getElementById('tleParsedList');
-        list.innerHTML = '';
-        tleParsed.forEach((t, idx) => {
-            const row = document.createElement('div');
-            row.className = 'tle-entry';
+
+        // Build entire list as one HTML string — no per-row DOM append
+        const rows = tleParsed.map((t, idx) => {
             const col = SAT_COLORS[idx % SAT_COLORS.length];
-            row.innerHTML = `
-            <input class="tle-entry-check" type="checkbox" ${t.checked?'checked':''} onchange="tleToggle(${idx},this.checked)"/>
-            <span class="tle-entry-dot" style="background:${col}"></span>
-            <span class="tle-entry-name">${esc(t.name)}</span>
-            <span class="tle-entry-inc">${t.inc.toFixed(1)}°</span>
-            <span class="tle-entry-alt">${t.altKm} km</span>`;
-            list.appendChild(row);
-        });
+            return `<div class="tle-entry">
+                <input class="tle-entry-check" type="checkbox" ${t.checked?'checked':''} data-tleindex="${idx}"/>
+                <span class="tle-entry-dot" style="background:${col}"></span>
+                <span class="tle-entry-name">${esc(t.name)}</span>
+                <span class="tle-entry-inc">${t.inc.toFixed(1)}°</span>
+                <span class="tle-entry-alt">${t.altKm} km</span>
+            </div>`;
+        }).join('');
+
+        const list = document.getElementById('tleParsedList');
+        list.innerHTML = rows;
+
+        // Single delegated listener for all checkboxes
+        list.addEventListener('change', e => {
+            if (e.target.dataset.tleindex !== undefined) {
+                tleToggle(parseInt(e.target.dataset.tleindex), e.target.checked);
+            }
+        }, { once: true });  // replaced on next renderTLEParsed call anyway
+
         updateTLESelectedCount();
     }
 
     function tleToggle(idx, v) { tleParsed[idx].checked = v; updateTLESelectedCount(); }
-    function tleSelectAll(v) { tleParsed.forEach(t => t.checked = v); renderTLEParsed(); }
+    function tleSelectAll(v)   { tleParsed.forEach(t => t.checked = v); renderTLEParsed(); }
     function updateTLESelectedCount() {
         const n = tleParsed.filter(t => t.checked).length;
         document.getElementById('tleSelectedCount').textContent = n + ' selected';
@@ -681,6 +689,9 @@
         document.getElementById('tleParsedSection').style.display = 'none';
     }
 
+    // ================================================================
+    // TLE IMPORT — BATCH (the critical fix)
+    // ================================================================
     function importSelectedTLE() {
         const mass     = parseFloat(document.getElementById('tleMassInput').value) || 800;
         const eoVal    = document.getElementById('tleEoSelect').value;
@@ -688,7 +699,6 @@
         const toImport = tleParsed.filter(t => t.checked);
         if (!toImport.length) { toast('No satellites selected'); return; }
 
-        // Build subsystems from picker selections
         function pickerSubsystems() {
             const subs = {};
             if (eoVal)  { const cat = findCatFor(eoVal);  if (cat) subs[cat] = eoVal; }
@@ -696,8 +706,12 @@
             return subs;
         }
 
+        const subs        = pickerSubsystems();
+        const firstNewIdx = satellites.length;  // remember where new batch starts
+
+        // Push all sats into the array in one loop — no DOM work inside
         toImport.forEach(t => {
-            addSatellite({
+            _pushSat({
                 name:           t.name,
                 mass,
                 altitudeKm:     t.altKm,
@@ -706,12 +720,17 @@
                 raanDeg:        t.raan,
                 argPerigeeDeg:  t.omega,
                 trueAnomalyDeg: t.nu,
-                subsystems:     pickerSubsystems(),
+                subsystems:     Object.assign({}, subs),
             });
         });
+
+        // Single DOM flush after the entire batch
         const manBtn = document.querySelector('.mode-tab');
         switchMode('manual', manBtn);
-        selectSat(satellites[satellites.length - toImport.length].id);
+        activeSatId = satellites[firstNewIdx].id;
+        renderSatList();
+        renderEditor();
+        updateSummary();
         toast(`${toImport.length} satellite(s) imported from TLE ✓`);
     }
 
@@ -772,9 +791,9 @@
     }
 
     function buildConstParamGrid() {
-        const cfg    = ARCH_PARAMS[constArch] || ARCH_PARAMS['walker-delta'];
-        const grid   = document.getElementById('constParamGrid');
-        const note   = document.getElementById('constArchNote');
+        const cfg  = ARCH_PARAMS[constArch] || ARCH_PARAMS['walker-delta'];
+        const grid = document.getElementById('constParamGrid');
+        const note = document.getElementById('constArchNote');
         if (!grid) return;
         grid.innerHTML = cfg.fields.map(f => `
         <div class="form-field">
@@ -794,12 +813,12 @@
 
     function buildConstPreview() {
         constGenerated = [];
-        const arch = constArch;
-        const np  = Math.max(1, Math.round(getCP('np', 3)));
-        const spp = Math.max(1, Math.round(getCP('spp', 4)));
-        const alt = getCP('alt', 550);
-        const ecc = getCP('ecc', 0);
-        const inc = getCP('inc', 53);
+        const arch   = constArch;
+        const np     = Math.max(1, Math.round(getCP('np', 3)));
+        const spp    = Math.max(1, Math.round(getCP('spp', 4)));
+        const alt    = getCP('alt', 550);
+        const ecc    = getCP('ecc', 0);
+        const inc    = getCP('inc', 53);
         const prefix = (document.getElementById('constPrefixInput') || {value:'SAT'}).value || 'SAT';
 
         for (let p = 0; p < np; p++) {
@@ -819,9 +838,8 @@
                 } else {
                     nu = (360 / spp) * s;
                 }
-                nu = ((nu % 360) + 360) % 360;
+                nu   = ((nu   % 360) + 360) % 360;
                 raan = ((raan % 360) + 360) % 360;
-
                 constGenerated.push({
                     name:           `${prefix}_P${p+1}_S${s+1}`,
                     altitudeKm:     alt,
@@ -834,7 +852,6 @@
             }
         }
 
-        // Render preview table
         const tbody = document.getElementById('constPreviewBody');
         if (!tbody) return;
         tbody.innerHTML = constGenerated.map(s => `<tr>
@@ -848,6 +865,7 @@
         document.getElementById('constPreviewCount').textContent = constGenerated.length + ' sats';
     }
 
+    // Constellation import also uses batch pattern
     function importConstellation() {
         if (!constGenerated.length) { toast('Configure parameters first'); return; }
         const mass   = parseFloat(document.getElementById('constMassInput').value) || 800;
@@ -861,10 +879,17 @@
             return subs;
         }
 
-        constGenerated.forEach(s => addSatellite(Object.assign({ mass, subsystems: pickerSubsystems() }, s)));
+        const subs        = pickerSubsystems();
+        const firstNewIdx = satellites.length;
+
+        constGenerated.forEach(s => _pushSat(Object.assign({ mass, subsystems: Object.assign({}, subs) }, s)));
+
         const manBtn = document.querySelector('.mode-tab');
         switchMode('manual', manBtn);
-        selectSat(satellites[satellites.length - constGenerated.length].id);
+        activeSatId = satellites[firstNewIdx].id;
+        renderSatList();
+        renderEditor();
+        updateSummary();
         toast(`${constGenerated.length} satellites generated & imported ✓`);
     }
 
@@ -904,17 +929,17 @@
         document.getElementById('satcomToggle').checked = !!data.satcomEnabled;
         if (data.epoch) document.getElementById('epochInput').value = data.epoch.replace('Z','').replace(/:00Z$/,'');
         satellites = (data.satellites || []).map((s, i) => ({
-            id: Date.now() + i + Math.random(),
-            name: s.name || 'SAT_'+(i+1),
-            color: SAT_COLORS[i % SAT_COLORS.length],
-            mass: s.mass || 800,
-            altitudeKm: s.altitudeKm || 500,
-            eccentricity: s.eccentricity || 0.001,
+            id:             Date.now() + i + Math.random(),
+            name:           s.name || 'SAT_'+(i+1),
+            color:          SAT_COLORS[i % SAT_COLORS.length],
+            mass:           s.mass || 800,
+            altitudeKm:     s.altitudeKm || 500,
+            eccentricity:   s.eccentricity || 0.001,
             inclinationDeg: s.inclinationDeg || 0,
-            raanDeg: s.raanDeg || 0,
-            argPerigeeDeg: s.argPerigeeDeg || 0,
+            raanDeg:        s.raanDeg || 0,
+            argPerigeeDeg:  s.argPerigeeDeg || 0,
             trueAnomalyDeg: s.trueAnomalyDeg || 0,
-            subsystems: s.subsystems || {}
+            subsystems:     s.subsystems || {}
         }));
         activeSatId = satellites.length ? satellites[0].id : null;
         renderSatList(); renderEditor(); updateSummary();
@@ -929,8 +954,8 @@
         return {
             satcomEnabled:      document.getElementById('satcomToggle').checked,
             eoDetectionEnabled: document.getElementById('eoToggle').checked,
-            duration_mission: parseFloat(document.getElementById('durationInput').value),
-            epoch: epoch ? epoch  :new Date().toISOString(),  //Default start date
+            duration_mission:   parseFloat(document.getElementById('durationInput').value),
+            epoch:              epoch ? epoch : new Date().toISOString(),
             satellites: satellites.map(s => ({
                 name:           s.name,
                 mass:           s.mass,
@@ -948,11 +973,9 @@
     // ================================================================
     // UTILS
     // ================================================================
-    // Find the catalog category key that contains an item by name
     function findCatFor(itemName) {
-        for (const [cat, items] of Object.entries(subsystemCatalog)) {
+        for (const [cat, items] of Object.entries(subsystemCatalog))
             if (items.some(i => (i.name || '') === itemName)) return cat;
-        }
         return null;
     }
     function altToSemiAxis(km) { return km * 1000 + RE; }
