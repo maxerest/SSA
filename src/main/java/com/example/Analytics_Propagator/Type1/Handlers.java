@@ -146,7 +146,7 @@ public class Handlers {
                     // All points were visible — valid access, record it
                     AbsoluteDate startDate = Map_sat_area_entryDate.get(sat.get_Name()).get(name)
                             .values().stream()
-                            .max(Comparator.comparingDouble(d -> d.durationFrom(Parametres.date_orekit)))
+                            .max(Comparator.comparingDouble(d -> d.durationFrom(sat.getPropagation_date())))
                             .orElse(null);
 
                     if (startDate != null) {

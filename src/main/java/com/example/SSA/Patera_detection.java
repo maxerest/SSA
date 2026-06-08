@@ -116,7 +116,7 @@ public class Patera_detection extends Patera2005 {
                 mapCollisions.forEach((l, percentage) -> {
                     writer.printf(Locale.US, "%s,%.2f,%s,%.2f%n",
                             s.get_Name(),
-                            (double) l.durationFrom(Parametres.date_orekit),
+                            (double) l.durationFrom(s.getPropagation_date()),
                             nomSat,
                             percentage);
                 });

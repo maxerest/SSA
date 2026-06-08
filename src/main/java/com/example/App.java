@@ -37,7 +37,7 @@ public class App
 
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
-        final boolean visualisation_2D = false;
+        final boolean visualisation_2D = true;
         final boolean visualisation_3D = true;
 
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
@@ -201,6 +201,7 @@ public class App
                     .motor(Motors.motor_catalogue.get(satConfig.subsystems.get("Motor")))
                     .eo_sensor(EO_sensors.sensor_catalogue.get(satConfig.subsystems.get("EO_SENSORS")))
                     .antenna(Antenna.antenna_catalogue.get(satConfig.subsystems.get("ANTENNAS")))
+                    .date_initialState(satConfig.date_propagation)
                     .build());
         }
         return liste_par_sats;

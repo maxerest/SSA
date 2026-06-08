@@ -201,15 +201,15 @@ public class Ground_station {
         double[] azel1 = new double[2];
         double[] azel2 = new double[2];
 
-        PVCoordinates pv0 = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t0), Parametres.frame);
+        PVCoordinates pv0 = pReal.get_Cartesian_Orbit().getPVCoordinates(pReal.getDate_start_propagation().shiftedBy(t0), Parametres.frame);
         azel0[0] = station.getBaseFrame().getAzimuth(pv0.getPosition(), Parametres.frame, t0);
         azel0[1] = station.getBaseFrame().getElevation(pv0.getPosition(), Parametres.frame, t0);
         
-        PVCoordinates pv1 = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t1), Parametres.frame);
+        PVCoordinates pv1 = pReal.get_Cartesian_Orbit().getPVCoordinates(pReal.getDate_start_propagation().shiftedBy(t1), Parametres.frame);
         azel1[0] = station.getBaseFrame().getAzimuth(pv1.getPosition(), Parametres.frame, t1);
         azel1[1] = station.getBaseFrame().getElevation(pv1.getPosition(), Parametres.frame, t1);
         
-        PVCoordinates pv2 = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t2), Parametres.frame);
+        PVCoordinates pv2 = pReal.get_Cartesian_Orbit().getPVCoordinates(pReal.getDate_start_propagation().shiftedBy(t2), Parametres.frame);
         azel2[0] = station.getBaseFrame().getAzimuth(pv2.getPosition(), Parametres.frame, t2);
         azel2[1] = station.getBaseFrame().getElevation(pv2.getPosition(), Parametres.frame, t2);
         

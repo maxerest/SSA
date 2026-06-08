@@ -136,8 +136,8 @@ public class Least_squares_batch {
         }
 
         // Génération des mesures
-        generator.generate(Parametres.date_orekit,
-                Parametres.date_orekit.shiftedBy(Parametres.duration));
+        generator.generate(p.getPropagation_date(),
+                p.getPropagation_date().shiftedBy(Parametres.duration));
 
         // Récupération des mesures
         return subscriber.getGeneratedMeasurements();

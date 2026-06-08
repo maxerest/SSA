@@ -196,7 +196,7 @@ public class Visulations {
                     double[] xyz = Least_squares_batch.azElRangeToECEF(
                             azEl[0], azEl[1], range, station, date);
 
-                    double t = date.durationFrom(Parametres.date_orekit);
+                    double t = date.durationFrom(p.getDate_start_propagation());
 
                     writer.printf(Locale.US, "%.6f,%.6f,%.6f,%f,%d,%d%n",
                             xyz[0], xyz[1], xyz[2], t, 0, 1);
@@ -281,7 +281,7 @@ public class Visulations {
         double z = temp_s.getEntry(2);
         // Velocity
         Vector3D pos = new Vector3D(x, y, z);
-        boolean trigger = p.is_firing(Parametres.date_orekit.shiftedBy(t));
+        boolean trigger = p.is_firing(p.getPropagation_date().shiftedBy(t));
         File csvFile = new File("src/main/resources/CSV_exports/Kalman/"
                 + p.get_Name() + ".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);

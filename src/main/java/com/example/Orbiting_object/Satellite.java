@@ -1,11 +1,9 @@
 package com.example.Orbiting_object;
 
-import com.example.Ground_stations.EO_detection;
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.Satellite_sub_systems.*;
 import com.example.RevisitFrequency.EO_observations;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
-import org.orekit.geometry.fov.FieldOfView;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
@@ -46,7 +44,7 @@ public class Satellite extends Orbiting_object {
         this.srpCoeff = builder.srpCoeff;
         this.sensor = builder.sensor;
         this.motor=builder.motor;
-        this.map_parametres_antennes.put(builder.antenna.getName(),builder.antenna);
+    this.map_parametres_antennes.put(builder.antenna.getName(),builder.antenna);
     }
 
     public boolean is_firing(SpacecraftState currentState) {
@@ -109,7 +107,9 @@ public class Satellite extends Orbiting_object {
         public Builder Detectionaltitude(Double d) { super.Detectionaltitude(d); return this; }
         @Override
         public  Builder s_initialState(SpacecraftState s) {super.s_initialState(s);return this;}
-
+        @Override
+        public Builder date_initialState(AbsoluteDate d){super.date_initialState(d);
+            return this;}
         public Builder motor(Motors m) { this.motor = m; return this; }
         public Builder area(double a) { this.area = a; return this; }
         public Builder cd(double c) { this.cd = c; return this; }
@@ -140,6 +140,11 @@ public class Satellite extends Orbiting_object {
     public Map<String, Antenna> getMap_parametres_antennes() {
         return map_parametres_antennes;
     }
+
+    public AbsoluteDate getPropagation_date() {
+        return super.getDate_start_propagation();
+    }
+
     public EO_sensors.Sensor get_sensor(){return sensor;}
     private final Map<String, EO_sensors.Sensor> activeSensors = new LinkedHashMap<>();
 
@@ -150,9 +155,9 @@ public class Satellite extends Orbiting_object {
     public List<SpacecraftState> get_liste_state_propa(){return liste_state_propa;}
     public Map<String, Map<AbsoluteDate,Double>> getMap_pourcentage_collision() {return map_pourcentage_collision;}
     public double getAgility() {return agility;}
-    public void add_manoeuvre (double start_date_manoeuvre, double duration_manoeuvre){
+    public void add_manoeuvre (AbsoluteDate start_date_manoeuvre, double duration_manoeuvre,Satellite s){
         try{
-        liste_manoeuvre_sat.add( new Manoeuvre(start_date_manoeuvre,duration_manoeuvre));
+        liste_manoeuvre_sat.add( new Manoeuvre(start_date_manoeuvre,duration_manoeuvre,s));
         }catch (Exception e){
             System.out.println("Echec de l'ajout de la manoeuvre");
         }

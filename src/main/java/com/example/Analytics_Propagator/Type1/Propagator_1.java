@@ -107,7 +107,7 @@ public class Propagator_1
             EO_detection.EO_usage_detection(propagator,sat);
         }
         sat.launch_manoeuvre(propagator,sat.getMotor());
-        propagator.propagate(Parametres.date_orekit.shiftedBy(Parametres.duration));
+        propagator.propagate(sat.getPropagation_date().shiftedBy(Parametres.duration));
     }
 
     public static NumericalPropagator generic_propagator(String type_propa,Satellite satellite){
@@ -161,20 +161,20 @@ public class Propagator_1
             for (double t = 0; t <= Parametres.duration; t += measurementInterval) {
                 
                 // Get “true” position & velocity from real orbit
-                PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(Parametres.date_orekit.shiftedBy(t), Parametres.frame);
+                PVCoordinates truePV = pReal.get_Cartesian_Orbit().getPVCoordinates(pReal.getPropagation_date().shiftedBy(t), Parametres.frame);
                 SpacecraftState currentState = new SpacecraftState(pReal.get_Cartesian_Orbit().shiftedBy(t));         
                 
                 //Check visibility from ground stations
-                boolean gs_detected= Ground_station.hasVisibleStations(currentState,Parametres.date_orekit.shiftedBy(t));
+                boolean gs_detected= Ground_station.hasVisibleStations(currentState,pReal.getPropagation_date().shiftedBy(t));
                 // Add measurement to Kalman filter if visible from ground station , otherwise add dummy measurement
                 if (gs_detected){ 
                     //If it is not the first detection, cre
                     if (!already_detected){
                         //Get the IoD-Gauss initial estimation                        
-                        PVCoordinates pvG = Ground_station.getIodGaussInstance(Parametres.date_orekit.shiftedBy(t), Parametres.date_orekit.shiftedBy(t+120), Parametres.date_orekit.shiftedBy(t+240), Ground_station.which_station_visible(currentState,Parametres.date_orekit.shiftedBy(t)),satellite,pReal);
+                        PVCoordinates pvG = Ground_station.getIodGaussInstance(pReal.getPropagation_date().shiftedBy(t), pReal.getPropagation_date().shiftedBy(t+120), pReal.getPropagation_date().shiftedBy(t+240), Ground_station.which_station_visible(currentState,pReal.getPropagation_date().shiftedBy(t)),satellite,pReal);
                         // Create measurement uncertainties (sigma) and weights
                         PV meas = new PV(
-                            Parametres.date_orekit.shiftedBy(t),
+                                pReal.getPropagation_date().shiftedBy(t),
                             pvG.getPosition(),
                             pvG.getVelocity(),
                             1000,
@@ -188,12 +188,12 @@ public class Propagator_1
                     }
                     //Case where the satellite has not been detected too soon ago 
                     if ((has_been_detected_too_soon_ago && j==0)||!has_been_detected_too_soon_ago){
-                        kalman=added_noisy_value(kalman, truePV, pReal.is_firing(Parametres.date_orekit.shiftedBy(t)), satellite, t);
+                        kalman=added_noisy_value(kalman, truePV, pReal.is_firing(pReal.getPropagation_date().shiftedBy(t)), satellite, t,pReal);
                         has_been_detected_too_soon_ago=true;
                         
                     }//Case where the satellite has been detected too soon ago
                     else if(has_been_detected_too_soon_ago && j!=0){
-                        kalman=add_dummy_value(kalman, satellite, truePV, t);
+                        kalman=add_dummy_value(kalman, satellite, truePV, t,pReal);
                         has_been_detected_too_soon_ago=true;
                     }else {
                         throw new IllegalStateException("Unexpected state in detection logic.");
@@ -206,7 +206,7 @@ public class Propagator_1
                         Visulations.write_csv_before_detection(pNoisy); 
                         continue;
                     }
-                    kalman=add_dummy_value(kalman, satellite, truePV, t);
+                    kalman=add_dummy_value(kalman, satellite, truePV, t,pReal);
                     j=0;
                 }                
                 Visulations.export_csv_kalman_add_step(pNoisy, t, kalman.getPhysicalEstimatedState(),gs_detected);
@@ -221,7 +221,7 @@ public class Propagator_1
     * @param satellite : ObservableSatellite object
     * @param t : time of the measurement 
     **/
-    private static KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t) {
+    private static KalmanEstimator added_noisy_value(KalmanEstimator kalman,PVCoordinates truePV, boolean trigger,ObservableSatellite satellite, double t,Satellite pReal) {
                 Random rng = new Random();  
                 double sigmaPosition = 1;  // meters
                 double sigmaVelocity = 5;  // m/s
@@ -246,7 +246,7 @@ public class Propagator_1
                 }
 
                 PV meas = new PV(
-                    Parametres.date_orekit.shiftedBy(t),
+                        pReal.getPropagation_date().shiftedBy(t),
                     noisyPos,
                     noisyVel,
                     sigmaPosition,
@@ -266,11 +266,11 @@ public class Propagator_1
     * @param t : time of the measurement 
     **/
 
-    private static KalmanEstimator add_dummy_value(KalmanEstimator kalman,ObservableSatellite satellite,PVCoordinates truePV, double t) {
+    private static KalmanEstimator add_dummy_value(KalmanEstimator kalman,ObservableSatellite satellite,PVCoordinates truePV, double t, Satellite  pReal) {
         
         // True position but weight =0 therefore as ignored as possible by the Kalman filter
         PV dummyMeas = new PV(
-            Parametres.date_orekit.shiftedBy(t),
+                pReal.getPropagation_date().shiftedBy(t),
             truePV.getPosition(),   
             truePV.getVelocity(),   
             10000, 

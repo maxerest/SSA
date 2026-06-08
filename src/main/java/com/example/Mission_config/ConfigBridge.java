@@ -157,10 +157,9 @@ public class ConfigBridge {
         Satcom.activated_satcom = getBool(root, "satcomEnabled");
         EO_detection.EO_detection     = getBool(root, "eoDetectionEnabled");
         Parametres.duration = getDouble(root, "duration_mission");
-        AbsoluteDate epoch   = getAbsDate(root, "epoch");
-        Parametres.date_orekit=epoch;
         List<Map<String, Object>> satList = (List<Map<String, Object>>) root.getOrDefault("satellites", List.of());
         List<MissionConfig.SatConfig> configs = new ArrayList<>();
+        AbsoluteDate epoch   = getAbsDate(root, "epoch");
 
         for (Map<String, Object> s : satList) {
             String name       = getString(s, "name");
@@ -171,18 +170,66 @@ public class ConfigBridge {
             double raan       = Math.toRadians(getDouble(s, "raanDeg"));
             double omega      = Math.toRadians(getDouble(s, "argPerigeeDeg"));
             double nu         = Math.toRadians(getDouble(s, "trueAnomalyDeg"));
-
+            String satEpoch = getString(s, "epochISO");
+            AbsoluteDate date_propagation= parseEpoch(satEpoch);
+            if(!epoch.isBefore(date_propagation)){
+                epoch = date_propagation;
+            }
             Map<String, Object> subs = (Map<String, Object>) s.getOrDefault("subsystems", Map.of());
             Map<String, String> subsStr = new LinkedHashMap<>();
             for (Map.Entry<String, Object> e : subs.entrySet()) {
                 subsStr.put(e.getKey(), e.getValue() == null ? "" : e.getValue().toString());
             }
-            configs.add(new MissionConfig.SatConfig(name, mass, alt, ecc, inc, raan, omega, nu, subsStr));
+            configs.add(new MissionConfig.SatConfig(name, mass, alt, ecc, inc, raan, omega, nu, subsStr,date_propagation));
         }
-
+        Parametres.date_orekit=epoch;
         return new MissionConfig(configs);
     }
+    /**
+     * Helper: Parse ISO datetime string to Orekit AbsoluteDate
+     * Format: YYYY-MM-DDTHH:mm (e.g., "2024-01-15T14:30")
+     *
+     * @param epochStr ISO format datetime string
+     * @return AbsoluteDate in UTC
+     */
+    private AbsoluteDate parseEpoch(String epochStr) throws Exception {
+        if (epochStr == null || epochStr.isEmpty()) {
+            return new AbsoluteDate();  // Current time
+        }
 
+        try {
+            // Format: "2024-01-15T14:30"
+            // Replace 'T' with space and pad to full ISO 8601 if needed
+            String normalized = epochStr.replace("T", " ");
+
+            // Add seconds if missing (assume :00)
+            if (!normalized.contains(":") || normalized.lastIndexOf(":") == normalized.indexOf(":")) {
+                normalized += ":00";
+            }
+
+            // Parse: "2024-01-15 14:30:00"
+            String[] parts = normalized.split(" ");
+            if (parts.length < 2) {
+                throw new IllegalArgumentException("Invalid epoch format: " + epochStr);
+            }
+
+            String[] dateParts = parts[0].split("-");
+            String[] timeParts = parts[1].split(":");
+
+            int year = Integer.parseInt(dateParts[0]);
+            int month = Integer.parseInt(dateParts[1]);
+            int day = Integer.parseInt(dateParts[2]);
+            int hour = Integer.parseInt(timeParts[0]);
+            int minute = Integer.parseInt(timeParts[1]);
+            int second = timeParts.length > 2 ? Integer.parseInt(timeParts[2]) : 0;
+
+            // Create AbsoluteDate in UTC
+            return new AbsoluteDate(year, month, day, hour, minute, second, TimeScalesFactory.getUTC());
+
+        } catch (Exception e) {
+            throw new Exception("Failed to parse epoch: " + epochStr, e);
+        }
+    }
     private boolean getBool(Map<String, Object> m, String k) {
         Object v = m.get(k);
         if (v instanceof Boolean) return (Boolean) v;
@@ -330,5 +377,7 @@ public class ConfigBridge {
         private void skipWs() {
             while (pos < src.length() && Character.isWhitespace(src.charAt(pos))) pos++;
         }
+
     }
+
 }

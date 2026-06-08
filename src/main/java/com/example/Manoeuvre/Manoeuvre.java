@@ -34,13 +34,14 @@ import java.util.List;
 
 public class Manoeuvre {
     private  ManeuverTriggers triggers;
-    private double start_date;
+    private AbsoluteDate start_date;
     private double duration;
-
-    public Manoeuvre(double start_date,double duration){
+    private Satellite satellite;
+    public Manoeuvre(AbsoluteDate start_date,double duration,Satellite satellite){
         this.start_date=start_date;
         this.duration=duration;
-        this.triggers=new DateBasedManeuverTriggers(Parametres.date_orekit.shiftedBy(start_date),duration);
+        this.triggers=new DateBasedManeuverTriggers(satellite.getPropagation_date().shiftedBy(start_date),duration);
+        this.satellite=satellite;
     }
 
     public ManeuverTriggers getTriggers() {

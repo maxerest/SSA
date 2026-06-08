@@ -1068,12 +1068,23 @@
             const obj = satObjects[satName];
             if (!obj) return;
 
+            const firstT = sat.pts[0].t;
+            const lastT  = sat.pts[sat.pts.length - 1].t;
+
+            if (t < firstT || t > lastT) {
+                obj.mesh.visible = false;
+                obj.trailPts.visible = false;
+                return;
+            }
+
+            obj.mesh.visible = true;
+            obj.trailPts.visible = showTrails;
+
             const closest = sat.pts.reduce((best, p) =>
                 Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best, sat.pts[0]);
 
             const [tx, ty, tz] = ecefToThreeJS([closest.x, closest.y, closest.z]);
             obj.mesh.position.set(tx, ty, tz);
-
             let hexColor = sat.isNoisy
                 ? (closest.detected ? '#3498db' : '#ffffff')
                 : (closest.detected ? '#2ecc71' : '#e74c3c');

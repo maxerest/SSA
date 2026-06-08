@@ -33,7 +33,7 @@
             public final double raan;           // rad
             public final double argPerigee;     // rad
             public final double trueAnomaly;    // rad
-
+            public final AbsoluteDate date_propagation;
             // Sub-systems — key = category label (e.g. "PROPULSION"), value = component name
             // Empty string means "none selected" for that category.
             public final Map<String, String> subsystems;
@@ -41,7 +41,7 @@
             public SatConfig(String name,
                              double mass, double semiAxis, double eccentricity,
                              double inclination, double raan, double argPerigee, double trueAnomaly,
-                             Map<String, String> subsystems) {
+                             Map<String, String> subsystems, AbsoluteDate date_propagation) {
                 this.name         = name;
                 this.mass         = mass;
                 this.semiAxis     = semiAxis;
@@ -51,6 +51,7 @@
                 this.argPerigee   = argPerigee;
                 this.trueAnomaly  = trueAnomaly;
                 this.subsystems   = Map.copyOf(subsystems);
+                this.date_propagation=date_propagation;
             }
 
             public String motorName() {

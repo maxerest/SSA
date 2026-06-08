@@ -27,6 +27,7 @@ public class Orbiting_object {
     private Orbit orbit_kepl;
     private Orbit orbit_cart;
     private Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS;// +100e6;
+    private AbsoluteDate date_start_propagation;
     //Inital state of the satellite
     private SpacecraftState s_initialState;
     public Orbiting_object(){}
@@ -41,6 +42,7 @@ public class Orbiting_object {
         this.anomalie = builder.anomalie;
         this.type_anomalie = builder.type_anomalie;
         this.Detectionaltitude = builder.Detectionaltitude;
+        this.date_start_propagation=builder.date_init;
         this.orbit_kepl=new KeplerianOrbit(
                 this.semi_axis,
                 this.eccentricity,
@@ -50,7 +52,7 @@ public class Orbiting_object {
                 this.anomalie,
                 this.type_anomalie,
                 FramesFactory.getEME2000(),
-                Parametres.date_orekit,
+                builder.date_init,
                 Constants.EGM96_EARTH_MU);
         this.orbit_cart= new CartesianOrbit(orbit_kepl);
         this.s_initialState=builder.s_initialState;
@@ -68,7 +70,7 @@ public class Orbiting_object {
         private PositionAngleType type_anomalie = PositionAngleType.MEAN;
         public Double Detectionaltitude = Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 100000e3;
         private SpacecraftState s_initialState;
-
+        private AbsoluteDate date_init;
 
         // Builder methods
         public Builder nom_sat(String name) {
@@ -125,7 +127,7 @@ public class Orbiting_object {
             this.s_initialState = s.addAdditionalData("name",this.nom_sat);
             return this;
         }
-
+        public Builder date_initialState(AbsoluteDate d) {this.date_init=d;return this;}
         public Orbiting_object build() {
             // Create the orbit from current builder values
             KeplerianOrbit orbit = new KeplerianOrbit(
@@ -137,7 +139,7 @@ public class Orbiting_object {
                     anomalie,
                     type_anomalie,
                     FramesFactory.getEME2000(),
-                    Parametres.date_orekit,
+                    date_init,
                     Constants.EIGEN5C_EARTH_MU
             );
             this.s_initialState = new SpacecraftState(orbit).withMass(this.mass);
@@ -183,4 +185,8 @@ public class Orbiting_object {
         return Detectionaltitude;
     }
     public SpacecraftState get_s_initialState(){return s_initialState;}
+
+    public AbsoluteDate getDate_start_propagation() {
+        return date_start_propagation;
+    }
 }
