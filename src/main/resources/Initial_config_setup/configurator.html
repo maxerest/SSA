@@ -623,6 +623,13 @@
             if (parsed) tleParsed.push(parsed);
         }
 
+        // Set simulation epoch from the first TLE
+        if (tleParsed.length) {
+            const firstL1 = tleParsed[0].l1;
+            document.getElementById('epochInput').value = tleEpochToISO(firstL1);
+            toast('Epoch set from TLE ✓');
+        }
+
         renderTLEParsed();
     }
 
@@ -990,6 +997,19 @@
         t.classList.add('show');
         clearTimeout(t._to);
         t._to = setTimeout(() => t.classList.remove('show'), 2400);
+    }
+    function tleEpochToISO(l1) {
+        const epochStr = l1.substring(18, 32).trim();
+        const yr2      = parseInt(epochStr.substring(0, 2));
+        const year     = yr2 >= 57 ? 1900 + yr2 : 2000 + yr2;
+        const dayOfYear = parseFloat(epochStr.substring(2));
+        const day       = Math.floor(dayOfYear);
+        const frac      = dayOfYear - day;
+        const date      = new Date(Date.UTC(year, 0, 1));
+        date.setUTCDate(date.getUTCDate() + day - 1);
+        const ms = Math.round(frac * 86400 * 1000);
+        date.setUTCMilliseconds(date.getUTCMilliseconds() + ms);
+        return date.toISOString().slice(0, 16);
     }
 </script>
 </body>

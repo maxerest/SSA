@@ -971,19 +971,12 @@
         content.innerHTML = `
 
         <div class="detail-section">
-            <div class="detail-section-title">Position</div>
-            <div class="detail-row"><span class="detail-key">X</span><span class="detail-val">${(closest.x/1000).toFixed(2)} km</span></div>
-            <div class="detail-row"><span class="detail-key">Y</span><span class="detail-val">${(closest.y/1000).toFixed(2)} km</span></div>
-            <div class="detail-row"><span class="detail-key">Z</span><span class="detail-val">${(closest.z/1000).toFixed(2)} km</span></div>
+            <div class="detail-section-title">Orbital Parameters</div>
             <div class="detail-row"><span class="detail-key">Altitude</span><span class="detail-val accent">${altKm} km</span></div>
             <div class="detail-row"><span class="detail-key">Velocity</span><span class="detail-val">${velKms} km/s</span></div>
             <div class="detail-row"><span class="detail-key">Sim time T</span><span class="detail-val">${closest.t.toFixed(0)} s</span></div>
-        </div>
-
-        <div class="detail-section">
-            <div class="detail-section-title">Orbital Parameters</div>
             ${orb ? `
-            <div class="detail-row"><span class="detail-key">Semi-major axis</span><span class="detail-val accent">${(orb.a/1000).toFixed(3)} km</span></div>
+            <div class="detail-row"><span class="detail-key">Semi-major axis</span><span class="detail-val accent">${(orb.a / 1000).toFixed(3)} km</span></div>
             <div class="detail-row"><span class="detail-key">Eccentricity</span><span class="detail-val">${orb.e.toFixed(6)}</span></div>
             <div class="detail-row"><span class="detail-key">Inclination</span><span class="detail-val">${(orb.i * 180 / Math.PI).toFixed(4)}°</span></div>
             <div class="detail-row"><span class="detail-key">Orbit type</span><span class="detail-val">${orb.e < 0.01 ? 'Circular' : orb.e < 0.1 ? 'Near-circular' : 'Elliptical'}</span></div>
