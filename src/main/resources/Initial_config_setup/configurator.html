@@ -830,27 +830,26 @@
         const alt    = getCP('alt', 550);
         const ecc    = getCP('ecc', 0);
         const inc    = getCP('inc', 53);
+        const F      = arch === 'walker-delta' ? Math.round(getCP('f', 1)) : 0;
+        const T      = np * spp;
         const prefix = (document.getElementById('constPrefixInput') || {value:'SAT'}).value || 'SAT';
 
         for (let p = 0; p < np; p++) {
+            // Compute RAAN once per plane — never touched again inside the s loop
             let raan;
             if (arch === 'walker-star') {
                 raan = (180 / np) * p;
+            } else if (arch === 'streets') {
+                raan = ((360 / np) * p + getCP('raan0', 0)) % 360;
             } else {
-                raan = (360 / np) * p + (arch === 'streets' ? getCP('raan0', 0) : 0);
+                raan = (360 / np) * p;  // walker-delta and custom
             }
+            raan = ((raan % 360) + 360) % 360;
 
             for (let s = 0; s < spp; s++) {
-                let nu;
-                if (arch === 'walker-delta') {
-                    const F = Math.round(getCP('f', 1));
-                    const T = np * spp;
-                    nu = (360 / spp) * s + (360 * F * p / T);
-                } else {
-                    nu = (360 / spp) * s;
-                }
-                nu   = ((nu   % 360) + 360) % 360;
-                raan = ((raan % 360) + 360) % 360;
+                // In-plane position + inter-plane phasing offset
+                const nu = (((360 / spp) * s + (360 * F * p / T)) % 360 + 360) % 360;
+
                 constGenerated.push({
                     name:           `${prefix}_P${p+1}_S${s+1}`,
                     altitudeKm:     alt,
@@ -862,7 +861,6 @@
                 });
             }
         }
-
         const tbody = document.getElementById('constPreviewBody');
         if (!tbody) return;
         tbody.innerHTML = constGenerated.map(s => `<tr>

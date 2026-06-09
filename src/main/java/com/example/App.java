@@ -188,6 +188,7 @@ public class App
     public static List<Satellite> real_orbit(MissionConfig missionConfig) {
         List<Satellite> liste_par_sats = new ArrayList<>();
         for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
+
             liste_par_sats.add(new Satellite.Builder()
                     .nom_sat(satConfig.name)
                     .mass(satConfig.mass)

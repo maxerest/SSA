@@ -47,15 +47,15 @@ public class Orbiting_object {
                 this.semi_axis,
                 this.eccentricity,
                 this.inclinaison,
-                this.long_noeud_ascendant,
                 this.arg_periastre,
+                this.long_noeud_ascendant,
                 this.anomalie,
                 this.type_anomalie,
                 FramesFactory.getEME2000(),
                 builder.date_init,
                 Constants.EGM96_EARTH_MU);
         this.orbit_cart= new CartesianOrbit(orbit_kepl);
-        this.s_initialState=builder.s_initialState;
+        this.s_initialState=new SpacecraftState(orbit_kepl).withMass(builder.mass);
     }
     // Builder class
     public static class Builder {
@@ -129,20 +129,8 @@ public class Orbiting_object {
         }
         public Builder date_initialState(AbsoluteDate d) {this.date_init=d;return this;}
         public Orbiting_object build() {
-            // Create the orbit from current builder values
-            KeplerianOrbit orbit = new KeplerianOrbit(
-                    semi_axis,  // Convert km to m
-                    eccentricity,
-                    inclinaison,
-                    long_noeud_ascendant,
-                    arg_periastre,
-                    anomalie,
-                    type_anomalie,
-                    FramesFactory.getEME2000(),
-                    date_init,
-                    Constants.EIGEN5C_EARTH_MU
-            );
-            this.s_initialState = new SpacecraftState(orbit).withMass(this.mass);
+            // Don't build orbit here — just validate and let the constructor do it
+            if (date_init == null) throw new IllegalStateException("date_init must be set");
             return new Orbiting_object(this);
         }
     }
