@@ -412,6 +412,8 @@
     <div class="ctrl-sep"></div>
     <button id="uploadBtn">Load Sat CSV</button>
     <button id="uploadGSBtn">Load GS CSV</button>
+    <button id="propagate">Propagate</button>
+    <button id="configure">Configure satellites</button>
     <button id="trailToggle" class="active">Trails ✓</button>
     <button id="coneToggle"  class="active">Cones ✓</button>
     <input type="file" id="csvFile"  accept=".csv" style="display:none;"/>
@@ -497,7 +499,7 @@
     let timer           = null;
     let speedMultiplier = 1;
     let showTrails      = true;
-    let showCones       = true;
+    let showCones       = false;
     let selectedSat     = null;
     let satcomLinks = [];   // parsed from satcom_link.csv
     // ================================================================
@@ -717,7 +719,71 @@
         }
         return { headers, rows };
     }
+    //TODO fiw the visualisation at the recevial of the configurator
+    function load_initial_position(text){
 
+        const { rows } = parseCSV(text);
+        if (!rows.length) return;
+
+        const grouped = {};
+        rows.forEach(r => {
+            const name = r['name_sat'] || r['name'] || 'Unknown';
+            if (!grouped[name]) grouped[name] = [];
+            grouped[name].push(r);
+        });
+
+        const t0 = parseFloat(rows[0]['t'] || 0);
+
+        sats  = {};
+        times = [];
+        const timeSet = new Set();
+
+        Object.keys(grouped).forEach((satName, colorIdx) => {
+            const colorHex = SAT_COLORS[colorIdx % SAT_COLORS.length];
+            const pts = grouped[satName].map(r => {
+
+                const detStr  = (r['detected_by_gs'] || '').toLowerCase();
+                return {
+                    x: parseFloat(r['x']), y: parseFloat(r['y']), z: parseFloat(r['z'])
+                };
+            });
+            sats[satName] = { pts, colorHex, isNoisy: satName.toLowerCase().includes('noisy') };
+
+            if (satObjects[satName]) {
+                scene.remove(satObjects[satName].mesh);
+                scene.remove(satObjects[satName].trailPts);
+                satMeshMap.delete(satObjects[satName].mesh.uuid);
+            }
+            createSatObjects(satName, colorHex);
+            const satNames = Object.keys(sats);
+
+            satNames.forEach(satName => {
+                const sat = sats[satName];
+                const obj = satObjects[satName];
+                if (!obj) return;
+
+                obj.mesh.visible = true;
+                obj.trailPts.visible = showTrails;
+
+
+                const [tx, ty, tz] = ecefToThreeJS([sat.x, sat.y, sat.z]);
+                obj.mesh.position.set(tx, ty, tz);
+
+                obj.mesh.material.color.set(colorHex);
+                obj.mesh.material.emissive.set(colorHex).multiplyScalar(0.25);
+                obj.trailPts.material.color.set(colorHex);
+
+                obj.history.unshift(ecefToThreeJS([sat.x, sat.y, sat.z]));
+                obj.trailGeo.attributes.position.needsUpdate = true;
+            });
+        });
+
+        buildLegend();
+        updateDatetimeBar();
+        buildSatList();
+
+
+    }
     function loadSatCSV(text) {
         const { rows } = parseCSV(text);
         if (!rows.length) return;
@@ -829,6 +895,7 @@
         console.log('[3D] Satcom links loaded:', satcomLinks.length);
         if (selectedSat) refreshRightPanel(selectedSat);
     }
+
     // ================================================================
     // ORBITAL PARAM HELPERS
     // ================================================================
@@ -1224,7 +1291,8 @@
 
     document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('csvFile').click());
     document.getElementById('uploadGSBtn').addEventListener('click', () => document.getElementById('gsFile').click());
-
+    document.getElementById('propagate').addEventListener('click',()=>ws.send('propagate'))
+    document.getElementById('configure').addEventListener('click',()=>ws.send('configure'))
     document.getElementById('csvFile').addEventListener('change', e => {
         const f = e.target.files[0]; if (!f) return;
         const r = new FileReader(); r.onload = ev => loadSatCSV(ev.target.result); r.readAsText(f);
@@ -1258,6 +1326,7 @@
         else if (msg.startsWith('SAT_CSV:'))     receiveCSVContent(msg.slice(8));
         else if (msg.startsWith('ORBITAL_CSV:')) receiveOrbitalCSV(msg.slice(12));
         else if (msg.startsWith('SATCOM_CSV:')) loadSatcomCSV(msg.slice(11));
+        else if (msg.startsWith('configurator')) load_initial_position(msg.slice(12));
     };
     ws.onerror = (e) => console.error('[WS] Error:', e);
     ws.onclose = ()  => console.warn('[WS] Connection closed');

@@ -25,13 +25,13 @@ import com.example.Mission_config.ConfigBridge;
 import com.example.Mission_config.MissionConfig;
 import java.util.concurrent.CountDownLatch;
 import com.example.Mission_config.MissionConfiguratorUI;
-
+import java.awt.Desktop;
 import java.util.*;
 import java.io.File;
 import java.io.IOException;
 
 public class App 
-{
+{   public static List<MissionConfig> liste_config = new ArrayList<>();
     public static List<Satellite> liste_par_sats_real_orbit;
     public static void main(String[] args) throws IOException {
 
@@ -43,51 +43,10 @@ public class App
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
 
-        //Start from the config of the mission
-        ConfigBridge bridge = new ConfigBridge(config -> {
-            System.out.println("[App] Mission config received");
-            // Hide configurator window
-            for (javafx.stage.Window window : new ArrayList<>(javafx.stage.Window.getWindows())) {
-                window.hide();
-            }
+        //Start the websocket where the program is handled of the globe as a starting point
+        new Thread(() -> new Visualizer3DServer().launch()).start();
 
-            // Run simulation OUTSIDE JavaFX thread
-            new Thread(() -> {
-                try {
-                    runSimulation(config);
-                    // Open second JavaFX window AFTER simulation
-                    if (visualisation_2D){
-                        Platform.runLater(() -> {
-                            try {
-                                System.out.println("[App] Opening 2DUI...");
-                                Stage stage2D = new Stage();
-                                stage2D.setOnCloseRequest(e -> {
-                                    System.out.println("[App] 2D window closed — shutting down.");
-                                    Platform.exit();
-                                    System.exit(0);
-                                });
-                                new SatelliteTrackerUI().start(stage2D);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    }
-                    if (visualisation_3D) {
-                        new Thread(() -> new Visualizer3DServer().launch()).start();
-                    }
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).start();
-
-        }, new CountDownLatch(1));
-
-        MissionConfiguratorUI.setBridge(bridge);
-
-        Platform.setImplicitExit(false);
-        Application.launch(MissionConfiguratorUI.class, args);
-        System.exit(0);
     }
 
 
@@ -122,7 +81,7 @@ public class App
 
     return liste_par_sats_noise_orbit;
     }
-    private static void runSimulation(MissionConfig missionConfig) throws IOException {
+    public static void runSimulation(MissionConfig missionConfig) throws IOException {
         boolean propagate_real_orbit = true;
         boolean propagate_kalman_filter = false;
         boolean propagate_least_squares = false;
@@ -133,8 +92,8 @@ public class App
         boolean check_collision = false;
         // Definition des GS
         Ground_station.loadStationsFromCSV();
-        Motors.loadMotorsFromCSV();
 
+        Motors.loadMotorsFromCSV();
         // Delete past CSV files
         Visulations.deleteAllCsvFiles();
         if (TLE_visualisation)
@@ -155,8 +114,7 @@ public class App
                 new EO_detection();
                 EO_sensors.loadSensorsFromCSV();
             }
-            // Definition des satellites
-            liste_par_sats_real_orbit = real_orbit(missionConfig);
+
             Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
             List<Satellite> liste_par_sats_noisy_orbit;
 
@@ -187,8 +145,8 @@ public class App
     }
     public static List<Satellite> real_orbit(MissionConfig missionConfig) {
         List<Satellite> liste_par_sats = new ArrayList<>();
+        Visulations.create_static_position_file();
         for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
-
             liste_par_sats.add(new Satellite.Builder()
                     .nom_sat(satConfig.name)
                     .mass(satConfig.mass)
@@ -204,6 +162,7 @@ public class App
                     .antenna(Antenna.antenna_catalogue.get(satConfig.subsystems.get("ANTENNAS")))
                     .date_initialState(satConfig.date_propagation)
                     .build());
+            Visulations.export_initial_position(liste_par_sats.getLast().get_Name(),liste_par_sats.getLast().get_s_initialState().getPosition().getX(),liste_par_sats.getLast().get_s_initialState().getPosition().getY(),liste_par_sats.getLast().get_s_initialState().getPosition().getZ());
         }
         return liste_par_sats;
     }

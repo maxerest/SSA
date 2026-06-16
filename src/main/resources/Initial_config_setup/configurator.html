@@ -16,9 +16,8 @@
     </div>
     <div class="header-actions">
         <button onclick="loadSaved()">↑ Load</button>
-        <button onclick="saveConfig()">↓ Save</button>
         <div style="width:1px;height:20px;background:var(--border)"></div>
-        <button class="btn-green" onclick="launchMission()">▶ Launch Mission</button>
+        <button class="btn-green" onclick="launchMission()">▶ Accept Config</button>
     </div>
 </div>
 
@@ -965,6 +964,7 @@
     function launchMission() {
         if (!satellites.length) { toast('Add at least one satellite'); return; }
         if (!window.configBridge) { toast('Bridge not connected'); return; }
+        saveConfig();
         configBridge.submitConfig(JSON.stringify(buildPayload()));
     }
     function buildPayload() {
@@ -983,7 +983,7 @@
                 raanDeg:        s.raanDeg,
                 argPerigeeDeg:  s.argPerigeeDeg,
                 trueAnomalyDeg: s.trueAnomalyDeg,
-                epochISO:       s.epochISO,  // ← INCLUDE EPOCH IN PAYLOAD
+                epochISO:       s.epochISO,
                 subsystems:     s.subsystems
             }))
         };

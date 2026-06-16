@@ -88,6 +88,18 @@ public class Visulations {
         }
 
     }
+    public static void create_static_position_file(){
+            try {
+                currentFileName = "src/main/resources/CSV_exports/Static_position/initial_position.csv";
+                PrintWriter csvWriter = new PrintWriter(new FileWriter(currentFileName));
+                csvWriter.println("name_sat,x,y,z");
+                csvWriter.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+    }
     public static void closeCSV() {
 
         for (Map.Entry<String , PrintWriter> entry : csvWriters.entrySet()) {
@@ -375,8 +387,19 @@ public class Visulations {
         String filename = "src/main/resources/EO detection/observations.csv";
         try (FileWriter fw = new FileWriter(filename, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
-
             bw.write(name + "," + start.toString() + "," + end.toString() + "," + duration+ "," + sat_name);
+            bw.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void export_initial_position(String name, double x, double y, double z ) {
+
+        String filename = "src/main/resources/CSV_exports/Static_position/initial_position.csv";
+        try (FileWriter fw = new FileWriter(filename, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            bw.write(name + "," + x + "," + y + "," + z);
             bw.newLine();
 
         } catch (IOException e) {

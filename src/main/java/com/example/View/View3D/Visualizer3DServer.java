@@ -1,16 +1,26 @@
 package com.example.View.View3D;
 
+import com.example.App;
 import com.example.Ground_stations.Ground_station;
+import com.example.Mission_config.ConfigBridge;
+import com.example.Mission_config.MissionConfig;
+import com.example.Mission_config.MissionConfiguratorUI;
 import com.example.Parametres;
+import com.example.View.SatelliteTrackerUI;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.stage.Stage;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
 import java.awt.Desktop;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -43,6 +53,14 @@ public class Visualizer3DServer extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, String message) {
         System.out.println("[3DUI→Java] " + message);
+        if(message.startsWith("propagate")) {
+            System.out.println("Starting propagation");
+            launch_propagation();
+        }
+        if(message.startsWith("configure")) {
+            System.out.println("Starting configuration");
+            launch_configurator();
+        }
     }
 
     @Override
@@ -72,8 +90,6 @@ public class Visualizer3DServer extends WebSocketServer {
                 System.err.println("[3DUI] Browser did not connect in time.");
                 return;
             }
-
-            sendAllData();
 
         } catch (Exception e) {
             System.err.println("[3DUI] Launch error: " + e.getMessage());
@@ -166,4 +182,53 @@ public class Visualizer3DServer extends WebSocketServer {
             send("ORBITAL_CSV:" + escapeForJs(content));
         } catch (Exception e) { e.printStackTrace(); }
     }
+
+    /*
+    THIS is where the configruator will be used when clicked on in the websocket
+     */
+    private void launch_configurator()  {
+
+        ConfigBridge bridge = new ConfigBridge(config -> {
+            System.out.println("[java] Mission config received");
+            // Hide configurator window
+            for (javafx.stage.Window window : new ArrayList<>(javafx.stage.Window.getWindows())) {
+                window.hide();
+            }
+
+        }, new CountDownLatch(1));
+
+        MissionConfiguratorUI.setBridge(bridge);
+
+        Application.launch(MissionConfiguratorUI.class);
+        try{
+            String satcomContent = Files.readString(
+                    Paths.get("src/main/resources/CSV_exports/Static_position/initial_position.csv").toAbsolutePath());
+            send("configurator" + escapeForJs(satcomContent));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
+
+        System.out.println("[3DUI] Launch configurator complete.");
+    }
+
+    /*
+   THIS is where the propgation will be used when clicked on in the websocket
+    Need to make sure :
+    -con,figurator is received
+    -dates are set
+    -satellties are created
+    */
+    private void launch_propagation(){
+        for (MissionConfig m:App.liste_config){
+            try {
+                App.runSimulation(m);
+                sendAllData();
+                System.out.println("[3DUI] Simulation complete.");
+            }catch (Exception e){System.out.println("[Java] Launch propagation error: " + e.getMessage());}
+        }
+    }
+
+
 }

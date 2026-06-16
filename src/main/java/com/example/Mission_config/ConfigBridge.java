@@ -1,5 +1,6 @@
 package com.example.Mission_config;
 
+import com.example.App;
 import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Satcom;
 import com.example.Parametres;
@@ -43,8 +44,10 @@ public class ConfigBridge {
         Platform.runLater(() -> {
             try {
                 MissionConfig config = parseConfig(jsonString);
-                System.out.println("[Configurator] Config received: " + config);
+                App.liste_par_sats_real_orbit = App.real_orbit(config);
+                System.out.println("[Configurator] Config received: " + config.satellites.size() + " satellites");
                 onConfigReady.accept(config);
+                App.liste_config.add(config);
                 latch.countDown();
             } catch (Exception e) {
                 System.err.println("[ConfigBridge] submitConfig error: " + e.getMessage());
@@ -183,6 +186,8 @@ public class ConfigBridge {
             configs.add(new MissionConfig.SatConfig(name, mass, alt, ecc, inc, raan, omega, nu, subsStr,date_propagation));
         }
         Parametres.date_orekit=epoch;
+        // Definition des satellites
+
         return new MissionConfig(configs);
     }
     /**
