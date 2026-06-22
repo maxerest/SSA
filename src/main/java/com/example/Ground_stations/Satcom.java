@@ -4,40 +4,82 @@ import com.example.Analytics_Propagator.Type1.Handlers;
 import com.example.Orbiting_object.Satellite;
 import com.example.Orbiting_object.Satellite_sub_systems.Antenna;
 import com.example.Orbiting_object.Satellite_sub_systems.MODCOD;
+import org.hipparchus.util.FastMath;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.events.ElevationDetector;
 import org.orekit.propagation.events.EventDetector;
 import org.orekit.propagation.numerical.NumericalPropagator;
+
+import java.util.List;
+
 
 public class Satcom {
     public static boolean activated_satcom;
     // === CONSTANTS ===
     private static final double BOLTZMANN = 1.38064852e-23; // J/K
     private static final double C = 299792458.0; // m/s
-    private static final double EARTH_RADIUS = 6371000.0; // meters
-
+    private static final double EARTH_RADIUS = 6371000; // meters
+    public record RainCoeff(
+            double minFreqGHz,
+            double maxFreqGHz,
+            double k,
+            double alpha) {
+    }
+    private static final List<RainCoeff> COEFFS = List.of(
+            new RainCoeff( 0.0,  8.0, 0.0001, 1.00), // C-band
+            new RainCoeff( 8.0, 12.0, 0.0050, 1.15), // X-band
+            new RainCoeff(12.0, 18.0, 0.0180, 1.22), // Ku-band
+            new RainCoeff(18.0, 30.0, 0.0750, 1.12), // Ka-band
+            new RainCoeff(30.0, 75.0, 0.2200, 1.05)  // V-band
+    );
     public static double calculate_budget_link(Ground_station.GroundStation_physical GS, Satellite S,Antenna antenna){
-      /*  // Calculate atmospheric losses
-        double rainAttenuationDb = calculateRainAttenuation(frequencyGhz, elevationAngleDeg, rainRatePercentile);
-        double gaseousAttenuationDb = calculateGaseousAbsorption(frequencyGhz, elevationAngleDeg);*/
+
+        SpacecraftState Sc_state=S.get_liste_state_propa().getLast();
+        double distance = GS.getBaseFrame().getPosition(Sc_state.getDate(),GS.getBaseFrame()).distance(Sc_state.getPosition());
 
         // Miscellaneous losses (polarization, coupling, etc.)
         double miscLossesDb = 1.0;
         // Perte de free path
-        double pathLossDb = free_path_loss_calculation(GS,S,antenna);
+        double pathLossDb = free_path_loss_calculation(distance,antenna);
+        double totalLossesDb = pathLossDb  + miscLossesDb+depointing_loss(FastMath.toRadians(0.01),antenna.getteta3dB());
+        if (GS.israining()){
+            double elevationDeg =
+                    GS.getBaseFrame()
+                            .getTrackingCoordinates(
+                                    Sc_state.getPosition(),
+                                    Sc_state.getFrame(),
+                                    Sc_state.getDate())
+                            .getElevation();
+            totalLossesDb+=rain_loss(antenna.getFrequency(), GS.getRain_rate(),elevationDeg);
+        }
 
-        //double totalLossesDb = pathLossDb + rainAttenuationDb + gaseousAttenuationDb + miscLossesDb;
-        //to delete when it is done
-        double totalLossesDb = pathLossDb  + miscLossesDb;
-        //Calculate recevied power
+        //Calculate received power
         double eirpDbm = calculateEIRP(antenna);
         double receivedPowerDbm = eirpDbm - totalLossesDb + GS.getAntenna_gain();
 
-        // Noise power (separate calculation, in dBm)
-        //double noisePowerDbm = Noise_power_calculation(GS);
-        // SNR (signal minus noise)
         return calculateSNR(GS,receivedPowerDbm);
 
+    }
+
+    private static double rain_loss(double antenna_frequency,double rain_rate,double angle) {
+        RainCoeff coeff = getCoeff(antenna_frequency);
+        double distance =5; // KM where rain is applied
+        double pathLengthKm =
+                distance /
+                        Math.sin(angle);
+        return coeff.k()
+                * Math.pow(rain_rate, coeff.alpha())*pathLengthKm;
+    }
+
+    public static RainCoeff getCoeff(double frequencyGHz) {
+
+        return COEFFS.stream()
+                .filter(c -> frequencyGHz >= c.minFreqGHz()
+                        && frequencyGHz < c.maxFreqGHz())
+                .findFirst()
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Unsupported frequency: " + frequencyGHz + " GHz"));
     }
     /**
      * Calculate EIRP
@@ -46,18 +88,15 @@ public class Satcom {
         return antenna.getTxPowerDbm() + antenna.getGain();
     }
 
-    private static double free_path_loss_calculation (Ground_station.GroundStation_physical GS, Satellite S,Antenna antenna){
-            SpacecraftState Sc_state=S.get_liste_state_propa().getLast();
-            double distance = GS.getBaseFrame().getPosition(Sc_state.getDate(),GS.getBaseFrame()).distance(Sc_state.getPosition());
+    private static double free_path_loss_calculation (double distance,Antenna antenna){
             double frequencyHz = antenna.getFrequency() * 1e9;
             return 20.0 * Math.log10(4.0 * Math.PI * distance / (C / frequencyHz));
         }
 
     private static double Noise_power_calculation (Ground_station.GroundStation_physical GS){
-        // TODO get dynamic access to temperature at the given GS location
-        double temperatureK = 290;
 
         // === RECEIVER PARAMETERS ===
+        double temperatureK = GS.get_system_noise_temperature();
         double noiseFigureDb = GS.getNoiseFigureDb();
         double noiseBandwidthMhz = GS.getNoiseBandwidthMhz();
         double bandwidthHz = noiseBandwidthMhz * 1e6;
@@ -65,13 +104,14 @@ public class Satcom {
         double noisePowerW = BOLTZMANN * temperatureK * bandwidthHz * noiseFactor;
         return 10.0 * Math.log10(noisePowerW * 1000.0);
     }
+
     private static double calculateSNR(Ground_station.GroundStation_physical GS,double  receivedPowerDbm) {
         double noisePowerDbm = Noise_power_calculation(GS);
         return receivedPowerDbm - noisePowerDbm;
     }
 
     private static double depointing_loss(double depointing,double teta3dB){
-        return 12*(depointing/teta3dB);
+        return 12*Math.pow(depointing/teta3dB,2);
     }
 
 

@@ -43,15 +43,19 @@ public class Ground_station {
         double noiseBandwidthMhz = 50.0;
         double temperatureK = 290.0;
         public Map <SpacecraftState,Boolean> map_visibility_from_sat=new HashMap<>();
-        public GeodeticPoint geo_point;
-
-        public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point,double elevation_mask) {
+        private GeodeticPoint geo_point;
+        private final double rain_rate;
+        private boolean is_raining=true;
+        private double system_noise_temperature; // in K
+        public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point,double elevation_mask,double rain_rate,double system_noise_temperature) {
             super(baseFrame);
             this.antenna_gain=55; //dB
             this.antenna_size=10; //m
             this.name=name;
             this.geo_point=point;
             this.elevation_mask=elevation_mask;
+            this.rain_rate=rain_rate;
+            this.system_noise_temperature=system_noise_temperature;
         }
 
         public String getName() {
@@ -86,6 +90,21 @@ public class Ground_station {
         public void setNoiseBandwidthMhz(double noiseBandwidthMhz) {
             this.noiseBandwidthMhz = noiseBandwidthMhz;
         }
+
+        public double getRain_rate() {
+            return rain_rate;
+        }
+
+        public boolean israining() {
+            return is_raining;
+        }
+
+        public void setIsraining(boolean is_raining) {
+            this.is_raining = is_raining;
+        }
+        public double get_system_noise_temperature() {
+            return system_noise_temperature;
+        }
     }
     // Call this method at program initialization to load ground stations from CSV within the public static list liste_GS
     public static void loadStationsFromCSV() {
@@ -106,6 +125,8 @@ public class Ground_station {
                 double alt = Double.parseDouble(parts[3].trim());
                 double station_activation= Double.parseDouble(parts[4].trim());
                 double masked_angle=FastMath.toRadians(Double.parseDouble(parts[5].trim()));
+                double rain_rate = Double.parseDouble(parts[6].trim());
+                double temperature = Double.parseDouble(parts[7].trim());
                 if (station_activation==0){
                     // Station is deactivated, skip it
                     continue;
@@ -120,7 +141,7 @@ public class Ground_station {
                         ,
                         name
                 );
-                GroundStation_physical station_gs = new GroundStation_physical(station,name,point,masked_angle);
+                GroundStation_physical station_gs = new GroundStation_physical(station,name,point,masked_angle,rain_rate,temperature);
                 
                 liste_GS.add(station_gs);
             }

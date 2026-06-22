@@ -162,6 +162,7 @@ public class App
                     .antenna(Antenna.antenna_catalogue.get(satConfig.subsystems.get("ANTENNAS")))
                     .date_initialState(satConfig.date_propagation)
                     .build());
+            System.out.println(liste_par_sats.getLast().get_s_initialState().getOrbit().getA());
             Visulations.export_initial_position(liste_par_sats.getLast().get_Name(),liste_par_sats.getLast().get_s_initialState().getPosition().getX(),liste_par_sats.getLast().get_s_initialState().getPosition().getY(),liste_par_sats.getLast().get_s_initialState().getPosition().getZ());
         }
         return liste_par_sats;
