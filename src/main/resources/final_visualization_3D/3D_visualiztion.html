@@ -11,16 +11,20 @@
             --panel2:     #0a0d14;
             --border:     #1c2333;
             --border2:    #242d3f;
-            --accent:     #1e90ff;
-            --accent2:    #00e5b0;
-            --accent3:    #7c6af7;
+            /* Color hierarchy: teal=live/active, blue=selected/interactive, purple=EO only */
+            --accent:     #1e90ff;   /* blue: selected / interactive */
+            --accent2:    #00e5b0;   /* teal: live data / status */
+            --accent3:    #7c6af7;   /* purple: EO events only */
+            --teal:       #00e5b0;
+            --blue:       #1e90ff;
+            --purple:     #7c6af7;
             --warn:       #f59e0b;
             --danger:     #ef4444;
             --success:    #22c55e;
             --text:       #c9d1d9;
             --text-dim:   #586069;
             --text-mid:   #8b949e;
-            --ctrl-h:     46px;
+            --ctrl-h:     48px;
             --left-w:     240px;
             --right-w:    300px;
             --font-mono:  'Courier New', monospace;
@@ -55,7 +59,7 @@
             z-index: 10;
         }
         .epoch-label { color: var(--text-dim); text-transform: uppercase; }
-        .epoch-val   { color: var(--accent2); }
+        .epoch-val   { color: var(--teal); }
         .no-epoch    { color: var(--text-dim); font-style: italic; }
 
         /* ── Controls bar ── */
@@ -65,30 +69,169 @@
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            padding: 0 12px;
-            gap: 10px;
+            padding: 0 14px;
+            gap: 0;
             flex-shrink: 0;
-            flex-wrap: wrap;
             z-index: 10;
         }
-        #controls label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
-        #controls input[type=range] { accent-color: var(--accent); cursor: pointer; }
 
-        .ctrl-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+        /* Groups inside toolbar */
+        .ctrl-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 14px;
+        }
+        .ctrl-group:first-child { padding-left: 0; }
+        .ctrl-group:last-child  { padding-right: 0; }
 
+        .ctrl-sep {
+            width: 1px;
+            height: 26px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        #controls label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            white-space: nowrap;
+        }
+        #controls input[type=range] { accent-color: var(--blue); cursor: pointer; }
+
+        /* Base button */
         button {
             background: #161b22;
             border: 1px solid var(--border);
             color: var(--text);
-            padding: 5px 12px;
+            padding: 5px 11px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
-            transition: background .15s, border-color .15s;
+            font-family: var(--font-ui);
+            transition: background .15s, border-color .15s, color .15s;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-        button:hover { background: #21262d; border-color: var(--accent); }
-        button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        button:hover { background: #21262d; border-color: var(--border2); }
+
+        /* Toggle active state — blue */
+        button.active {
+            background: rgba(30,144,255,.15);
+            color: var(--blue);
+            border-color: rgba(30,144,255,.4);
+        }
+        button.active:hover { background: rgba(30,144,255,.22); }
+
+        /* Play button */
+        #playBtn {
+            background: rgba(0,229,176,.1);
+            border-color: rgba(0,229,176,.35);
+            color: var(--teal);
+            font-weight: 600;
+            min-width: 84px;
+            justify-content: center;
+        }
+        #playBtn:hover { background: rgba(0,229,176,.18); }
+
+        /* Propagate button — teal */
+        #propagate {
+            background: rgba(0,229,176,.1);
+            border-color: rgba(0,229,176,.35);
+            color: var(--teal);
+            font-weight: 600;
+        }
+        #propagate:hover { background: rgba(0,229,176,.2); border-color: rgba(0,229,176,.6); }
+
+        /* Configure button — purple */
+        #configure {
+            background: rgba(124,106,247,.12);
+            border-color: rgba(124,106,247,.35);
+            color: var(--purple);
+            font-weight: 600;
+        }
+        #configure:hover { background: rgba(124,106,247,.22); border-color: rgba(124,106,247,.6); }
+
+        /* ── Load dropdown ── */
+        .load-wrap {
+            position: relative;
+        }
+        #loadBtn {
+            background: #161b22;
+            border-color: var(--border2);
+            color: var(--text);
+            font-weight: 500;
+            gap: 6px;
+        }
+        #loadBtn:hover { border-color: var(--blue); }
+        #loadBtn .chevron {
+            font-size: 9px;
+            color: var(--text-dim);
+            transition: transform .15s;
+        }
+        #loadBtn.open .chevron { transform: rotate(180deg); }
+
+        .load-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: #0d1117;
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            min-width: 200px;
+            z-index: 100;
+            box-shadow: 0 8px 24px rgba(0,0,0,.5);
+            overflow: hidden;
+        }
+        .load-menu.open { display: block; }
+
+        .load-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text);
+            transition: background .12s;
+            border: none;
+            background: none;
+            width: 100%;
+            border-radius: 0;
+            text-align: left;
+        }
+        .load-menu-item:hover { background: #161b22; }
+        .load-menu-item .item-icon {
+            font-size: 13px;
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .load-menu-item .item-label { flex: 1; }
+        .load-menu-item .item-ext {
+            font-size: 10px;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+        .load-menu-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 3px 0;
+        }
+
+        /* Speed label */
+        #speedLabel {
+            font-size: 12px;
+            min-width: 30px;
+            color: var(--teal);
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
 
         /* ── Status row ── */
         #statusRow {
@@ -103,10 +246,19 @@
             z-index: 10;
         }
         #status { font-size: 11px; color: var(--text-dim); flex: 1; }
-        #statsRow { font-size: 11px; font-family: var(--font-mono); color: var(--text-dim); display: flex; gap: 16px; }
-        .stat-item { display: flex; gap: 5px; }
-        .stat-label { color: var(--text-dim); }
-        .stat-val   { color: var(--text); }
+        #statsRow { font-size: 11px; font-family: var(--font-mono); color: var(--text-dim); display: flex; gap: 10px; }
+        .stat-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2px 9px;
+            font-size: 10px;
+        }
+        .stat-label { color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; }
+        .stat-val   { color: var(--teal); font-weight: 600; }
 
         /* ── Main layout ── */
         #mainLayout {
@@ -144,8 +296,8 @@
             content: '';
             width: 6px; height: 6px;
             border-radius: 50%;
-            background: var(--accent2);
-            box-shadow: 0 0 6px var(--accent2);
+            background: var(--teal);
+            box-shadow: 0 0 6px var(--teal);
             flex-shrink: 0;
         }
         #satList {
@@ -176,8 +328,8 @@
             border-radius: 5px 0 0 5px;
         }
         .sat-card:hover { background: #111720; border-color: var(--border2); }
-        .sat-card.selected { border-color: var(--accent); background: #0d1825; }
-        .sat-card.selected::before { background: var(--accent); }
+        .sat-card.selected { border-color: var(--blue); background: #0d1825; }
+        .sat-card.selected::before { background: var(--blue); }
         .sat-card.detected::before { background: var(--success); }
         .sat-card.not-detected::before { background: var(--danger); }
 
@@ -218,7 +370,7 @@
             letter-spacing: .08em;
         }
         .sat-card-next .next-val {
-            color: var(--accent2);
+            color: var(--teal);
             font-family: var(--font-mono);
             font-size: 10px;
         }
@@ -259,37 +411,84 @@
             flex-shrink: 0;
         }
         #rightPanelHeader {
-            padding: 10px 12px 8px;
+            padding: 10px 12px;
             border-bottom: 1px solid var(--border);
+            background: #090c13;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+        }
+        /* Purple dot for EO / detail panel */
+        #rightPanelDot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--purple);
+            box-shadow: 0 0 6px var(--purple);
+            flex-shrink: 0;
+            display: none;
+        }
+        #rightPanelDot.visible { display: block; }
+
+        #rightPanelTitle {
             font-size: 10px;
             font-family: var(--font-mono);
             letter-spacing: .12em;
             text-transform: uppercase;
             color: var(--text-dim);
-            background: #090c13;
             flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
-        #rightPanelTitle {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        /* When a sat is selected, title becomes smaller eyebrow */
+        #rightPanelHeader.has-sat #rightPanelTitle {
+            font-size: 9px;
+            color: var(--text-dim);
         }
-        #rightPanelTitle::before {
-            content: '';
-            width: 6px; height: 6px;
+
+        #rightPanelSatRow {
+            display: none;
+            align-items: center;
+            gap: 7px;
+            flex: 1;
+            min-width: 0;
+        }
+        #rightPanelSatRow.visible { display: flex; }
+
+        #rightPanelSatDot {
+            width: 9px; height: 9px;
             border-radius: 50%;
-            background: var(--accent3);
-            box-shadow: 0 0 6px var(--accent3);
             flex-shrink: 0;
+            border: 1.5px solid rgba(255,255,255,.2);
         }
         #rightPanelSatName {
-            color: var(--accent);
-            font-size: 11px;
-            font-weight: 600;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: .01em;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
+        #rightPanelClose {
+            width: 22px; height: 22px;
+            border-radius: 4px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-dim);
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            flex-shrink: 0;
+            transition: background .12s, color .12s, border-color .12s;
+        }
+        #rightPanelClose.visible { display: flex; }
+        #rightPanelClose:hover { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); color: var(--danger); }
+
         #rightPanelEmpty {
             flex: 1;
             display: flex;
@@ -355,10 +554,11 @@
             text-align: right;
             word-break: break-all;
         }
-        .detail-val.good  { color: var(--success); }
-        .detail-val.bad   { color: var(--danger); }
-        .detail-val.warn  { color: var(--warn); }
-        .detail-val.accent { color: var(--accent2); }
+        .detail-val.good   { color: var(--success); }
+        .detail-val.bad    { color: var(--danger); }
+        .detail-val.warn   { color: var(--warn); }
+        .detail-val.accent { color: var(--teal); }   /* teal = live data */
+        .detail-val.eo     { color: var(--purple); }  /* purple = EO */
 
         /* detection event list */
         .event-list { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
@@ -375,7 +575,7 @@
             align-items: center;
             margin-bottom: 3px;
         }
-        .event-name { color: var(--accent2); font-weight: 600; font-family: var(--font-mono); }
+        .event-name { color: var(--teal); font-weight: 600; font-family: var(--font-mono); }
         .event-time { color: var(--text-dim); font-family: var(--font-mono); }
         .event-badge {
             display: inline-block;
@@ -385,9 +585,11 @@
             font-weight: 600;
             letter-spacing: .06em;
         }
-        .badge-eo    { background: rgba(124,106,247,.2); color: var(--accent3); border: 1px solid rgba(124,106,247,.3); }
-        .badge-satcom { background: rgba(0,229,176,.15); color: var(--accent2); border: 1px solid rgba(0,229,176,.25); }
-        .badge-none  { background: rgba(88,96,105,.15); color: var(--text-dim); border: 1px solid var(--border); }
+        /* EO badge = purple */
+        .badge-eo     { background: rgba(124,106,247,.2); color: var(--purple); border: 1px solid rgba(124,106,247,.3); }
+        /* satcom badge = teal */
+        .badge-satcom { background: rgba(0,229,176,.15); color: var(--teal); border: 1px solid rgba(0,229,176,.25); }
+        .badge-none   { background: rgba(88,96,105,.15); color: var(--text-dim); border: 1px solid var(--border); }
         .no-events { color: var(--text-dim); font-size: 11px; font-style: italic; padding: 4px 0; }
     </style>
 </head>
@@ -400,24 +602,81 @@
 
 <!-- Controls -->
 <div id="controls">
-    <label>Time</label>
-    <input type="range" id="tSlider" min="0" max="9" value="0" step="1" style="flex:2;min-width:120px;"/>
-    <div class="ctrl-sep"></div>
-    <button id="playBtn">▶ Play</button>
-    <div class="ctrl-group" style="display:flex;align-items:center;gap:6px;">
-        <label>Speed</label>
-        <input type="range" id="speedSlider" min="-6" max="6" value="0" step="1" style="width:90px;"/>
-        <span id="speedLabel" style="font-size:12px;min-width:28px;">1×</span>
+
+    <!-- Group 1: Playback -->
+    <div class="ctrl-group">
+        <button id="playBtn">▶ Play</button>
     </div>
+
     <div class="ctrl-sep"></div>
-    <button id="uploadBtn">Load Sat CSV</button>
-    <button id="uploadGSBtn">Load GS CSV</button>
-    <button id="propagate">Propagate</button>
-    <button id="configure">Configure satellites</button>
-    <button id="trailToggle" class="active">Trails ✓</button>
-    <button id="coneToggle"  class="active">Cones ✓</button>
-    <input type="file" id="csvFile"  accept=".csv" style="display:none;"/>
-    <input type="file" id="gsFile"   accept=".csv" style="display:none;"/>
+
+    <!-- Group 2: Time scrub -->
+    <div class="ctrl-group">
+        <label>Time</label>
+        <input type="range" id="tSlider" min="0" max="9" value="0" step="1" style="width:130px;"/>
+    </div>
+
+    <div class="ctrl-sep"></div>
+
+    <!-- Group 3: Speed -->
+    <div class="ctrl-group">
+        <label>Speed</label>
+        <input type="range" id="speedSlider" min="-6" max="6" value="0" step="1" style="width:80px;"/>
+        <span id="speedLabel">1×</span>
+    </div>
+
+    <div class="ctrl-sep"></div>
+
+    <!-- Group 4: View toggles -->
+    <div class="ctrl-group">
+        <button id="trailToggle" class="active">Trails</button>
+        <button id="coneToggle">Cones</button>
+    </div>
+
+    <div class="ctrl-sep"></div>
+
+    <!-- Group 5: Actions -->
+    <div class="ctrl-group">
+        <!-- Unified load dropdown -->
+        <div class="load-wrap">
+            <button id="loadBtn">
+                <span>⬆ Load</span>
+                <span class="chevron">▾</span>
+            </button>
+            <div class="load-menu" id="loadMenu">
+                <button class="load-menu-item" id="mi-sat">
+                    <span class="item-icon">🛰</span>
+                    <span class="item-label">Satellite positions</span>
+                    <span class="item-ext">.csv</span>
+                </button>
+                <button class="load-menu-item" id="mi-gs">
+                    <span class="item-icon">📡</span>
+                    <span class="item-label">Ground stations</span>
+                    <span class="item-ext">.csv</span>
+                </button>
+                <div class="load-menu-divider"></div>
+                <button class="load-menu-item" id="mi-orbital">
+                    <span class="item-icon">🪐</span>
+                    <span class="item-label">Orbital parameters</span>
+                    <span class="item-ext">.csv</span>
+                </button>
+                <button class="load-menu-item" id="mi-satcom">
+                    <span class="item-icon">🔗</span>
+                    <span class="item-label">Satcom links</span>
+                    <span class="item-ext">.csv</span>
+                </button>
+            </div>
+        </div>
+
+        <button id="propagate">⟳ Propagate</button>
+        <button id="configure">⚙ Configure</button>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="csvFile"     accept=".csv" style="display:none;"/>
+    <input type="file" id="gsFile"      accept=".csv" style="display:none;"/>
+    <input type="file" id="orbitalFile" accept=".csv" style="display:none;"/>
+    <input type="file" id="satcomFile"  accept=".csv" style="display:none;"/>
 </div>
 
 <!-- Status / stats -->
@@ -444,8 +703,13 @@
     <!-- RIGHT: satellite detail panel -->
     <div id="rightPanel">
         <div id="rightPanelHeader">
-            <div id="rightPanelTitle">Satellite Detail</div>
-            <span id="rightPanelSatName"></span>
+            <span id="rightPanelDot"></span>
+            <span id="rightPanelTitle">Satellite Detail</span>
+            <div id="rightPanelSatRow">
+                <div id="rightPanelSatDot"></div>
+                <span id="rightPanelSatName"></span>
+            </div>
+            <button id="rightPanelClose" title="Deselect">✕</button>
         </div>
         <div id="rightPanelEmpty">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -490,7 +754,7 @@
     // STATE
     // ================================================================
     let sats            = {};
-    let orbitalParams   = {};   // { satName: [ {a, e, i, t, ...} ] }
+    let orbitalParams   = {};
     let times           = [];
     let idx             = 0;
     let obsEpoch        = null;
@@ -501,7 +765,8 @@
     let showTrails      = true;
     let showCones       = false;
     let selectedSat     = null;
-    let satcomLinks = [];   // parsed from satcom_link.csv
+    let satcomLinks     = [];
+
     // ================================================================
     // UTILS
     // ================================================================
@@ -521,12 +786,7 @@
         ];
     }
 
-    // ITRF/ECEF → Three.js axis remap
-    // ITRF: X=Greenwich, Y=90°E, Z=North Pole
-    // Three.js: X=right, Y=up, Z=toward camera
-    function ecefToThreeJS([x, y, z]) {
-        return [y, z, x];
-    }
+    function ecefToThreeJS([x, y, z]) { return [y, z, x]; }
 
     // ================================================================
     // THREE.JS SCENE
@@ -619,8 +879,8 @@
     updateCamera();
 
     // Raycaster
-    const raycaster = new THREE.Raycaster();
-    const mouseNDC  = new THREE.Vector2();
+    const raycaster  = new THREE.Raycaster();
+    const mouseNDC   = new THREE.Vector2();
     const satMeshMap = new Map();
 
     canvas.addEventListener('click', e => {
@@ -719,71 +979,43 @@
         }
         return { headers, rows };
     }
-    //TODO fiw the visualisation at the recevial of the configurator
-    function load_initial_position(text){
 
+    function load_initial_position(text) {
         const { rows } = parseCSV(text);
         if (!rows.length) return;
 
-        const grouped = {};
-        rows.forEach(r => {
-            const name = r['name_sat'] || r['name'] || 'Unknown';
-            if (!grouped[name]) grouped[name] = [];
-            grouped[name].push(r);
-        });
-
-        const t0 = parseFloat(rows[0]['t'] || 0);
-
-        sats  = {};
-        times = [];
-        const timeSet = new Set();
-
-        Object.keys(grouped).forEach((satName, colorIdx) => {
+        rows.forEach((r, colorIdx) => {
+            const satName  = r['name_sat'] || r['name'] || `SAT_${colorIdx}`;
             const colorHex = SAT_COLORS[colorIdx % SAT_COLORS.length];
-            const pts = grouped[satName].map(r => {
+            const x = parseFloat(r['x']);
+            const y = parseFloat(r['y']);
+            const z = parseFloat(r['z']);
+            if (isNaN(x) || isNaN(y) || isNaN(z)) return;
 
-                const detStr  = (r['detected_by_gs'] || '').toLowerCase();
-                return {
-                    x: parseFloat(r['x']), y: parseFloat(r['y']), z: parseFloat(r['z'])
-                };
-            });
-            sats[satName] = { pts, colorHex, isNoisy: satName.toLowerCase().includes('noisy') };
-
-            if (satObjects[satName]) {
-                scene.remove(satObjects[satName].mesh);
-                scene.remove(satObjects[satName].trailPts);
-                satMeshMap.delete(satObjects[satName].mesh.uuid);
-            }
+            sats[satName] = {
+                pts: [{ x, y, z, t: 0, firing: 0, detected: 0, station: '' }],
+                colorHex,
+                isNoisy: satName.toLowerCase().includes('noisy'),
+                isStatic: true
+            };
             createSatObjects(satName, colorHex);
-            const satNames = Object.keys(sats);
 
-            satNames.forEach(satName => {
-                const sat = sats[satName];
-                const obj = satObjects[satName];
-                if (!obj) return;
-
-                obj.mesh.visible = true;
-                obj.trailPts.visible = showTrails;
-
-
-                const [tx, ty, tz] = ecefToThreeJS([sat.x, sat.y, sat.z]);
-                obj.mesh.position.set(tx, ty, tz);
-
-                obj.mesh.material.color.set(colorHex);
-                obj.mesh.material.emissive.set(colorHex).multiplyScalar(0.25);
-                obj.trailPts.material.color.set(colorHex);
-
-                obj.history.unshift(ecefToThreeJS([sat.x, sat.y, sat.z]));
-                obj.trailGeo.attributes.position.needsUpdate = true;
-            });
+            const obj = satObjects[satName];
+            if (!obj) return;
+            const [tx, ty, tz] = ecefToThreeJS([x, y, z]);
+            obj.mesh.position.set(tx, ty, tz);
+            obj.mesh.visible = true;
+            obj.mesh.material.color.set(colorHex);
+            obj.mesh.material.emissive.set(colorHex).multiplyScalar(0.25);
+            obj.trailPts.visible = false;
         });
 
-        buildLegend();
-        updateDatetimeBar();
+        document.getElementById('status').textContent =
+            `${Object.keys(sats).length} satellite(s) placed — click Propagate to animate.`;
         buildSatList();
-
-
+        updateDatetimeBar();
     }
+
     function loadSatCSV(text) {
         const { rows } = parseCSV(text);
         if (!rows.length) return;
@@ -839,7 +1071,6 @@
         updateDatetimeBar();
         buildSatList();
 
-        // Auto-start playback as soon as data is loaded
         playing = true;
         document.getElementById('playBtn').textContent = '⏸ Pause';
         restartTimer();
@@ -882,6 +1113,7 @@
         document.getElementById('status').textContent =
             document.getElementById('status').textContent + ` | ${gsObjects.length} GS loaded.`;
     }
+
     function loadSatcomCSV(text) {
         const { rows } = parseCSV(text);
         satcomLinks = rows.map(r => ({
@@ -906,15 +1138,11 @@
             Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best, params[0]);
     }
 
-    // Returns next detection event after current time idx
     function getNextDetection(satName, type) {
-        // type: 'eo' = EO detection (firing=1), 'satcom' = GS detection (detected=true)
         const sat = sats[satName];
         if (!sat) return null;
-        const currentT = times[idx];
-
         for (let i = idx + 1; i < times.length; i++) {
-            const t = times[i];
+            const t  = times[i];
             const pt = sat.pts.find(p => p.t === t);
             if (!pt) continue;
             if (type === 'eo'     && pt.firing   > 0)  return { t, station: pt.station };
@@ -962,7 +1190,7 @@
         const nextEO     = getNextDetection(satName, 'eo');
         const nextSatcom = getNextDetection(satName, 'satcom');
 
-        const detected = closest.detected === 1;
+        const detected  = closest.detected === 1;
         const cardClass = `sat-card ${detected ? 'detected' : 'not-detected'} ${selectedSat === satName ? 'selected' : ''}`;
 
         return `<div class="${cardClass}" id="satcard-${satName}">
@@ -980,8 +1208,7 @@
     }
 
     function refreshSatList() {
-        const satNames = Object.keys(sats);
-        satNames.forEach(name => {
+        Object.keys(sats).forEach(name => {
             const el = document.getElementById(`satcard-${name}`);
             if (!el) return;
             el.outerHTML = buildSatCardHTML(name);
@@ -994,16 +1221,43 @@
     // ================================================================
     function selectSat(satName) {
         selectedSat = satName;
-        // Update left panel selection highlight
         document.querySelectorAll('.sat-card').forEach(el => el.classList.remove('selected'));
         const card = document.getElementById(`satcard-${satName}`);
         if (card) card.classList.add('selected');
-        // Show right panel
+
+        // Update header
+        const sat = sats[satName];
+        const header = document.getElementById('rightPanelHeader');
+        header.classList.add('has-sat');
+
+        document.getElementById('rightPanelDot').classList.add('visible');
+        document.getElementById('rightPanelTitle').style.display = 'none';
+
+        const satRow = document.getElementById('rightPanelSatRow');
+        satRow.classList.add('visible');
+        document.getElementById('rightPanelSatDot').style.background = sat ? sat.colorHex : '#888';
+        document.getElementById('rightPanelSatName').textContent = satName;
+        document.getElementById('rightPanelClose').classList.add('visible');
+
         document.getElementById('rightPanelEmpty').style.display = 'none';
         const content = document.getElementById('rightPanelContent');
         content.classList.add('visible');
-        document.getElementById('rightPanelSatName').textContent = satName;
         refreshRightPanel(satName);
+    }
+
+    function deselectSat() {
+        selectedSat = null;
+        document.querySelectorAll('.sat-card').forEach(el => el.classList.remove('selected'));
+
+        const header = document.getElementById('rightPanelHeader');
+        header.classList.remove('has-sat');
+        document.getElementById('rightPanelDot').classList.remove('visible');
+        document.getElementById('rightPanelTitle').style.display = '';
+        document.getElementById('rightPanelSatRow').classList.remove('visible');
+        document.getElementById('rightPanelClose').classList.remove('visible');
+
+        document.getElementById('rightPanelEmpty').style.display = '';
+        document.getElementById('rightPanelContent').classList.remove('visible');
     }
 
     function refreshRightPanel(satName) {
@@ -1026,17 +1280,13 @@
             }
         }
 
-        const eoEvents = sat.pts.filter(p => p.firing > 0);
+        const eoEvents   = sat.pts.filter(p => p.firing > 0);
         const nextEO     = getNextDetection(satName, 'eo');
         const nextSatcom = getNextDetection(satName, 'satcom');
+        const links      = satcomLinks.filter(l => l.sat === satName);
+        const totalData  = links.reduce((s, l) => s + l.dataMB, 0);
 
-        // Satcom links from dedicated CSV
-        const links    = satcomLinks.filter(l => l.sat === satName);
-        const totalData = links.reduce((s, l) => s + l.dataMB, 0);
-
-        const content = document.getElementById('rightPanelContent');
-        content.innerHTML = `
-
+        document.getElementById('rightPanelContent').innerHTML = `
         <div class="detail-section">
             <div class="detail-section-title">Orbital Parameters</div>
             <div class="detail-row"><span class="detail-key">Altitude</span><span class="detail-val accent">${altKm} km</span></div>
@@ -1055,7 +1305,7 @@
             <div class="detail-row"><span class="detail-key">GS Detection</span>
                 <span class="detail-val ${closest.detected ? 'good' : 'bad'}">${closest.detected ? '✓ Detected' : '✗ Not detected'}</span></div>
             <div class="detail-row"><span class="detail-key">EO Firing</span>
-                <span class="detail-val ${closest.firing ? 'warn' : ''}">${closest.firing ? '🔥 Active' : 'Inactive'}</span></div>
+                <span class="detail-val ${closest.firing ? 'eo' : ''}">${closest.firing ? '🔥 Active' : 'Inactive'}</span></div>
             <div class="detail-row"><span class="detail-key">Active station</span>
                 <span class="detail-val">${closest.station && closest.station !== 'nan' ? closest.station : '—'}</span></div>
             <div class="detail-row"><span class="detail-key">Sat type</span>
@@ -1065,7 +1315,7 @@
         <div class="detail-section">
             <div class="detail-section-title">Next Events</div>
             <div class="detail-row"><span class="detail-key">Next EO pass</span>
-                <span class="detail-val ${nextEO ? 'accent' : ''}">${nextEO ? formatDeltaT(nextEO.t) : 'None remaining'}</span></div>
+                <span class="detail-val ${nextEO ? 'eo' : ''}">${nextEO ? formatDeltaT(nextEO.t) : 'None remaining'}</span></div>
             <div class="detail-row"><span class="detail-key">Next downlink</span>
                 <span class="detail-val ${nextSatcom ? 'accent' : ''}">${nextSatcom ? formatDeltaT(nextSatcom.t) : 'None remaining'}</span></div>
             ${nextSatcom && nextSatcom.station ? `<div class="detail-row"><span class="detail-key">Via station</span><span class="detail-val">${nextSatcom.station}</span></div>` : ''}
@@ -1108,13 +1358,12 @@
                            </div>
                            <div class="event-time">${startISO} UTC</div>
                            <div class="event-time">→ ${endISO} UTC (${durMin} min)</div>
-                           <div class="event-time" style="color:var(--accent2);margin-top:2px;">${l.dataMB.toFixed(1)} MB</div>
+                           <div class="event-time" style="color:var(--teal);margin-top:2px;">${l.dataMB.toFixed(1)} MB</div>
                        </div>`;
             }).join('')}
                    </div>`
         }
-        </div>
-    `;
+        </div>`;
     }
 
     // ================================================================
@@ -1152,6 +1401,7 @@
 
             const [tx, ty, tz] = ecefToThreeJS([closest.x, closest.y, closest.z]);
             obj.mesh.position.set(tx, ty, tz);
+
             let hexColor = sat.isNoisy
                 ? (closest.detected ? '#3498db' : '#ffffff')
                 : (closest.detected ? '#2ecc71' : '#e74c3c');
@@ -1176,13 +1426,13 @@
             const c = s.pts.reduce((b, p) => Math.abs(p.t-t) < Math.abs(b.t-t) ? p : b, s.pts[0]);
             return c.detected;
         });
+
+        // Stat pills
         document.getElementById('statsRow').innerHTML =
-            `<div class="stat-item"><span class="stat-label">VISIBLE</span><span class="stat-val">${detected.length} / ${satNames.length}</span></div>` +
-            `<div class="stat-item"><span class="stat-label">GS</span><span class="stat-val">${gsObjects.length}</span></div>`;
+            `<div class="stat-pill"><span class="stat-label">Visible</span><span class="stat-val">${detected.length}/${satNames.length}</span></div>` +
+            `<div class="stat-pill"><span class="stat-label">GS</span><span class="stat-val">${gsObjects.length}</span></div>`;
 
         document.getElementById('tSlider').value = idx;
-
-        // Refresh panels
         refreshSatList();
         if (selectedSat) refreshRightPanel(selectedSat);
     }
@@ -1190,23 +1440,12 @@
     function restartTimer() {
         clearInterval(timer);
         if (!playing || !times.length) return;
-
         if (speedMultiplier >= 1) {
-            // Fast: advance multiple steps per tick, fire at ~60fps
             const steps = Math.max(1, Math.round(speedMultiplier));
-            timer = setInterval(() => {
-                idx = (idx + steps) % times.length;
-                tick();
-            }, 16);
+            timer = setInterval(() => { idx = (idx + steps) % times.length; tick(); }, 16);
         } else {
-            // Slow: advance 1 step at a time, but wait longer between ticks
-            // e.g. 0.5× means each step takes 2× as long
-            const baseStepMs = 16; // ms per step at 1×
-            const intervalMs = Math.round(baseStepMs / speedMultiplier);
-            timer = setInterval(() => {
-                idx = (idx + 1) % times.length;
-                tick();
-            }, intervalMs);
+            const intervalMs = Math.round(16 / speedMultiplier);
+            timer = setInterval(() => { idx = (idx + 1) % times.length; tick(); }, intervalMs);
         }
     }
 
@@ -1233,7 +1472,7 @@
         const ms  = currentUnixMs();
         if (obsEpoch === null) { bar.innerHTML = '<span class="no-epoch">No epoch set — load a satellite CSV to begin</span>'; return; }
         if (isNaN(ms))         { bar.innerHTML = '<span class="no-epoch">Epoch set — load satellite CSV to begin</span>'; return; }
-        const iso = new Date(ms).toISOString();
+        const iso      = new Date(ms).toISOString();
         const elapsedS = Math.round((ms - obsEpoch) / 1000);
         const elH = Math.floor(elapsedS/3600), elM = Math.floor((elapsedS%3600)/60), elS = elapsedS%60;
         bar.innerHTML =
@@ -1257,6 +1496,28 @@
     }
 
     // ================================================================
+    // LOAD DROPDOWN
+    // ================================================================
+    const loadBtn  = document.getElementById('loadBtn');
+    const loadMenu = document.getElementById('loadMenu');
+
+    loadBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const open = loadMenu.classList.toggle('open');
+        loadBtn.classList.toggle('open', open);
+    });
+
+    document.addEventListener('click', () => {
+        loadMenu.classList.remove('open');
+        loadBtn.classList.remove('open');
+    });
+
+    document.getElementById('mi-sat').addEventListener('click',     () => document.getElementById('csvFile').click());
+    document.getElementById('mi-gs').addEventListener('click',      () => document.getElementById('gsFile').click());
+    document.getElementById('mi-orbital').addEventListener('click', () => document.getElementById('orbitalFile').click());
+    document.getElementById('mi-satcom').addEventListener('click',  () => document.getElementById('satcomFile').click());
+
+    // ================================================================
     // UI LISTENERS
     // ================================================================
     document.getElementById('tSlider').addEventListener('input', e => { idx = parseInt(e.target.value); tick(); });
@@ -1278,21 +1539,19 @@
     document.getElementById('trailToggle').addEventListener('click', function() {
         showTrails = !showTrails;
         this.classList.toggle('active', showTrails);
-        this.textContent = showTrails ? 'Trails ✓' : 'Trails ✗';
+        this.textContent = showTrails ? 'Trails' : 'Trails';
         Object.values(satObjects).forEach(o => { o.trailPts.visible = showTrails; });
     });
 
     document.getElementById('coneToggle').addEventListener('click', function() {
         showCones = !showCones;
         this.classList.toggle('active', showCones);
-        this.textContent = showCones ? 'Cones ✓' : 'Cones ✗';
         gsObjects.forEach(o => { o.cone.visible = showCones; });
     });
 
-    document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('csvFile').click());
-    document.getElementById('uploadGSBtn').addEventListener('click', () => document.getElementById('gsFile').click());
-    document.getElementById('propagate').addEventListener('click',()=>ws.send('propagate'))
-    document.getElementById('configure').addEventListener('click',()=>ws.send('configure'))
+    document.getElementById('propagate').addEventListener('click', () => ws.send('propagate'));
+    document.getElementById('configure').addEventListener('click', () => ws.send('configure'));
+
     document.getElementById('csvFile').addEventListener('change', e => {
         const f = e.target.files[0]; if (!f) return;
         const r = new FileReader(); r.onload = ev => loadSatCSV(ev.target.result); r.readAsText(f);
@@ -1301,6 +1560,16 @@
         const f = e.target.files[0]; if (!f) return;
         const r = new FileReader(); r.onload = ev => loadGSCSV(ev.target.result); r.readAsText(f);
     });
+    document.getElementById('orbitalFile').addEventListener('change', e => {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader(); r.onload = ev => loadOrbitalCSV(ev.target.result); r.readAsText(f);
+    });
+    document.getElementById('satcomFile').addEventListener('change', e => {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader(); r.onload = ev => loadSatcomCSV(ev.target.result); r.readAsText(f);
+    });
+
+    document.getElementById('rightPanelClose').addEventListener('click', deselectSat);
 
     // ================================================================
     // BRIDGE ENTRY POINTS
@@ -1308,8 +1577,8 @@
     window.receiveCSVContent    = text => loadSatCSV(text);
     window.receiveGSCSVContent  = text => loadGSCSV(text);
     window.receiveOrbitalCSV    = text => loadOrbitalCSV(text);
-    window.receiveSatcomCSV = text => loadSatcomCSV(text);
-    window.setSimulationEpoch = function(isoDateString) {
+    window.receiveSatcomCSV     = text => loadSatcomCSV(text);
+    window.setSimulationEpoch   = function(isoDateString) {
         obsEpoch = new Date(isoDateString).getTime();
         updateDatetimeBar();
     };
@@ -1325,7 +1594,7 @@
         else if (msg.startsWith('GS_CSV:'))      loadGSCSV(msg.slice(7));
         else if (msg.startsWith('SAT_CSV:'))     receiveCSVContent(msg.slice(8));
         else if (msg.startsWith('ORBITAL_CSV:')) receiveOrbitalCSV(msg.slice(12));
-        else if (msg.startsWith('SATCOM_CSV:')) loadSatcomCSV(msg.slice(11));
+        else if (msg.startsWith('SATCOM_CSV:'))  loadSatcomCSV(msg.slice(11));
         else if (msg.startsWith('configurator')) load_initial_position(msg.slice(12));
     };
     ws.onerror = (e) => console.error('[WS] Error:', e);
