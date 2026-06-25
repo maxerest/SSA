@@ -1,26 +1,14 @@
 // ================================================================
 // data/parsers.js — CSV → typed domain objects
 // ================================================================
-//
-// Every function here is pure: input text → output objects (or null).
-// No DOM access, no state mutation, no Three.js.
-// Errors are returned as { error: string } so callers can surface them.
 
 import { SAT_COLORS } from '../core/config.js';
 
-// ── Low-level CSV tokeniser ───────────────────────────────────────
-
-/**
- * @param {string} text
- * @returns {{ headers: string[], rows: Record<string,string>[] } | { error: string }}
- */
 export function parseCSV(text) {
     try {
         const lines = text.trim().split('\n');
         if (lines.length < 2) return { error: 'CSV has no data rows' };
-
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-
         const rows = [];
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -30,20 +18,12 @@ export function parseCSV(text) {
             headers.forEach((h, j) => { obj[h] = vals[j] ? vals[j].trim() : ''; });
             rows.push(obj);
         }
-
         return { headers, rows };
     } catch (err) {
         return { error: `Parse failed: ${err.message}` };
     }
 }
 
-// ── Domain parsers ────────────────────────────────────────────────
-
-/**
- * Parse a satellite position CSV (multi-time-step format).
- * @param {string} text
- * @returns {{ sats: Record<string,SatEntry>, times: number[], epoch: number } | { error: string }}
- */
 export function parseSatCSV(text) {
     const result = parseCSV(text);
     if (result.error) return result;
@@ -78,11 +58,7 @@ export function parseSatCSV(text) {
         }).filter(p => !isNaN(p.x) && !isNaN(p.y) && !isNaN(p.z));
 
         if (pts.length) {
-            sats[satName] = {
-                pts,
-                colorHex,
-                isNoisy: satName.toLowerCase().includes('noisy'),
-            };
+            sats[satName] = { pts, colorHex, isNoisy: satName.toLowerCase().includes('noisy') };
         }
     });
 
@@ -93,11 +69,6 @@ export function parseSatCSV(text) {
     return { sats, times, epoch };
 }
 
-/**
- * Parse a static initial-position CSV (single point per satellite).
- * @param {string} text
- * @returns {{ sats: Record<string,SatEntry> } | { error: string }}
- */
 export function parseInitialPositionCSV(text) {
     const result = parseCSV(text);
     if (result.error) return result;
@@ -111,7 +82,6 @@ export function parseInitialPositionCSV(text) {
         const y = parseFloat(r['y']);
         const z = parseFloat(r['z']);
         if (isNaN(x) || isNaN(y) || isNaN(z)) return;
-
         sats[satName] = {
             pts: [{ x, y, z, t: 0, firing: 0, detected: 0, station: '' }],
             colorHex,
@@ -124,11 +94,6 @@ export function parseInitialPositionCSV(text) {
     return { sats };
 }
 
-/**
- * Parse a ground-station CSV.
- * @param {string} text
- * @returns {{ stations: GSEntry[] } | { error: string }}
- */
 export function parseGSCSV(text) {
     const result = parseCSV(text);
     if (result.error) return result;
@@ -138,18 +103,13 @@ export function parseGSCSV(text) {
         name:      r['name'] || `GS_${i}`,
         lat:       parseFloat(r['lat'] || 0),
         lon:       parseFloat(r['long'] || r['lon'] || 0),
-        alt:       parseFloat(r['alt'] || 0),          // km
+        alt:       parseFloat(r['alt'] || 0),
         activated: (r['activated'] || 'true').toLowerCase() !== 'false',
     })).filter(s => !isNaN(s.lat) && !isNaN(s.lon));
 
     return { stations };
 }
 
-/**
- * Parse an orbital-parameters CSV.
- * @param {string} text
- * @returns {{ orbitalParams: Record<string, OrbitalEntry[]> } | { error: string }}
- */
 export function parseOrbitalCSV(text) {
     const result = parseCSV(text);
     if (result.error) return result;
@@ -173,11 +133,6 @@ export function parseOrbitalCSV(text) {
     return { orbitalParams };
 }
 
-/**
- * Parse a satcom-links CSV.
- * @param {string} text
- * @returns {{ links: SatcomLink[] } | { error: string }}
- */
 export function parseSatcomCSV(text) {
     const result = parseCSV(text);
     if (result.error) return result;

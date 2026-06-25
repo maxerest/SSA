@@ -13,12 +13,14 @@ import javafx.stage.Stage;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
-
+import com.sun.net.httpserver.HttpServer;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -29,11 +31,58 @@ public class Visualizer3DServer extends WebSocketServer {
     private static final int PORT = 8765;
     private WebSocket connectedClient = null;
     private final CountDownLatch clientConnected = new CountDownLatch(1);
-
+    private final CountDownLatch serverReady = new CountDownLatch(1);
     public Visualizer3DServer() {
         super(new InetSocketAddress("localhost", PORT));
     }
+    private void startHttpServer() throws IOException {
+        HttpServer http = HttpServer.create(new InetSocketAddress(8766), 0);
 
+        // Serve all files from your resources folder
+        http.createContext("/", exchange -> {
+            String requestPath = exchange.getRequestURI().getPath();
+            if (requestPath.equals("/")) requestPath = "/3D_visualiztion.html";
+
+            // Always look inside /final_visualization_3D/
+            String resourcePath = "/final_visualization_3D" + requestPath;
+
+            try {
+                var resource = getClass().getResource(resourcePath);
+                if (resource == null) {
+                    System.err.println("[HTTP] 404: " + resourcePath);
+                    byte[] notFound = "404 Not Found".getBytes();
+                    exchange.sendResponseHeaders(404, notFound.length);
+                    exchange.getResponseBody().write(notFound);
+                    exchange.close();
+                    return;
+                }
+                Path filePath = Paths.get(resource.toURI());
+                byte[] bytes = Files.readAllBytes(filePath);
+                String mime = getMime(requestPath);
+                exchange.getResponseHeaders().set("Content-Type", mime);
+                exchange.sendResponseHeaders(200, bytes.length);
+                exchange.getResponseBody().write(bytes);
+            } catch (Exception e) {
+                System.err.println("[HTTP] Error serving " + resourcePath + ": " + e.getMessage());
+                byte[] err = "500 Internal Server Error".getBytes();
+                exchange.sendResponseHeaders(500, err.length);
+                exchange.getResponseBody().write(err);
+            }
+            exchange.close();
+        });
+
+        http.start();
+        System.out.println("[3DUI] HTTP server started on port 8766");
+    }
+
+    private String getMime(String path) {
+        if (path.endsWith(".html")) return "text/html";
+        if (path.endsWith(".js"))   return "application/javascript";
+        if (path.endsWith(".css"))  return "text/css";
+        if (path.endsWith(".jpg"))  return "image/jpeg";
+        if (path.endsWith(".png"))  return "image/png";
+        return "application/octet-stream";
+    }
     // ----------------------------------------------------------------
     // WebSocketServer callbacks
     // ----------------------------------------------------------------
@@ -71,6 +120,7 @@ public class Visualizer3DServer extends WebSocketServer {
     @Override
     public void onStart() {
         System.out.println("[3DUI] WebSocket server started on port " + PORT);
+        serverReady.countDown(); // signal that server is truly ready
     }
 
     // ----------------------------------------------------------------
@@ -80,15 +130,22 @@ public class Visualizer3DServer extends WebSocketServer {
         try {
             this.start();
 
-            URI htmlUri = getClass().getResource(
-                    "/final_visualization_3D/3D_visualiztion.html").toURI();
-            Desktop.getDesktop().browse(htmlUri);
+            boolean started = serverReady.await(10, TimeUnit.SECONDS);
+            if (!started) {
+                System.err.println("[3DUI] Server failed to start in time.");
+                return;
+            }
+
+            // Start HTTP server BEFORE opening browser
+            startHttpServer();
+
+            // Open via HTTP instead of file://
+            Desktop.getDesktop().browse(new URI("http://localhost:8766/"));
             System.out.println("[3DUI] Opened in browser.");
 
-            boolean connected = clientConnected.await(15, TimeUnit.SECONDS);
+            boolean connected = clientConnected.await(30, TimeUnit.SECONDS);
             if (!connected) {
                 System.err.println("[3DUI] Browser did not connect in time.");
-                return;
             }
 
         } catch (Exception e) {

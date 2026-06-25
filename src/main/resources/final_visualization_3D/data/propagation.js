@@ -1,19 +1,10 @@
 // ================================================================
 // data/propagation.js — Orbital & detection query helpers
 // ================================================================
-//
-// Pure functions that query simulation data.
-// No Three.js, no DOM, no state mutation.
 
 import { State }        from '../core/state.js';
 import { formatDeltaT } from '../core/utils.js';
 
-/**
- * Return the orbital-parameter entry for `satName` closest to time `t`.
- * @param {string} satName
- * @param {number} t
- * @returns {OrbitalEntry|null}
- */
 export function getOrbitalAtTime(satName, t) {
     const params = State.orbitalParams[satName];
     if (!params || !params.length) return null;
@@ -21,12 +12,6 @@ export function getOrbitalAtTime(satName, t) {
         Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best, params[0]);
 }
 
-/**
- * Find the next event of `type` after the current time index.
- * @param {string} satName
- * @param {'eo'|'satcom'} type
- * @returns {{ t: number, station: string }|null}
- */
 export function getNextDetection(satName, type) {
     const sat   = State.sats[satName];
     const times = State.times;
@@ -43,13 +28,6 @@ export function getNextDetection(satName, type) {
     return null;
 }
 
-/**
- * Return the velocity (km/s) of `satName` at the data point closest to `t`.
- * Computes finite difference against the preceding point.
- * @param {string} satName
- * @param {number} closestT
- * @returns {string}  formatted string, or '—'
- */
 export function getVelocityKms(satName, closestT) {
     const sat   = State.sats[satName];
     if (!sat) return '—';
@@ -67,21 +45,11 @@ export function getVelocityKms(satName, closestT) {
     return (Math.sqrt(dx*dx + dy*dy + dz*dz) / dt / 1000).toFixed(3);
 }
 
-/**
- * Format a future event time relative to the current sim time.
- * @param {number|null} targetT
- * @returns {string}
- */
 export function fmtNextEvent(targetT) {
     const currentT = State.times[State.idx] ?? 0;
     return formatDeltaT(currentT, targetT);
 }
 
-/**
- * Classify orbit type by eccentricity.
- * @param {number} e
- * @returns {string}
- */
 export function orbitType(e) {
     if (e < 0.01)  return 'Circular';
     if (e < 0.1)   return 'Near-circular';
