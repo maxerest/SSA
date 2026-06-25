@@ -46,7 +46,7 @@ public class Ground_station {
         private GeodeticPoint geo_point;
         private final double rain_rate;
         private boolean is_raining=true;
-        private double system_noise_temperature; // in K
+        private final double system_noise_temperature; // in K
         public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point,double elevation_mask,double rain_rate,double system_noise_temperature) {
             super(baseFrame);
             this.antenna_gain=55; //dB
@@ -126,7 +126,7 @@ public class Ground_station {
                 double station_activation= Double.parseDouble(parts[4].trim());
                 double masked_angle=FastMath.toRadians(Double.parseDouble(parts[5].trim()));
                 double rain_rate = Double.parseDouble(parts[6].trim());
-                double temperature = Double.parseDouble(parts[7].trim());
+                double G_T = Double.parseDouble(parts[7].trim());
                 if (station_activation==0){
                     // Station is deactivated, skip it
                     continue;
@@ -141,7 +141,7 @@ public class Ground_station {
                         ,
                         name
                 );
-                GroundStation_physical station_gs = new GroundStation_physical(station,name,point,masked_angle,rain_rate,temperature);
+                GroundStation_physical station_gs = new GroundStation_physical(station,name,point,masked_angle,rain_rate,G_T);
                 
                 liste_GS.add(station_gs);
             }
