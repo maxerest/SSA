@@ -9,6 +9,27 @@
  *   - Kick off map initialisation
  * ================================================================ */
 
+// ── WebSocket bridge (SatelliteTracker2DServer) ──────────────────
+// Connects to the Java server that replaced the JavaFX WebView bridge.
+// Each message prefix maps 1-to-1 to the existing loader functions below.
+
+const ws = new WebSocket('ws://localhost:8767');
+
+ws.onopen = () => console.log('[2DUI] Connected to Java server.');
+
+ws.onmessage = ({ data }) => {
+    if      (data.startsWith('EPOCH:'))      setSimulationEpoch(data.slice(6));
+    else if (data.startsWith('GS_CSV:'))     loadGSFromText(data.slice(7));
+    else if (data.startsWith('EO_CSV:'))     loadEOFromText(data.slice(7));
+    else if (data.startsWith('OBS_CSV:'))    loadObsFromText(data.slice(8));
+    else if (data.startsWith('SATCOM_CSV:')) loadSATCOMFromText(data.slice(11));
+    else if (data.startsWith('EXPLORER:'))   populateExplorer(data.slice(9));
+    else if (data.startsWith('SAT_CSV:'))    applyData(parseCSV(data.slice(8)));
+};
+
+ws.onerror = e  => console.error('[2DUI] WebSocket error:', e);
+ws.onclose = () => console.warn('[2DUI] WebSocket closed.');
+
 // ── Datetime bar ─────────────────────────────────────────────────
 
 function updateDatetimeBar() {
@@ -169,7 +190,7 @@ window.addEventListener('resize', () => {
 });
 
 // ── Java bridge entry points ─────────────────────────────────────
-// These are called by SatelliteTrackerUI.java via engine.executeScript(…)
+// Legacy window.* names kept for backwards compatibility.
 
 window.receiveCSVContent       = text => applyData(parseCSV(text));
 window.receiveObsCSVContent    = text => loadObsFromText(text);
@@ -177,7 +198,7 @@ window.receiveEOCSVContent     = text => loadEOFromText(text);
 window.receiveSATCOMCSVContent = text => loadSATCOMFromText(text);
 
 /**
- * Called from Java to set the simulation epoch.
+ * Called from Java (or WebSocket EPOCH: message) to set the simulation epoch.
  * @param {string} isoDateString - ISO-8601 date string (e.g. "2026-04-23T14:00:00Z")
  */
 window.setSimulationEpoch = function(isoDateString) {

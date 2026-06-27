@@ -7,6 +7,7 @@ import com.example.Mission_config.MissionConfig;
 import com.example.Mission_config.MissionConfiguratorUI;
 import com.example.Parametres;
 import com.example.View.SatelliteTrackerUI;
+import com.example.View.View2D.VisualizerGroundTrack;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
@@ -110,6 +111,13 @@ public class Visualizer3DServer extends WebSocketServer {
             System.out.println("Starting configuration");
             launch_configurator();
         }
+        if(message.startsWith("2d_view")) {
+            System.out.println("Starting 2D view launch");
+            Thread t = new Thread(() -> new VisualizerGroundTrack().launch(), "2DUI-launcher");
+            t.setDaemon(true);
+            t.start();
+        }
+
     }
 
     @Override

@@ -30,7 +30,7 @@ import java.util.*;
 import java.io.File;
 import java.io.IOException;
 
-public class App 
+public class App
 {   public static List<MissionConfig> liste_config = new ArrayList<>();
     public static List<Satellite> liste_par_sats_real_orbit;
     public static void main(String[] args) throws IOException {
@@ -50,36 +50,36 @@ public class App
     }
 
 
-    
+
     /**
      * Création objets satellites pour la propagation avec des orbites bruitées
-     * 
+     *
      * @param liste_par_sats_real_orbit liste des satellites avec des orbites réelles pour l'ajout de bruit
      */
 
     public static List<Satellite> noisy_orbit(List<Satellite> liste_par_sats_real_orbit) {
-    List<Satellite> liste_par_sats_noise_orbit = new LinkedList<>();
-    int i = 0;
-    for (Satellite p : liste_par_sats_real_orbit) {
+        List<Satellite> liste_par_sats_noise_orbit = new LinkedList<>();
+        int i = 0;
+        for (Satellite p : liste_par_sats_real_orbit) {
 
-        // Build noisy orbit parameters
-        Satellite noisyP = new Satellite.Builder()
-            .nom_sat("Sat_noisy" + (++i))
-            .mass(p.get_mass()) // keep same
-            .semi_axis(p.get_semi_axis()-100000)
-            .eccentricity(p.get_eccentricity())
-            .inclinaison(p.get_inclinaison())
-            .long_noeud_ascendant(p.get_long_noeud_ascendant())
-            .arg_periastre(p.get_arg_periastre())
-            .anomalie(p.get_anomalie())
-            .type_anomalie(p.get_type_anomalie())
-            .motor(p.getMotor())
-            .build();
+            // Build noisy orbit parameters
+            Satellite noisyP = new Satellite.Builder()
+                    .nom_sat("Sat_noisy" + (++i))
+                    .mass(p.get_mass()) // keep same
+                    .semi_axis(p.get_semi_axis()-100000)
+                    .eccentricity(p.get_eccentricity())
+                    .inclinaison(p.get_inclinaison())
+                    .long_noeud_ascendant(p.get_long_noeud_ascendant())
+                    .arg_periastre(p.get_arg_periastre())
+                    .anomalie(p.get_anomalie())
+                    .type_anomalie(p.get_type_anomalie())
+                    .motor(p.getMotor())
+                    .build();
 
-        liste_par_sats_noise_orbit.add(noisyP);
-    }
+            liste_par_sats_noise_orbit.add(noisyP);
+        }
 
-    return liste_par_sats_noise_orbit;
+        return liste_par_sats_noise_orbit;
     }
     public static void runSimulation(MissionConfig missionConfig) throws IOException {
         boolean propagate_real_orbit = true;

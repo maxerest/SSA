@@ -82,6 +82,7 @@ export function initControls(ws) {
     // ── Backend actions ────────────────────────────────────────
     document.getElementById('propagate').addEventListener('click', () => ws.send('propagate'));
     document.getElementById('configure').addEventListener('click', () => ws.send('configure'));
+    document.getElementById('2d_view').addEventListener('click', () => ws.send('2d_view'));
 
     // ── Right panel close ──────────────────────────────────────
     document.getElementById('rightPanelClose').addEventListener('click', deselectSat);
