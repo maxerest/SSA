@@ -6,11 +6,10 @@ import com.example.Mission_config.ConfigBridge;
 import com.example.Mission_config.MissionConfig;
 import com.example.Mission_config.MissionConfiguratorUI;
 import com.example.Parametres;
-import com.example.View.SatelliteTrackerUI;
+import com.example.View.Sun_position;
 import com.example.View.View2D.VisualizerGroundTrack;
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.stage.Stage;
+import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -24,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -194,6 +194,8 @@ public class Visualizer3DServer extends WebSocketServer {
                     Paths.get("src/main/resources/Satcom/satcom_link.csv").toAbsolutePath());
             send("SATCOM_CSV:" + escapeForJs(satcomContent));
             System.out.println("[3DUI] Satcom links sent.");
+
+
         } catch (Exception e) {
             System.err.println("[3DUI] sendAllData error: " + e.getMessage());
             e.printStackTrace();
@@ -266,16 +268,19 @@ public class Visualizer3DServer extends WebSocketServer {
 
         Application.launch(MissionConfiguratorUI.class);
         try{
-            String satcomContent = Files.readString(
+            String staticContent = Files.readString(
                     Paths.get("src/main/resources/CSV_exports/Static_position/initial_position.csv").toAbsolutePath());
-            send("configurator" + escapeForJs(satcomContent));
+            send("configurator" + escapeForJs(staticContent));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-
-
         System.out.println("[3DUI] Launch configurator complete.");
+        //update to the sun position
+        Vector3D sunposition = Sun_position.getSun_position_initial();
+        send("Sun position:"+ sunposition.getX()+","+ sunposition.getY()+","+sunposition.getZ());
+
+        System.out.println("[3DUI] Initial sun position  sent."+sunposition.getX()+" "+sunposition.getY()+" "+sunposition.getZ());
     }
 
     /*

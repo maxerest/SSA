@@ -39,7 +39,7 @@ public class ConfigBridge {
         this.latch         = latch;
     }
 
-    // ── Called by JS when user clicks "Launch Mission" ─────────────────────
+    // ── Called by JS when user clicks "Accept config" ─────────────────────
     public void submitConfig(String jsonString) {
         Platform.runLater(() -> {
             try {

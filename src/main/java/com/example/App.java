@@ -11,21 +11,20 @@ import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
 import com.example.Orbiting_object.Satellite_sub_systems.Motors;
 import com.example.SSA.Patera_detection;
 import com.example.TLE.My_TLE;
-import com.example.View.SatelliteTrackerUI;
 import com.example.View.View3D.Visualizer3DServer;
 import com.example.View.Visulations;
-import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.stage.Stage;
+import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.data.DataProvider;
 import org.orekit.data.DataContext;
 import org.orekit.data.DirectoryCrawler;
+import org.orekit.frames.Frame;
+import org.orekit.frames.FramesFactory;
+import org.orekit.frames.Transform;
 import org.orekit.orbits.PositionAngleType;
-import com.example.Mission_config.ConfigBridge;
 import com.example.Mission_config.MissionConfig;
-import java.util.concurrent.CountDownLatch;
-import com.example.Mission_config.MissionConfiguratorUI;
-import java.awt.Desktop;
+import org.orekit.propagation.SpacecraftState;
+import org.orekit.utils.IERSConventions;
+
 import java.util.*;
 import java.io.File;
 import java.io.IOException;
@@ -42,10 +41,8 @@ public class App
 
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
-
         //Start the websocket where the program is handled of the globe as a starting point
         new Thread(() -> new Visualizer3DServer().launch()).start();
-
 
     }
 
@@ -92,7 +89,6 @@ public class App
         boolean check_collision = false;
         // Definition des GS
         Ground_station.loadStationsFromCSV();
-
         Motors.loadMotorsFromCSV();
         // Delete past CSV files
         Visulations.deleteAllCsvFiles();
@@ -144,6 +140,9 @@ public class App
         }
     }
     public static List<Satellite> real_orbit(MissionConfig missionConfig) {
+        Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
+        Vector3D position_sat_static;
+        SpacecraftState temp_state;
         List<Satellite> liste_par_sats = new ArrayList<>();
         Visulations.create_static_position_file();
         for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
@@ -162,8 +161,10 @@ public class App
                     .antenna(Antenna.antenna_catalogue.get(satConfig.subsystems.get("ANTENNAS")))
                     .date_initialState(satConfig.date_propagation)
                     .build());
-            System.out.println(liste_par_sats.getLast().get_s_initialState().getOrbit().getA());
-            Visulations.export_initial_position(liste_par_sats.getLast().get_Name(),liste_par_sats.getLast().get_s_initialState().getPosition().getX(),liste_par_sats.getLast().get_s_initialState().getPosition().getY(),liste_par_sats.getLast().get_s_initialState().getPosition().getZ());
+            temp_state=liste_par_sats.getLast().get_s_initialState();
+            Transform toItrf = temp_state.getFrame().getTransformTo(itrf, temp_state.getDate());
+            position_sat_static=toItrf.transformPosition(temp_state.getPosition());
+            Visulations.export_initial_position(liste_par_sats.getLast().get_Name(),position_sat_static.getX(),position_sat_static.getY(),position_sat_static.getZ());
         }
         return liste_par_sats;
     }

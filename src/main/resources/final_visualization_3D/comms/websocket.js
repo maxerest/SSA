@@ -4,10 +4,12 @@
 
 import { State } from '../core/state.js';
 import { updateDatetimeBar } from '../ui/datetime.js';
+import {setSunPosition, initial_sun_position} from "../scene/earth.js";
 import {
     loadSatCSV, loadGSCSV, loadOrbitalCSV,
     loadSatcomCSV, loadInitialPositionCSV,
 } from '../loaders.js';
+import {ecefToThreeJS} from "../core/utils.js";
 
 export function initWebSocket() {
     const ws = new WebSocket('ws://localhost:8765');
@@ -22,6 +24,12 @@ export function initWebSocket() {
         else if (msg.startsWith('ORBITAL_CSV:')) loadOrbitalCSV(msg.slice(12));
         else if (msg.startsWith('SATCOM_CSV:'))  loadSatcomCSV(msg.slice(11));
         else if (msg.startsWith('configurator')) loadInitialPositionCSV(msg.slice(12));
+        else if (msg.startsWith('Sun position:')) {
+            const [x, y, z] = msg.slice(13).split(',').map(Number);
+            const [tx, ty, tz] = ecefToThreeJS([x, y, z]);
+            setSunPosition(tx,ty,tz);
+        }
+
     };
 
     ws.onerror = e  => console.error('[WS] Error:', e);

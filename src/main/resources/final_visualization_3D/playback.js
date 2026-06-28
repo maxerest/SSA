@@ -8,6 +8,7 @@ import { updateSatPositions, gsObjects } from './scene/satellites.js';
 import { updateDatetimeBar }   from './ui/datetime.js';
 import { refreshSatList }      from './ui/leftPanel.js';
 import { refreshRightPanel }   from './ui/rightPanel.js';
+import {updateSunPosition} from "./scene/earth.js";
 
 let timer = null;
 
@@ -23,7 +24,8 @@ export function tick() {
         const c = closestPoint(State.sats[n].pts, t);
         return c.detected;
     });
-
+    const duration_from_start = State.times[State.idx]-State.obsEpoch;
+    updateSunPosition(duration_from_start);
     document.getElementById('statsRow').innerHTML =
         `<div class="stat-pill"><span class="stat-label">Visible</span><span class="stat-val">${detected.length}/${satNames.length}</span></div>` +
         `<div class="stat-pill"><span class="stat-label">GS</span><span class="stat-val">${gsObjects.length}</span></div>`;
@@ -31,6 +33,7 @@ export function tick() {
     document.getElementById('tSlider').value = State.idx;
     refreshSatList();
     if (State.selectedSat) refreshRightPanel(State.selectedSat);
+
 }
 
 export function restartTimer() {

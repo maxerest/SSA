@@ -4,9 +4,12 @@
 
 import { EARTH_R } from '../core/config.js';
 
-/**
- * @param {THREE.Scene} scene
- */
+// Module-scoped so both buildLights() and setSunPosition() share it
+const sunLight     = new THREE.DirectionalLight(0xfff8e7, 2);  // main sun — softer
+const fillLight    = new THREE.DirectionalLight(0x4488ff, 0.3); // faint blue fill (space reflection)
+const ambientLight = new THREE.AmbientLight(0x111122, 0.6);      // deep space ambient
+export let initial_sun_position=[1, 0.5, 1];
+
 export function buildStars(scene) {
     const N   = 3000;
     const pos = new Float32Array(N * 3);
@@ -27,10 +30,34 @@ export function buildStars(scene) {
     })));
 }
 
-/**
- * @param {THREE.Scene} scene
- * @returns {{ earthMesh: THREE.Mesh, atmMesh: THREE.Mesh }}
- */
+export function buildLights(scene) {
+    sunLight.position.set(1, 0.5, 1).normalize();
+
+    // Fill light comes from the opposite side — softens the dark side
+    fillLight.position.set(-1, -0.5, -1).normalize();
+
+    scene.add(sunLight);
+    scene.add(fillLight);
+    scene.add(ambientLight);
+}
+
+export function setSunPosition(x, y, z) {
+    initial_sun_position = [x, y, z];
+    sunLight.position.set(x, y, z).normalize();
+}
+
+export function updateSunPosition(elapsedSeconds) {
+    const angle = -(2 * Math.PI * elapsedSeconds) / 86400;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const rx  =  initial_sun_position[0] * cos + initial_sun_position[2] * sin;
+    const ry  =  initial_sun_position[1];
+    const rz  = -initial_sun_position[0] * sin + initial_sun_position[2] * cos;
+    sunLight.position.set(rx, ry, rz).normalize();
+    fillLight.position.set(-rx, -ry, -rz).normalize();
+
+}
+
 export function buildEarth(scene) {
     const earthGeo = new THREE.SphereGeometry(EARTH_R, 64, 64);
     const earthMat = new THREE.MeshPhongMaterial({
@@ -68,14 +95,4 @@ export function buildEarth(scene) {
     scene.add(atmMesh);
 
     return { earthMesh, atmMesh };
-}
-
-/**
- * @param {THREE.Scene} scene
- */
-export function buildLights(scene) {
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const sun = new THREE.DirectionalLight(0xfff8e7, 1.1);
-    sun.position.set(1, 0.5, 1).normalize();
-    scene.add(sun);
 }
