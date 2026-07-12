@@ -115,7 +115,8 @@ public class Satellite extends Orbiting_object {
         public Builder cd(double c) { this.cd = c; return this; }
         public Builder srpCrossSection(double s) { this.srpCrossSection = s; return this; }
         public Builder srpCoeff(double s) { this.srpCoeff = s; return this; }
-        public Builder eo_sensor(EO_sensors.Sensor eo_s) { this.sensor = eo_s;return this; }
+        public Builder eo_sensor(EO_sensors.Sensor eo_s) { this.sensor = eo_s;return this;
+        }
         public Builder antenna(Antenna a) {if(a==null){this.antenna=new Antenna();return this;} this.antenna = a;return this; }
         public Satellite build() {super.build();
 

@@ -648,7 +648,7 @@
             const Mrad  = M * Math.PI / 180;
             const nu    = M + (2*ecc - ecc**3/4) * Math.sin(Mrad) * 180/Math.PI;
             const epochISO = tleEpochToISO(l1);  // ← EXTRACT EPOCH FROM TLE
-
+            document.getElementById('epochInput').value = tleEpochToISO(l1);
             return { name, l1, l2, inc, raan, ecc: parseFloat(ecc.toFixed(6)),
                 omega, M, nu: ((nu % 360) + 360) % 360,
                 altKm: Math.round(altKm), epochISO, checked: true };  // ← INCLUDE EPOCH

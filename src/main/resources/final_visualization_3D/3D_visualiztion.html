@@ -63,10 +63,14 @@
                     <span class="item-label">Satcom links</span>
                     <span class="item-ext">.csv</span>
                 </button>
+                <button class="load-menu-item" id="mi-eo">
+                    <span class="item-label">EO regions</span>
+                    <span class="item-ext">.csv</span>
+                </button>
             </div>
         </div>
-        <button id="propagate">⟳ Propagate</button>
         <button id="configure">⚙ Configure</button>
+        <button id="propagate">⟳ Propagate</button>
         <button id="2d_view">Ground track</button>
     </div>
 
@@ -74,11 +78,12 @@
     <input type="file" id="gsFile"      accept=".csv" style="display:none;"/>
     <input type="file" id="orbitalFile" accept=".csv" style="display:none;"/>
     <input type="file" id="satcomFile"  accept=".csv" style="display:none;"/>
+    <input type="file" id="eoFile"      accept=".csv" style="display:none;"/>
 </div>
 
 <!-- Status / stats -->
 <div id="statusRow">
-    <div id="status">Waiting for data…</div>
+    <div id="status">Click on Configure to start</div>
     <div id="statsRow"></div>
 </div>
 

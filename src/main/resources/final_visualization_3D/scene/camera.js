@@ -3,15 +3,16 @@
 // ================================================================
 
 import { EARTH_R } from '../core/config.js';
+import {State} from "../core/state.js";
+const camera = new THREE.PerspectiveCamera(45, 1, 1e4, 1e11);
 
+const spherical = { theta: 0, phi: Math.PI / 2, r: EARTH_R * 3.2 };
 export function buildCamera(canvas) {
-    const camera = new THREE.PerspectiveCamera(45, 1, 1e4, 1e11);
     camera.position.set(0, 0, EARTH_R * 3.2);
 
     let isDragging = false;
     let prevMouse  = { x: 0, y: 0 };
     let touchStart = null;
-    const spherical = { theta: 0, phi: Math.PI / 2, r: EARTH_R * 3.2 };
 
     function updateCamera() {
         camera.position.set(

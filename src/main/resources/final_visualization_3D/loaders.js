@@ -3,13 +3,22 @@
 // ================================================================
 
 import { State }  from './core/state.js';
-import { parseSatCSV, parseInitialPositionCSV, parseGSCSV, parseOrbitalCSV, parseSatcomCSV } from './data/parsers.js';
+import {
+    parseSatCSV,
+    parseInitialPositionCSV,
+    parseGSCSV,
+    parseOrbitalCSV,
+    parseSatcomCSV,
+    parseEOCSV,
+    parseZonesCSV
+} from './data/parsers.js';
 import { ecefToThreeJS } from './core/utils.js';
 import { createSatObjects, removeSatObjects, satObjects, addGroundStation, clearGroundStations } from './scene/satellites.js';
-import { buildLegend, updateDatetimeBar } from './ui/datetime.js';
+import {  updateDatetimeBar } from './ui/datetime.js';
 import { buildSatList }  from './ui/leftPanel.js';
 import { refreshRightPanel } from './ui/rightPanel.js';
 import { tick, restartTimer } from './playback.js';
+import {renderZones} from "./scene/earth.js";
 
 /** Set by main.js after scene is created */
 let _scene = null;
@@ -36,7 +45,6 @@ export function loadSatCSV(text) {
     document.getElementById('status').textContent =
         `${Object.keys(sats).length} satellite(s), ${times.length} time steps loaded.`;
 
-    buildLegend();
     updateDatetimeBar();
     buildSatList();
 
@@ -96,4 +104,35 @@ export function loadSatcomCSV(text) {
     State.set('satcomLinks', result.links);
     console.log('[3D] Satcom links loaded:', result.links.length);
     if (State.selectedSat) refreshRightPanel(State.selectedSat);
+}
+export function loadEOCSV(text) {
+    const result = parseEOCSV(text);
+    if (result.error) { console.error(result.error); return; }
+
+    const bySat = {};
+    result.links.forEach(link => {
+        if (!bySat[link.sat]) bySat[link.sat] = [];
+        bySat[link.sat].push(link);
+    });
+    State.set('EObySat', bySat);
+    // Per-satellite check: does every known sat have at least one EO link?
+    Object.keys(State.sats).forEach(satName => {
+        const links = bySat[satName];
+        if (links && links.length) {
+            console.log(`[EO] ${satName}: ${links.length} link(s)`, links);
+        } else {
+            console.warn(`[EO] ${satName}: NO links loaded`);
+        }
+    });
+    console.log('[3D] EO links loaded:', result.links.length);
+    if (State.selectedSat) refreshRightPanel(State.selectedSat);
+}
+export function loadZonesCSV(text) {
+    console.log('[1] loadZonesCSV called, raw text:', text.slice(0, 100));
+    const result = parseZonesCSV(text);
+    if (result.error) { console.error(result.error); return; }
+
+    console.log('[2] parsed zones:', result.zones);
+    renderZones(_scene, result.zones);
+    console.log('[3D] EO zones loaded:', result.zones.length);
 }

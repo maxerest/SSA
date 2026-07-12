@@ -8,7 +8,7 @@ import { State }            from './core/state.js';
 import { buildLights, buildStars, buildEarth } from './scene/earth.js';
 import { buildCamera }      from './scene/camera.js';
 import { satMeshMap }       from './scene/satellites.js';
-import { buildLegend, updateDatetimeBar } from './ui/datetime.js';
+import {  updateDatetimeBar } from './ui/datetime.js';
 import { buildSatList, setSelectCallback } from './ui/leftPanel.js';
 import { selectSat }        from './ui/rightPanel.js';
 import { initControls }     from './ui/controls.js';
@@ -90,7 +90,6 @@ window.setSimulationEpoch  = iso  => {
 };
 
 // ── Init ──────────────────────────────────────────────────────────
-buildLegend();
 updateDatetimeBar();
 buildSatList();
 console.log('[3D Visualizer] Ready.');

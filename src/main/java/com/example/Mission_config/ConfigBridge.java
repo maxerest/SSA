@@ -2,8 +2,12 @@ package com.example.Mission_config;
 
 import com.example.App;
 import com.example.Ground_stations.EO_detection;
+import com.example.Ground_stations.Ground_station;
 import com.example.Ground_stations.Satcom;
+import com.example.Orbiting_object.Satellite_sub_systems.Antenna;
+import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
 import com.example.Parametres;
+import com.example.View.Visulations;
 import javafx.application.Platform;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.time.TimeScalesFactory;
@@ -160,6 +164,15 @@ public class ConfigBridge {
         Satcom.activated_satcom = getBool(root, "satcomEnabled");
         EO_detection.EO_detection     = getBool(root, "eoDetectionEnabled");
         Parametres.duration = getDouble(root, "duration_mission");
+        if (EO_detection.EO_detection){
+            new EO_detection();
+            EO_sensors.loadSensorsFromCSV();
+        }
+        if (Satcom.activated_satcom){
+            Ground_station.satcom_activated=true;
+            Antenna.loadAntennaFromCSV();
+            Visulations.init_satcom_csv();
+        }
         List<Map<String, Object>> satList = (List<Map<String, Object>>) root.getOrDefault("satellites", List.of());
         List<MissionConfig.SatConfig> configs = new ArrayList<>();
         AbsoluteDate epoch   = getAbsDate(root, "epoch");
@@ -183,6 +196,7 @@ public class ConfigBridge {
             for (Map.Entry<String, Object> e : subs.entrySet()) {
                 subsStr.put(e.getKey(), e.getValue() == null ? "" : e.getValue().toString());
             }
+            System.out.println(subsStr.keySet());
             configs.add(new MissionConfig.SatConfig(name, mass, alt, ecc, inc, raan, omega, nu, subsStr,date_propagation));
         }
         Parametres.date_orekit=epoch;

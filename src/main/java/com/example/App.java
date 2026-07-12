@@ -90,6 +90,7 @@ public class App
         // Definition des GS
         Ground_station.loadStationsFromCSV();
         Motors.loadMotorsFromCSV();
+
         // Delete past CSV files
         Visulations.deleteAllCsvFiles();
         if (TLE_visualisation)
@@ -101,15 +102,6 @@ public class App
             }
         }
         if (propagate_real_orbit){
-            if (Satcom.activated_satcom){
-                Ground_station.satcom_activated=true;
-                Antenna.loadAntennaFromCSV();
-                Visulations.init_satcom_csv();
-            }
-            if (EO_detection.EO_detection){
-                new EO_detection();
-                EO_sensors.loadSensorsFromCSV();
-            }
 
             Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
             List<Satellite> liste_par_sats_noisy_orbit;
@@ -146,7 +138,7 @@ public class App
         List<Satellite> liste_par_sats = new ArrayList<>();
         Visulations.create_static_position_file();
         for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
-            liste_par_sats.add(new Satellite.Builder()
+              liste_par_sats.add(new Satellite.Builder()
                     .nom_sat(satConfig.name)
                     .mass(satConfig.mass)
                     .semi_axis(satConfig.semiAxis)

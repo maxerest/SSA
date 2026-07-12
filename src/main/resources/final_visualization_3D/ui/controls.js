@@ -40,6 +40,7 @@ export function initControls(ws) {
     document.getElementById('mi-gs')     .addEventListener('click', () => document.getElementById('gsFile').click());
     document.getElementById('mi-orbital').addEventListener('click', () => document.getElementById('orbitalFile').click());
     document.getElementById('mi-satcom') .addEventListener('click', () => document.getElementById('satcomFile').click());
+    document.getElementById('mi-eo') .addEventListener('click', () => document.getElementById('satcomFile').click());
 
     // ── File inputs ────────────────────────────────────────────
     document.getElementById('csvFile')    .addEventListener('change', e => readFile(e.target, loadSatCSV));
@@ -80,9 +81,15 @@ export function initControls(ws) {
     });
 
     // ── Backend actions ────────────────────────────────────────
-    document.getElementById('propagate').addEventListener('click', () => ws.send('propagate'));
-    document.getElementById('configure').addEventListener('click', () => ws.send('configure'));
-    document.getElementById('2d_view').addEventListener('click', () => ws.send('2d_view'));
+    document.getElementById('propagate').addEventListener('click', () => {ws.send('propagate');
+        document.getElementById('status').textContent = "Starting propagation";
+    });
+    document.getElementById('configure').addEventListener('click', () => {ws.send('configure')
+        document.getElementById('status').textContent = "Starting configuration panel";
+    });
+    document.getElementById('2d_view').addEventListener('click', () => {ws.send('2d_view')
+        document.getElementById('status').textContent = "Starting 2D view panel";
+    });
 
     // ── Right panel close ──────────────────────────────────────
     document.getElementById('rightPanelClose').addEventListener('click', deselectSat);

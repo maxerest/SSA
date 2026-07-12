@@ -1,6 +1,7 @@
 package com.example.View.View3D;
 
 import com.example.App;
+import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Ground_station;
 import com.example.Mission_config.ConfigBridge;
 import com.example.Mission_config.MissionConfig;
@@ -189,11 +190,24 @@ public class Visualizer3DServer extends WebSocketServer {
                     Paths.get("src/main/resources/CSV_exports/real_sat/real_sats_Orbital_param.csv").toAbsolutePath());
             send("ORBITAL_CSV:" + escapeForJs(orbContent));
             System.out.println("[3DUI] Orbital params sent.");
+
             // Satcom links
             String satcomContent = Files.readString(
                     Paths.get("src/main/resources/Satcom/satcom_link.csv").toAbsolutePath());
             send("SATCOM_CSV:" + escapeForJs(satcomContent));
             System.out.println("[3DUI] Satcom links sent.");
+            if(EO_detection.EO_detection){
+                // Satcom links
+                String EOContent = Files.readString(
+                        Paths.get("src/main/resources/EO detection/observations.csv").toAbsolutePath());
+                send("EO_CSV:" + escapeForJs(EOContent));
+                System.out.println("[3DUI] EO detections sent.");
+                String ZonesContent = Files.readString(
+                        Paths.get("src/main/resources/EO detection/Coordinates_area_to_observe.csv").toAbsolutePath());
+                send("EO_Zones:" + escapeForJs(ZonesContent));
+                System.out.println("[3DUI] EO zones sent.");
+            }
+
 
 
         } catch (Exception e) {
@@ -276,11 +290,14 @@ public class Visualizer3DServer extends WebSocketServer {
         }
 
         System.out.println("[3DUI] Launch configurator complete.");
+        // Set the Epoch of the 3D view
+        send("EPOCH:" + Parametres.date_orekit.toString());
+        System.out.println("[3DUI] Epoch  sent.");
+
         //update to the sun position
         Vector3D sunposition = Sun_position.getSun_position_initial();
         send("Sun position:"+ sunposition.getX()+","+ sunposition.getY()+","+sunposition.getZ());
-
-        System.out.println("[3DUI] Initial sun position  sent."+sunposition.getX()+" "+sunposition.getY()+" "+sunposition.getZ());
+        System.out.println("[3DUI] Initial sun position  sent.");
     }
 
     /*

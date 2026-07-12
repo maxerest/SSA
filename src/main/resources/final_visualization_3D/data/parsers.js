@@ -152,3 +152,34 @@ export function parseSatcomCSV(text) {
 
     return { links };
 }
+export function parseEOCSV(text) {
+    const result = parseCSV(text);
+    if (result.error) return result;
+    const { rows } = result;
+
+    const links = rows.map(r => ({
+        zone:     r['zone_name'] || '',
+        start:    new Date(r['start_time']),
+        end:      new Date(r['end_time']),
+        duration: parseFloat(r['duration_s'] || 0),
+        sat:      r['name_sat_doing_observation'] || '',
+    }));
+    return { links };
+}
+export function parseZonesCSV(text) {
+    const result = parseCSV(text);
+    if (result.error) return result;
+    const { rows } = result;
+
+    const normLon = lon => (lon > 180 ? lon - 360 : lon);
+
+    const zones = rows.map(r => {
+        const corners = [1, 2, 3, 4].map(i => ({
+            lat: parseFloat(r[`lat${i}`]),
+            lon: normLon(parseFloat(r[`long${i}`])),
+            alt: parseFloat(r[`alt${i}`] || 0),
+        }));
+        return { name: r['name'] || '', corners };
+    });
+    return { zones };
+}

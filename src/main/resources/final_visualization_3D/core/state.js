@@ -17,6 +17,7 @@ const _state = {
     showCones: false,
     selectedSat: null,
     satcomLinks: [],
+    EObySat: {},
 };
 
 export const State = {
@@ -61,4 +62,5 @@ export const State = {
     get showCones()      { return _state.showCones; },
     get selectedSat()    { return _state.selectedSat; },
     get satcomLinks()    { return _state.satcomLinks; },
+    get EObySat()   { return _state.EObySat; },
 };

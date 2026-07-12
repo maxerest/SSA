@@ -41,7 +41,7 @@ public class EO_detection {
         for (String name : Map_area_positions.keySet()) {
             int i = 0;
                 if(sat.get_sensor() ==null){
-                    System.out.println(sat.get_Name()+": sensor field of view is null and is skipped");
+                    System.out.println(sat.get_Name()+": sensor field is null and is skipped");
                     return;
                 }
                 FieldOfView fov=sat.get_sensor().getFieldOfView();

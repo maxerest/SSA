@@ -12,22 +12,33 @@ export function getOrbitalAtTime(satName, t) {
         Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best, params[0]);
 }
 
+
 export function getNextDetection(satName, type) {
     const sat   = State.sats[satName];
     const times = State.times;
     const idx   = State.idx;
     if (!sat) return null;
 
+    if (type === 'eo') {
+        const windows = State.EObySat[satName] || [];
+        const nowMs = State.obsEpoch + times[idx] * 1000;
+        const upcoming = windows
+            .filter(w => w.start.getTime() > nowMs)
+            .sort((a, b) => a.start - b.start);
+        if (!upcoming.length) return null;
+        const tSimSeconds = (upcoming[0].start.getTime() - State.obsEpoch) / 1000;
+        return { t: tSimSeconds, zone: upcoming[0].zone };
+    }
+
     for (let i = idx + 1; i < times.length; i++) {
         const t  = times[i];
         const pt = sat.pts.find(p => p.t === t);
         if (!pt) continue;
-        if (type === 'eo'     && pt.firing   > 0) return { t, station: pt.station };
         if (type === 'satcom' && pt.detected === 1) return { t, station: pt.station };
+
     }
     return null;
 }
-
 export function getVelocityKms(satName, closestT) {
     const sat   = State.sats[satName];
     if (!sat) return '—';

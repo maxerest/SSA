@@ -7,7 +7,7 @@ import { updateDatetimeBar } from '../ui/datetime.js';
 import {setSunPosition, initial_sun_position} from "../scene/earth.js";
 import {
     loadSatCSV, loadGSCSV, loadOrbitalCSV,
-    loadSatcomCSV, loadInitialPositionCSV,
+    loadSatcomCSV, loadInitialPositionCSV, loadEOCSV, loadZonesCSV,
 } from '../loaders.js';
 import {ecefToThreeJS} from "../core/utils.js";
 
@@ -23,6 +23,8 @@ export function initWebSocket() {
         else if (msg.startsWith('SAT_CSV:'))     loadSatCSV(msg.slice(8));
         else if (msg.startsWith('ORBITAL_CSV:')) loadOrbitalCSV(msg.slice(12));
         else if (msg.startsWith('SATCOM_CSV:'))  loadSatcomCSV(msg.slice(11));
+        else if (msg.startsWith('EO_CSV:'))      loadEOCSV(msg.slice(7));
+        else if (msg.startsWith('EO_Zones:'))    loadZonesCSV(msg.slice(9));
         else if (msg.startsWith('configurator')) loadInitialPositionCSV(msg.slice(12));
         else if (msg.startsWith('Sun position:')) {
             const [x, y, z] = msg.slice(13).split(',').map(Number);

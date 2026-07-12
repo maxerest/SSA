@@ -6,14 +6,14 @@ import { EARTH_R, MAX_EVENTS_SHOWN } from '../core/config.js';
 import { State }                      from '../core/state.js';
 import { closestPoint, formatDeltaT } from '../core/utils.js';
 import { getOrbitalAtTime, getNextDetection, getVelocityKms } from '../data/propagation.js';
+import {setSatSelection} from "../scene/satellites.js";
 
 export function selectSat(satName) {
     State.set('selectedSat', satName);
-
+    const sat     = State.sats[satName];
+    setSatSelection(satName);
     document.querySelectorAll('.sat-card').forEach(el => el.classList.remove('selected'));
     document.getElementById(`satcard-${satName}`)?.classList.add('selected');
-
-    const sat = State.sats[satName];
     document.getElementById('rightPanelHeader').classList.add('has-sat');
     document.getElementById('rightPanelDot').classList.add('visible');
     document.getElementById('rightPanelTitle').style.display = 'none';
@@ -29,7 +29,7 @@ export function selectSat(satName) {
 
 export function deselectSat() {
     State.set('selectedSat', null);
-
+    setSatSelection(null);
     document.querySelectorAll('.sat-card').forEach(el => el.classList.remove('selected'));
     document.getElementById('rightPanelHeader').classList.remove('has-sat');
     document.getElementById('rightPanelDot').classList.remove('visible');
@@ -51,7 +51,7 @@ export function refreshRightPanel(satName) {
     const orb     = getOrbitalAtTime(satName, t);
     const velKms  = getVelocityKms(satName, closest.t);
 
-    const eoEvents   = sat.pts.filter(p => p.firing > 0);
+    const eoEvents   = sat.pts.filter(p => p.firing > 0); // TO fix as it is not from firing but lenght of the csv
     const nextEO     = getNextDetection(satName, 'eo');
     const nextSatcom = getNextDetection(satName, 'satcom');
     const links      = State.satcomLinks.filter(l => l.sat === satName);
@@ -94,7 +94,7 @@ export function refreshRightPanel(satName) {
     </div>
 
     <div class="detail-section">
-        <div class="detail-section-title">EO Detection Events (${eoEvents.length})</div>
+        <div class="detail-section-title">EO Detection Events )</div>
         ${eoEvents.length === 0
         ? '<div class="no-events">No EO detections in simulation</div>'
         : `<div class="event-list">

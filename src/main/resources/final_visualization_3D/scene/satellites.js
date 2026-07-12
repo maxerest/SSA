@@ -29,6 +29,19 @@ export function createSatObjects(scene, satName, colorHex) {
     scene.add(mesh);
     satMeshMap.set(mesh.uuid, satName);
 
+    const ring = new THREE.Mesh(
+        new THREE.SphereGeometry(175_000, 48, 48),
+        new THREE.MeshBasicMaterial({
+            color: colorHex,
+            transparent: true,
+            opacity: 0.35,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        })
+    );
+    ring.visible = false;
+    scene.add(ring);
     const trailArr = new Float32Array(TRAIL_LENGTH * 3);
     const trailGeo = new THREE.BufferGeometry();
     trailGeo.setAttribute('position', new THREE.BufferAttribute(trailArr, 3));
@@ -38,7 +51,7 @@ export function createSatObjects(scene, satName, colorHex) {
     trailPts.visible = State.showTrails;
     scene.add(trailPts);
 
-    satObjects[satName] = { mesh, trailPts, trailGeo, trailArr, history: [], colorHex };
+    satObjects[satName] = { mesh, trailPts, trailGeo, trailArr, history: [], colorHex,ring };
 }
 
 /**
@@ -50,6 +63,7 @@ export function removeSatObjects(scene, satName) {
     if (!obj) return;
     scene.remove(obj.mesh);
     scene.remove(obj.trailPts);
+    scene.remove(obj.ring);
     satMeshMap.delete(obj.mesh.uuid);
     delete satObjects[satName];
 }
@@ -131,9 +145,21 @@ export function updateSatPositions() {
 
         if (t < firstT || t > lastT) {
             obj.mesh.visible     = false;
+            obj.ring.visible      = false;
             obj.trailPts.visible = false;
             return;
         }
+        if (obj.ring.visible) {
+            const pulse = (Math.sin(t * 3) + 1) / 2;
+
+            const scale = 1 + pulse * 0.12;
+            obj.ring.scale.setScalar(scale);
+
+            obj.ring.material.opacity = 0.2 + pulse * 0.35;
+
+            obj.ring.rotation.y += 0.005;
+        }
+
 
         obj.mesh.visible     = true;
         obj.trailPts.visible = State.showTrails;
@@ -141,6 +167,8 @@ export function updateSatPositions() {
         const closest      = closestPoint(sat.pts, t);
         const [tx, ty, tz] = ecefToThreeJS([closest.x, closest.y, closest.z]);
         obj.mesh.position.set(tx, ty, tz);
+        obj.ring.position.set(tx, ty, tz);
+        obj.ring.lookAt(0, 0, 0);
 
         const hexColor = getSatColor(sat, closest);
         obj.mesh.material.color.set(hexColor);
@@ -154,5 +182,10 @@ export function updateSatPositions() {
             obj.trailArr[i*3] = p[0]; obj.trailArr[i*3+1] = p[1]; obj.trailArr[i*3+2] = p[2];
         }
         obj.trailGeo.attributes.position.needsUpdate = true;
+    });
+}
+export function setSatSelection(satName) {
+    Object.entries(satObjects).forEach(([name, obj]) => {
+        obj.ring.visible = name === satName;
     });
 }

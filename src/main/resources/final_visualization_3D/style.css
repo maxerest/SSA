@@ -215,7 +215,7 @@ button.active:hover { background: rgba(30,144,255,.22); }
     min-height: 26px;
     z-index: 10;
 }
-#status { font-size: 11px; color: var(--text-dim); flex: 1; }
+#status { font-size: 13px; color: var(--text-mid); flex: 1; }
 #statsRow { font-size: 11px; font-family: var(--font-mono); color: var(--text-dim); display: flex; gap: 10px; }
 .stat-pill {
     display: flex;
