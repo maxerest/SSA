@@ -102,11 +102,10 @@ public class Propagator_1
 
     private static void EO_setup(Satellite sat, NumericalPropagator propagator) {
         if (EO_detection.EO_detection){
-            NadirPointing nadirLaw = new NadirPointing(Parametres.frame, Parametres.earth);
-            propagator.setAttitudeProvider(nadirLaw);
+            propagator.setAttitudeProvider(sat.getAttitude_sat());
             EO_detection.EO_usage_detection(propagator,sat);
         }
-        sat.launch_manoeuvre(propagator,sat.getMotor());
+
         propagator.propagate(sat.getPropagation_date().shiftedBy(Parametres.duration));
     }
 
@@ -188,7 +187,7 @@ public class Propagator_1
                     }
                     //Case where the satellite has not been detected too soon ago 
                     if ((has_been_detected_too_soon_ago && j==0)||!has_been_detected_too_soon_ago){
-                        kalman=added_noisy_value(kalman, truePV, pReal.is_firing(pReal.getPropagation_date().shiftedBy(t)), satellite, t,pReal);
+                        kalman=added_noisy_value(kalman, truePV, false , satellite, t,pReal);//pReal.is_firing(pReal.getPropagation_date().shiftedBy(t))
                         has_been_detected_too_soon_ago=true;
                         
                     }//Case where the satellite has been detected too soon ago

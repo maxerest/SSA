@@ -8,6 +8,11 @@ import com.example.RevisitFrequency.EO_observations;
 import com.example.View.Visulations;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.ode.events.Action;
+import org.orekit.forces.maneuvers.Maneuver;
+import org.orekit.forces.maneuvers.propulsion.BasicConstantThrustPropulsionModel;
+import org.orekit.forces.maneuvers.propulsion.PropulsionModel;
+import org.orekit.forces.maneuvers.trigger.DateBasedManeuverTriggers;
+import org.orekit.forces.maneuvers.trigger.ManeuverTriggers;
 import org.orekit.frames.Frame;
 import org.orekit.frames.FramesFactory;
 import org.orekit.frames.TopocentricFrame;
@@ -15,6 +20,7 @@ import org.orekit.geometry.fov.FieldOfView;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.events.*;
 import org.orekit.propagation.events.handlers.EventHandler;
+import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.IERSConventions;
@@ -39,7 +45,7 @@ public class Handlers {
             SpacecraftState updated_currentState= currentState.addAdditionalData("Boresight",p.getBoresight()).addAdditionalData("name",p.get_Name()).addAdditionalData("agility",p.getAgility());
             p.add_state(updated_currentState);
 
-            boolean trigger = p.is_firing(updated_currentState);
+            boolean trigger = false;//p.is_firing(updated_currentState);
             Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
             Vector3D pos =updated_currentState.getPVCoordinates(itrf).getPosition();
             //Vector3D pos =updated_currentState.getPVCoordinates().getPosition();
@@ -232,6 +238,51 @@ public class Handlers {
          */
 
 
+    }
+
+    public static class maneuver_handler implements EventHandler {
+        private final Satellite sat;
+        private final NumericalPropagator propagator;
+        private final boolean apo_or_per; // true = perigee, false = apogee
+        private final Vector3D direction;
+        private final double duration;
+        private boolean alreadyFired = false;
+        public maneuver_handler(Satellite sat, NumericalPropagator propagator,
+                                boolean apo_or_per, Vector3D direction, double duration) {
+            this.sat = sat;
+            this.propagator = propagator;
+            this.apo_or_per = apo_or_per;
+            this.direction = direction;
+            this.duration = duration;
+        }
+
+        @Override
+        public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
+            if (alreadyFired) {
+                return Action.CONTINUE; // ignore all later apside crossings
+            }
+            // perigee -> g increasing ; apogee -> g decreasing
+            boolean isTargetApside = (increasing && apo_or_per) || (!increasing && !apo_or_per);
+
+            if (isTargetApside) {
+                final AbsoluteDate firingDate = s.getDate();
+
+                final ManeuverTriggers trigger =
+                        new DateBasedManeuverTriggers(firingDate, duration);
+
+                final PropulsionModel propulsionModel =
+                        new BasicConstantThrustPropulsionModel(
+                                sat.getMotor().getThrust(),
+                                sat.getMotor().getISP(),
+                                direction,
+                                "Maneuver");
+
+                propagator.addForceModel(new Maneuver(null, trigger, propulsionModel));
+                alreadyFired=true;
+            }
+
+            return Action.CONTINUE;
+        }
     }
 }
 

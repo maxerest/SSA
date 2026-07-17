@@ -2,8 +2,11 @@ package com.example.Orbiting_object;
 
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Orbiting_object.Satellite_sub_systems.*;
+import com.example.Parametres;
 import com.example.RevisitFrequency.EO_observations;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
+import org.orekit.attitudes.AttitudeProvider;
+import org.orekit.attitudes.NadirPointing;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
@@ -14,6 +17,7 @@ import java.util.*;
 public class Satellite extends Orbiting_object {
 
     //Defintion manoeuvre
+    private AttitudeProvider attitude_sat = new NadirPointing(Parametres.frame,Parametres.earth);
     private List<Manoeuvre> liste_manoeuvre_sat= new LinkedList<>();
     private List<SpacecraftState> liste_state_propa= new ArrayList<>();
     private  Map<String, Map<AbsoluteDate,Double>> map_pourcentage_collision= new LinkedHashMap<>();
@@ -49,18 +53,18 @@ public class Satellite extends Orbiting_object {
 
     public boolean is_firing(SpacecraftState currentState) {
         for (Manoeuvre m:liste_manoeuvre_sat){
-            if (m.getTriggers().isFiring(currentState.getDate(), null)){
+            //if (m.getTriggers().isFiring(currentState.getDate(), null)){
                 return true;
-            }
+            //}
         }
         return false;
     }
 
     public boolean is_firing(AbsoluteDate date) {
         for (Manoeuvre m:liste_manoeuvre_sat){
-            if (m.getTriggers().isFiring(date, null)){
+           // if (m.getTriggers().isFiring(date, null)){
                 return true;
-            }
+            //}
         }
         return false;
     }
@@ -74,6 +78,14 @@ public class Satellite extends Orbiting_object {
 
     public void setCurrently_observing(String currently_observing) {
         this.currently_observing = currently_observing;
+    }
+
+    public AttitudeProvider getAttitude_sat() {
+        return attitude_sat;
+    }
+
+    public void setAttitude_sat(AttitudeProvider attitude_sat) {
+        this.attitude_sat = attitude_sat;
     }
 
     public static class Builder extends  Orbiting_object.Builder{
@@ -163,11 +175,7 @@ public class Satellite extends Orbiting_object {
             System.out.println("Echec de l'ajout de la manoeuvre");
         }
     }
-    public void launch_manoeuvre(NumericalPropagator propagator, Motors motor){
-        for (Manoeuvre m : liste_manoeuvre_sat){
-            m.launch_manoeuvre(motor.getISP(),motor.getThrust(),propagator);
-        }
-    }
+
     public void add_state (SpacecraftState s){
         this.liste_state_propa.add(s);
 

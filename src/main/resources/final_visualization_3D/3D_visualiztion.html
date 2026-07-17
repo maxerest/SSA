@@ -114,6 +114,7 @@
                 <span id="rightPanelSatName"></span>
             </div>
             <button id="rightPanelClose" title="Deselect">✕</button>
+            <button id="maneuverBtn" class="btn-accent" style="display:none;">🚀 Maneuver</button>
         </div>
         <div id="rightPanelEmpty">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -125,6 +126,45 @@
                 <circle cx="20" cy="20" r="3" fill="#586069"/>
             </svg>
             <span>Click a satellite on the globe<br>or in the fleet list to inspect</span>
+        </div>
+        <div id="maneuverModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+            <div style="background:#0d1117;border:1px solid #2a3441;border-radius:10px;width:520px;max-width:92vw;padding:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <span id="maneuverModalTitle" style="font-weight:600;">Maneuver</span>
+                    <button id="maneuverModalClose">✕</button>
+                </div>
+
+                <canvas id="maneuverCanvas" style="width:100%;height:260px;display:block;background:#07090f;border-radius:6px;"></canvas>
+
+                <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
+                    <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#9aa;">
+                        Time from epoch — <span id="maneuverTimeLabel">T = 0s</span>
+                        <input type="range" id="maneuverTimeSlider" min="0" max="0" value="0"/>
+                    </label>
+
+                    <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#9aa;">
+                        Duration (s)
+                        <input type="number" id="maneuverDuration" value="60" min="0"/>
+                    </label>
+
+                    <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#9aa;">
+                        Direction
+                        <select id="maneuverDirection">
+                            <option value="tangential+">Tangential — prograde</option>
+                            <option value="tangential-">Tangential — retrograde</option>
+                            <option value="radial+">Radial — outward</option>
+                            <option value="radial-">Radial — inward</option>
+                            <option value="normal+">Normal — +</option>
+                            <option value="normal-">Normal — -</option>
+                        </select>
+                    </label>
+
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+                        <button id="maneuverCancelBtn">Cancel</button>
+                        <button id="maneuverConfirmBtn" class="btn-green">Confirm Maneuver</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div id="rightPanelContent"></div>
     </div>

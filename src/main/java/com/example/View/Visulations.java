@@ -293,7 +293,7 @@ public class Visulations {
         double z = temp_s.getEntry(2);
         // Velocity
         Vector3D pos = new Vector3D(x, y, z);
-        boolean trigger = p.is_firing(p.getPropagation_date().shiftedBy(t));
+        boolean trigger = false; // p.is_firing(p.getPropagation_date().shiftedBy(t))
         File csvFile = new File("src/main/resources/CSV_exports/Kalman/"
                 + p.get_Name() + ".csv");
         try (FileWriter fw = new FileWriter(csvFile, true);

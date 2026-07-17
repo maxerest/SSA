@@ -3,6 +3,7 @@ package com.example.View.View3D;
 import com.example.App;
 import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Ground_station;
+import com.example.Manoeuvre.Manoeuvre;
 import com.example.Mission_config.ConfigBridge;
 import com.example.Mission_config.MissionConfig;
 import com.example.Mission_config.MissionConfiguratorUI;
@@ -117,6 +118,10 @@ public class Visualizer3DServer extends WebSocketServer {
             Thread t = new Thread(() -> new VisualizerGroundTrack().launch(), "2DUI-launcher");
             t.setDaemon(true);
             t.start();
+        }
+        if(message.startsWith("maneuver:")) {
+            System.out.println("Received maneuver");
+           // Manoeuvre maneuver = new Manoeuvre();
         }
 
     }

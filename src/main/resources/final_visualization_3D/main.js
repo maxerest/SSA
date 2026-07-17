@@ -16,7 +16,7 @@ import { setScene }         from './loaders.js';
 import { loadSatCSV, loadGSCSV, loadOrbitalCSV, loadSatcomCSV, loadInitialPositionCSV } from './loaders.js';
 import { initWebSocket }    from './comms/websocket.js';
 import { tick }             from './playback.js';
-
+import { setupManeuverModal } from './ui/maneuverModal.js';
 // ── Renderer ──────────────────────────────────────────────────────
 const canvas   = document.getElementById('glCanvas');
 const wrap     = document.getElementById('canvasWrap');
@@ -76,8 +76,7 @@ function resizeIfNeeded() {
 const ws = initWebSocket();
 
 // ── UI controls ───────────────────────────────────────────────────
-setSelectCallback(selectSat);
-initControls(ws);
+
 
 // ── Bridge (called by WebView / Java host) ────────────────────────
 window.receiveCSVContent   = text => loadSatCSV(text);
@@ -88,7 +87,9 @@ window.setSimulationEpoch  = iso  => {
     State.set('obsEpoch', new Date(iso).getTime());
     updateDatetimeBar();
 };
-
+setSelectCallback(selectSat);
+initControls(ws);
+setupManeuverModal(ws);
 // ── Init ──────────────────────────────────────────────────────────
 updateDatetimeBar();
 buildSatList();
