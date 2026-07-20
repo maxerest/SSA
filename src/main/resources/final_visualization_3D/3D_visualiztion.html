@@ -141,7 +141,12 @@
                         Time from epoch — <span id="maneuverTimeLabel">T = 0s</span>
                         <input type="range" id="maneuverTimeSlider" min="0" max="0" value="0"/>
                     </label>
-
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button type="button" id="jumpApogee">Apogee</button>
+                        <button type="button" id="jumpPerigee">Perigee</button>
+                        <button type="button" id="jumpAscNode">Asc. Node</button>
+                        <button type="button" id="jumpDescNode">Desc. Node</button>
+                    </div>
                     <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#9aa;">
                         Duration (s)
                         <input type="number" id="maneuverDuration" value="60" min="0"/>
@@ -150,6 +155,7 @@
                     <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#9aa;">
                         Direction
                         <select id="maneuverDirection">
+                            <option value="" selected disabled>— Select direction —</option>
                             <option value="tangential+">Tangential — prograde</option>
                             <option value="tangential-">Tangential — retrograde</option>
                             <option value="radial+">Radial — outward</option>
@@ -157,6 +163,7 @@
                             <option value="normal+">Normal — +</option>
                             <option value="normal-">Normal — -</option>
                         </select>
+                        <div id="directionError" style="display:none;color:#ff6b6b;font-size:10px;">Please select a direction before confirming.</div> value="normal-">Normal — -</option>
                     </label>
 
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">

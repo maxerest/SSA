@@ -24,6 +24,7 @@ import org.hipparchus.linear.RealVector;
 
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.orekit.estimation.measurements.EstimatedMeasurementBase;
 import org.orekit.estimation.measurements.GroundStation;
@@ -33,25 +34,26 @@ import org.orekit.frames.FramesFactory;
 import javax.swing.plaf.synth.SynthTextAreaUI;
 
 public class Visulations {
-    private static Map<String, PrintWriter> csvWriters = new HashMap<>();
+    public static Map<String, PrintWriter> csvWriters = new HashMap<>();
     private static String currentFileName = null;
 
-    public static void update_csv_orbital_realsat (String name,String name_sat,Orbit orbit_sat, AbsoluteDate currentdate,boolean trigger){
+    public static void update_csv_orbital_realsat(String name, String name_sat, Orbit orbit_sat, AbsoluteDate currentdate, boolean trigger) {
         name = name + "_Orbital_param";
         if (!csvWriters.containsKey(name)) {
-            csvWriters.get(name).close();
+            System.out.println("No CSV writer found for " + name + " — skipping write.");
+            return;
         }
         try {
             PrintWriter v = csvWriters.get(name);
-            v.printf(Locale.US,"%s,%f,%f,%f,%f,%d,%d%n",name_sat, orbit_sat.getA(), orbit_sat.getE(), orbit_sat.getI(), (double)currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
-            v.flush(); // Ensure data is written immediately
+            v.printf(Locale.US, "%s,%f,%f,%f,%f,%d,%d%n", name_sat, orbit_sat.getA(), orbit_sat.getE(), orbit_sat.getI(),
+                    (double) currentdate.durationFrom(Parametres.date_orekit), trigger ? 1 : 0, 0);
+            v.flush();
         } catch (Exception e) {
             System.out.println("erreur param orbit CSV");
             e.printStackTrace();
         }
-
-
     }
+
     public static void update_CSV_xyz_realsat(String name,String name_sat,Vector3D pos, AbsoluteDate currentdate,boolean trigger,boolean station_visible,String name_station) {
 
         try {
@@ -100,6 +102,7 @@ public class Visulations {
 
 
     }
+
     public static void closeCSV() {
 
         for (Map.Entry<String , PrintWriter> entry : csvWriters.entrySet()) {
@@ -446,5 +449,32 @@ public class Visulations {
         cmd.add("python");
         cmd.add("src/main/java/com/example/RevisitFrequency/graphs_observations.py");
         process_builder(cmd);
+    }
+    public static void deleteSatelliteRows(String satName) throws IOException {
+        Path path = Paths.get("src/main/resources/CSV_exports/real_sat/real_sats.csv");
+
+        List<String> existingLines = Files.readAllLines(path);
+
+        List<String> keptLines = existingLines.stream()
+                .filter(line -> !line.startsWith(satName + ","))
+                .collect(Collectors.toList());
+
+        Path tempPath = Paths.get("src/main/resources/CSV_exports/real_sat/real_sats.csv.tmp");
+        Files.write(tempPath, keptLines);
+        Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING); // dropped ATOMIC_MOVE
+    }
+    public static void reopen_CSV_writer_append() {
+        String name_temp="real_sats";
+            try {
+                if (csvWriters.containsKey(name_temp)) {
+                    csvWriters.get(name_temp).close();
+                }
+                String filename = "src/main/resources/CSV_exports/real_sat/" + name_temp + ".csv";
+                PrintWriter csvWriter = new PrintWriter(new FileWriter(filename, true)); // true = append
+                csvWriters.put(name_temp, csvWriter);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
     }
 }

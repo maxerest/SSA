@@ -33,7 +33,10 @@ public class App
 {   public static List<MissionConfig> liste_config = new ArrayList<>();
     public static List<Satellite> liste_par_sats_real_orbit;
     public static void main(String[] args) throws IOException {
-
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down — closing CSV writers...");
+            Visulations.closeCSV();
+        }));
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
         final boolean visualisation_2D = true;
@@ -43,7 +46,6 @@ public class App
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
         //Start the websocket where the program is handled of the globe as a starting point
         new Thread(() -> new Visualizer3DServer().launch()).start();
-
     }
 
 
@@ -89,7 +91,7 @@ public class App
         boolean check_collision = false;
         // Definition des GS
         Ground_station.loadStationsFromCSV();
-        Motors.loadMotorsFromCSV();
+
 
         // Delete past CSV files
         Visulations.deleteAllCsvFiles();
@@ -131,11 +133,12 @@ public class App
             Visulations.Python_EO_detection();
         }
     }
-    public static List<Satellite> real_orbit(MissionConfig missionConfig) {
+    public static List<Satellite> real_orbit(MissionConfig missionConfig) throws IOException {
         Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
         Vector3D position_sat_static;
         SpacecraftState temp_state;
         List<Satellite> liste_par_sats = new ArrayList<>();
+        Motors.loadMotorsFromCSV();
         Visulations.create_static_position_file();
         for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
               liste_par_sats.add(new Satellite.Builder()
@@ -148,7 +151,7 @@ public class App
                     .arg_periastre(satConfig.argPerigee)
                     .anomalie(satConfig.trueAnomaly)
                     .type_anomalie(PositionAngleType.TRUE)
-                    .motor(Motors.motor_catalogue.get(satConfig.subsystems.get("Motor")))
+                    .motor(Motors.motor_catalogue.get(satConfig.subsystems.get("MOTORS")))
                     .eo_sensor(EO_sensors.sensor_catalogue.get(satConfig.subsystems.get("EO_SENSORS")))
                     .antenna(Antenna.antenna_catalogue.get(satConfig.subsystems.get("ANTENNAS")))
                     .date_initialState(satConfig.date_propagation)

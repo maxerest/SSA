@@ -16,6 +16,9 @@ import java.util.*;
 
 public class Satellite extends Orbiting_object {
 
+
+
+    private NumericalPropagator propagator;
     //Defintion manoeuvre
     private AttitudeProvider attitude_sat = new NadirPointing(Parametres.frame,Parametres.earth);
     private List<Manoeuvre> liste_manoeuvre_sat= new LinkedList<>();
@@ -168,13 +171,6 @@ public class Satellite extends Orbiting_object {
     public List<SpacecraftState> get_liste_state_propa(){return liste_state_propa;}
     public Map<String, Map<AbsoluteDate,Double>> getMap_pourcentage_collision() {return map_pourcentage_collision;}
     public double getAgility() {return agility;}
-    public void add_manoeuvre (AbsoluteDate start_date_manoeuvre, double duration_manoeuvre,Satellite s){
-        try{
-        liste_manoeuvre_sat.add( new Manoeuvre(start_date_manoeuvre,duration_manoeuvre,s));
-        }catch (Exception e){
-            System.out.println("Echec de l'ajout de la manoeuvre");
-        }
-    }
 
     public void add_state (SpacecraftState s){
         this.liste_state_propa.add(s);
@@ -193,5 +189,12 @@ public class Satellite extends Orbiting_object {
 
     public void setMemory_on_board(double added_memory) {
         this.memory_on_board = Math.min(max_memory_on_board,memory_on_board+added_memory);
+    }
+    public NumericalPropagator getPropagator() {
+        return propagator;
+    }
+
+    public void setPropagator(NumericalPropagator propagator) {
+        this.propagator = propagator;
     }
 }

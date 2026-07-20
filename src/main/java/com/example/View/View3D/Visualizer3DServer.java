@@ -119,9 +119,18 @@ public class Visualizer3DServer extends WebSocketServer {
             t.setDaemon(true);
             t.start();
         }
-        if(message.startsWith("maneuver:")) {
+        if(message.startsWith("MANEUVER_CREATE:")) {
             System.out.println("Received maneuver");
-           // Manoeuvre maneuver = new Manoeuvre();
+            new Manoeuvre(message);
+            String satContent = null;
+            try {
+                satContent = Files.readString(
+                        Paths.get("src/main/resources/CSV_exports/real_sat/real_sats.csv").toAbsolutePath());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            send("SAT_CSV:" + escapeForJs(satContent));
+            System.out.println("[3DUI] Post maneuver coordinates sent.");
         }
 
     }

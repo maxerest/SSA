@@ -10,7 +10,14 @@ let ws = null;
 let scene, camera, renderer, satMesh, orbitLine;
 let animId = null;
 let currentSatName = null;
-const EARTH_MU = 3.986004418e14; // m³/s²
+
+// Camera orbit state
+let camDistance = EARTH_R * 6;
+let camTheta = 0;      // horizontal angle
+let camPhi   = Math.PI / 3; // vertical angle
+let isDragging = false;
+let lastMouseX = 0, lastMouseY = 0;
+
 export function setupManeuverModal(wsInstance) {
     ws = wsInstance;
 
@@ -21,11 +28,56 @@ export function setupManeuverModal(wsInstance) {
     document.getElementById('maneuverCancelBtn').addEventListener('click', closeManeuverModal);
     document.getElementById('maneuverConfirmBtn').addEventListener('click', confirmManeuver);
     document.getElementById('maneuverTimeSlider').addEventListener('input', onSliderInput);
-}
 
+    document.getElementById('jumpApogee').addEventListener('click', () => jumpToOrbitPoint('apogee'));
+    document.getElementById('jumpPerigee').addEventListener('click', () => jumpToOrbitPoint('perigee'));
+    document.getElementById('jumpAscNode').addEventListener('click', () => jumpToOrbitPoint('ascNode'));
+    document.getElementById('jumpDescNode').addEventListener('click', () => jumpToOrbitPoint('descNode'));
+
+    document.getElementById('maneuverDirection').addEventListener('change', () => {
+        document.getElementById('directionError').style.display = 'none';
+    });
+}
+function setupCameraControls(canvas) {
+    canvas.addEventListener('mousedown', e => {
+        isDragging = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+    });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+
+        camTheta -= dx * 0.005;
+        camPhi   -= dy * 0.005;
+        // Clamp vertical angle so camera can't flip over the poles
+        camPhi = Math.max(0.05, Math.min(Math.PI - 0.05, camPhi));
+        updateCameraPosition();
+    });
+
+    canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        camDistance *= (1 + e.deltaY * 0.001);
+        camDistance = Math.max(EARTH_R * 1.5, Math.min(EARTH_R * 30, camDistance));
+        updateCameraPosition();
+    }, { passive: false });
+}
+function updateCameraPosition() {
+    if (!camera) return;
+    camera.position.set(
+        camDistance * Math.sin(camPhi) * Math.sin(camTheta),
+        camDistance * Math.cos(camPhi),
+        camDistance * Math.sin(camPhi) * Math.cos(camTheta)
+    );
+    camera.lookAt(0, 0, 0);
+}
 function buildMiniScene(canvas) {
     scene  = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, EARTH_R * 0.01, EARTH_R * 25);
+    camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, EARTH_R * 0.01, EARTH_R * 100);
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -45,21 +97,22 @@ function buildMiniScene(canvas) {
     texLoader.load('/scene/earth-blue-marble.jpg', tex => {
         earthMat.map = tex;
         earthMat.needsUpdate = true;
-        window.GlobeInitialized = true;
     }, undefined, err => {
-        console.error('[earth] Texture load failed:', err);
-        window.GlobeInitialized = true;
+        console.error('[maneuverModal] Texture load failed:', err);
     });
 
     const earthMesh = new THREE.Mesh(earthGeo, earthMat);
-    earthMesh.rotation.y = -Math.PI/2;
+    earthMesh.rotation.y = -Math.PI / 2;
     scene.add(earthMesh);
 
     satMesh = new THREE.Mesh(
-        new THREE.SphereGeometry(EARTH_R * 0.02, 12, 12),
+        new THREE.SphereGeometry(EARTH_R * 0.1, 12, 12),
         new THREE.MeshBasicMaterial({ color: 0xffcc00 })
     );
     scene.add(satMesh);
+
+    setupCameraControls(canvas);
+    updateCameraPosition();
 }
 
 function buildOrbitLine(sat) {
@@ -77,8 +130,6 @@ function resizeCanvas(canvas) {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    camera.position.set(0, EARTH_R * 4, EARTH_R * 6);
-    camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
 }
 
@@ -97,6 +148,8 @@ function openManeuverModal(satName) {
 
     document.getElementById('maneuverModalTitle').textContent = `Maneuver — ${satName}`;
     document.getElementById('maneuverModal').style.display = 'flex';
+    document.getElementById('maneuverDirection').value = '';
+    document.getElementById('directionError').style.display = 'none';
 
     const canvas = document.getElementById('maneuverCanvas');
     if (!scene) buildMiniScene(canvas);
@@ -131,10 +184,15 @@ function confirmManeuver() {
     const sat = State.sats[currentSatName];
     if (!sat || !ws) return;
 
+    const direction = document.getElementById('maneuverDirection').value;
+    if (!direction) {
+        document.getElementById('directionError').style.display = 'block';
+        return; // block send entirely
+    }
+
     const idx      = parseInt(document.getElementById('maneuverTimeSlider').value);
     const t        = sat.pts[idx]?.t ?? 0;
     const duration = parseFloat(document.getElementById('maneuverDuration').value) || 0;
-    const direction = document.getElementById('maneuverDirection').value;
 
     const payload = {
         satName: currentSatName,
@@ -146,4 +204,47 @@ function confirmManeuver() {
 
     ws.send('MANEUVER_CREATE:' + JSON.stringify(payload));
     closeManeuverModal();
+}
+
+
+/**
+ * Find the index in sat.pts closest to a named orbital feature.
+ * Apogee/perigee: radius extrema. Nodes: z crosses zero (equatorial plane),
+ * ascending = z goes negative→positive, descending = positive→negative.
+ */
+function findOrbitPointIndex(sat, kind) {
+    const pts = sat.pts;
+    if (!pts.length) return 0;
+
+    if (kind === 'apogee' || kind === 'perigee') {
+        let bestIdx = 0;
+        let bestR   = Math.sqrt(pts[0].x**2 + pts[0].y**2 + pts[0].z**2);
+        for (let i = 1; i < pts.length; i++) {
+            const r = Math.sqrt(pts[i].x**2 + pts[i].y**2 + pts[i].z**2);
+            if ((kind === 'apogee' && r > bestR) || (kind === 'perigee' && r < bestR)) {
+                bestR = r;
+                bestIdx = i;
+            }
+        }
+        return bestIdx;
+    }
+
+    // Node crossing: find first sign change of z
+    for (let i = 1; i < pts.length; i++) {
+        const prevZ = pts[i - 1].z;
+        const currZ = pts[i].z;
+        const crossesUp   = prevZ < 0 && currZ >= 0;
+        const crossesDown = prevZ > 0 && currZ <= 0;
+        if (kind === 'ascNode' && crossesUp)   return i;
+        if (kind === 'descNode' && crossesDown) return i;
+    }
+    return 0; // no crossing found in this data window (e.g. equatorial orbit, or window too short)
+}
+
+function jumpToOrbitPoint(kind) {
+    const sat = State.sats[currentSatName];
+    if (!sat) return;
+    const idx = findOrbitPointIndex(sat, kind);
+    document.getElementById('maneuverTimeSlider').value = idx;
+    updateSatMeshPosition(sat, idx);
 }

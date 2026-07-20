@@ -85,9 +85,10 @@ public class Propagator_1
 
         for  (Satellite p : liste_par_sats_real_orbit){
             NumericalPropagator propagator = generic_propagator(name_file,p);
+            p.setPropagator(propagator);
             EO_setup(p, propagator);
         }
-       Visulations.closeCSV();
+
         
     }
 
@@ -97,7 +98,6 @@ public class Propagator_1
                NumericalPropagator propagator = generic_propagator("TLE",sat);
                EO_setup(sat, propagator);
        }
-        Visulations.closeCSV();
    }
 
     private static void EO_setup(Satellite sat, NumericalPropagator propagator) {
