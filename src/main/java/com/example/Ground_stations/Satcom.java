@@ -32,33 +32,120 @@ public class Satcom {
             new RainCoeff(18.0, 30.0, 0.0750, 1.12), // Ka-band
             new RainCoeff(30.0, 75.0, 0.2200, 1.05)  // V-band
     );
-    public static double calculate_budget_link(Ground_station.GroundStation_physical GS, Satellite S,Antenna antenna){
+    public static double calculate_budget_link(
+            Ground_station.GroundStation_physical GS,
+            Satellite S,
+            Antenna antenna) {
 
-        SpacecraftState Sc_state=S.get_liste_state_propa().getLast();
-        double distance = GS.getBaseFrame().getPosition(Sc_state.getDate(),GS.getBaseFrame()).distance(Sc_state.getPosition());
+        SpacecraftState state =
+                S.get_liste_state_propa().getLast();
 
-        // Miscellaneous losses (polarization, coupling, etc.)
+        // Correct GS -> satellite slant range
+        double distance =
+                state.getPVCoordinates(GS.getBaseFrame())
+                        .getPosition()
+                        .getNorm();
+
+        double pathLossDb =
+                free_path_loss_calculation(distance, antenna);
+
         double miscLossesDb = 1.0;
-        // Perte de free path
-        double pathLossDb = free_path_loss_calculation(distance,antenna);
-        double totalLossesDb = pathLossDb  + miscLossesDb+depointing_loss(FastMath.toRadians(0.01),antenna.getteta3dB());
-        if (GS.israining()){
-            double elevationDeg =
-                    GS.getBaseFrame()
-                            .getTrackingCoordinates(
-                                    Sc_state.getPosition(),
-                                    Sc_state.getFrame(),
-                                    Sc_state.getDate())
-                            .getElevation();
-            totalLossesDb+=rain_loss(antenna.getFrequency(), GS.getRain_rate(),elevationDeg);
+
+        double pointingLossDb =
+                depointing_loss(
+                        FastMath.toRadians(0.01),
+                        FastMath.toRadians(antenna.getteta3dB())
+                );
+
+        double rainLossDb = 0.0;
+
+        double elevationRad =
+                GS.getBaseFrame()
+                        .getTrackingCoordinates(
+                                state.getPosition(),
+                                state.getFrame(),
+                                state.getDate())
+                        .getElevation();
+
+        if (GS.israining() && elevationRad > 0) {
+
+            rainLossDb =
+                    rain_loss(
+                            antenna.getFrequency(),
+                            GS.getRain_rate(),
+                            elevationRad
+                    );
         }
 
-        //Calculate received power
-        double eirpDbm = calculateEIRP(antenna);
-        double receivedPowerDbm = eirpDbm - totalLossesDb + GS.getAntenna_gain();
+        double totalLossesDb =
+                pathLossDb
+                        + miscLossesDb
+                        + pointingLossDb
+                        + rainLossDb;
 
-        return calculateSNR(GS,receivedPowerDbm);
+        double eirpDbm =
+                calculateEIRP(antenna);
 
+        double eirpDbw =
+                eirpDbm - 30.0;
+
+        double bandwidthHz =
+                antenna.getBandwidth() * 1e6;
+
+        double bandwidthDb =
+                10.0 * Math.log10(bandwidthHz);
+
+        double gt =
+                GS.get_system_GT();
+
+        double cn0 =
+                eirpDbw
+                        - totalLossesDb
+                        + gt
+                        + 228.6;
+
+        double snr =
+                cn0
+                        - bandwidthDb;
+
+        System.out.println("======= LINK BUDGET =======");
+        System.out.printf("Distance       : %.2f km%n",
+                distance / 1000.0);
+        System.out.printf("Elevation      : %.2f deg%n",
+                FastMath.toDegrees(elevationRad));
+
+        System.out.printf("TX power       : %.2f dBm%n",
+                antenna.getTxPowerDbm());
+        System.out.printf("TX gain        : %.2f dBi%n",
+                antenna.getGain());
+        System.out.printf("EIRP           : %.2f dBW%n",
+                eirpDbw);
+
+        System.out.printf("FSPL           : %.2f dB%n",
+                pathLossDb);
+        System.out.printf("Pointing loss  : %.2f dB%n",
+                pointingLossDb);
+        System.out.printf("Rain loss      : %.2f dB%n",
+                rainLossDb);
+        System.out.printf("Misc loss      : %.2f dB%n",
+                miscLossesDb);
+
+        System.out.printf("G/T            : %.2f dB/K%n",
+                gt);
+
+        System.out.printf("Bandwidth      : %.2f MHz%n",
+                antenna.getBandwidth());
+        System.out.printf("Bandwidth term : %.2f dB%n",
+                bandwidthDb);
+
+        System.out.printf("C/N0           : %.2f dB-Hz%n",
+                cn0);
+        System.out.printf("C/N            : %.2f dB%n",
+                snr);
+
+        System.out.println("===========================");
+
+        return snr;
     }
 
     private static double rain_loss(double antenna_frequency,double rain_rate,double angle) {
@@ -93,21 +180,34 @@ public class Satcom {
             return 20.0 * Math.log10(4.0 * Math.PI * distance / (C / frequencyHz));
         }
 
-    private static double Noise_power_calculation (Ground_station.GroundStation_physical GS){
+    private static double calculateSNRFromGT(
+            Ground_station.GroundStation_physical GS,
+            double eirpDbm,
+            double totalLossesDb) {
 
-        // === RECEIVER PARAMETERS ===
-        double temperatureK = GS.get_system_noise_temperature();
-        double noiseFigureDb = GS.getNoiseFigureDb();
-        double noiseBandwidthMhz = GS.getNoiseBandwidthMhz();
-        double bandwidthHz = noiseBandwidthMhz * 1e6;
-        double noiseFactor = Math.pow(10.0, noiseFigureDb / 10.0);
-        double noisePowerW = BOLTZMANN * temperatureK * bandwidthHz * noiseFactor;
-        return 10.0 * Math.log10(noisePowerW * 1000.0);
-    }
+        double gtDbPerK = GS.get_system_GT();
 
-    private static double calculateSNR(Ground_station.GroundStation_physical GS,double  receivedPowerDbm) {
-        double noisePowerDbm = Noise_power_calculation(GS);
-        return receivedPowerDbm - noisePowerDbm;
+        double bandwidthHz =
+                GS.getNoiseBandwidthMhz() * 1e6;
+
+        // Convert EIRP dBm -> dBW
+        double eirpDbw = eirpDbm - 30.0;
+
+        // Boltzmann constant in dBW/K/Hz
+        // approximately -228.60 dBW/K/Hz
+        double boltzmannDb =
+                10.0 * Math.log10(BOLTZMANN);
+
+        // C/N0 in dB-Hz
+        double cn0DbHz =
+                eirpDbw
+                        - totalLossesDb
+                        + gtDbPerK
+                        - boltzmannDb;
+
+        // C/N over receiver bandwidth
+        return cn0DbHz
+                - 10.0 * Math.log10(bandwidthHz);
     }
 
     private static double depointing_loss(double depointing,double teta3dB){
@@ -128,23 +228,24 @@ public class Satcom {
         }
     }
 
-    public static double calculateDataRate_Mbps(double snr_dB, double bandwidth_MHz) {
-        // Get satellite's fixed MODCOD
-        //MODCOD.modcod modcod = sat.getMODCOD();
-        //get best modcod
-        MODCOD.modcod modcod = MODCOD.MODCODLibrary.getBestMODCOD(snr_dB);
+    public static double calculateDataRate_Mbps(
+            double snr_dB,
+            double bandwidth_MHz) {
 
-        if (modcod == null) {
-            return 0;
-        }
-
-        // Roll-off factor (typical for satellite systems)
         double rollOffFactor = 0.25;
 
-        // Symbol rate = Bandwidth / (1 + roll-off)
-        double symbolRate_MHz = bandwidth_MHz / (1.0 + rollOffFactor);
+        MODCOD.modcod modcod =
+                MODCOD.MODCODLibrary.getBestMODCOD(
+                        snr_dB,
+                        rollOffFactor
+                );
 
-        // Data Rate = Symbol Rate × Bits per Symbol × Code Rate
+        if (modcod == null) {
+            return 0.0;
+        }
+
+        double symbolRate_MHz =
+                bandwidth_MHz / (1.0 + rollOffFactor);
 
         return symbolRate_MHz
                 * modcod.getBitsPerSymbol()
@@ -170,6 +271,8 @@ public class Satcom {
 
             // Calculate SNR from link budget
             double snr_dB = Satcom.calculate_budget_link(GS, sat,antenna);
+            System.out.println(snr_dB);
+
             // Calculate data rate based on SNR and MODCOD
             double dataRate_Mbps = Satcom.calculateDataRate_Mbps(snr_dB, bandwidth_MHz);
 

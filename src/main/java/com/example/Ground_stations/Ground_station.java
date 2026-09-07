@@ -46,7 +46,7 @@ public class Ground_station {
         private GeodeticPoint geo_point;
         private final double rain_rate;
         private boolean is_raining=true;
-        private final double system_noise_temperature; // in K
+        private final double system_GT; // in db/K
         public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point,double elevation_mask,double rain_rate,double system_noise_temperature) {
             super(baseFrame);
             this.antenna_gain=55; //dB
@@ -55,7 +55,7 @@ public class Ground_station {
             this.geo_point=point;
             this.elevation_mask=elevation_mask;
             this.rain_rate=rain_rate;
-            this.system_noise_temperature=system_noise_temperature;
+            this.system_GT=system_noise_temperature;
         }
 
         public String getName() {
@@ -102,8 +102,8 @@ public class Ground_station {
         public void setIsraining(boolean is_raining) {
             this.is_raining = is_raining;
         }
-        public double get_system_noise_temperature() {
-            return system_noise_temperature;
+        public double get_system_GT() {
+            return system_GT;
         }
     }
     // Call this method at program initialization to load ground stations from CSV within the public static list liste_GS

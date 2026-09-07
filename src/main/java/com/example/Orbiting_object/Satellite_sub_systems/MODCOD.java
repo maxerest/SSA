@@ -93,21 +93,35 @@ public class MODCOD {
         /**
          * Get best MODCOD for given SNR (highest spectral efficiency achievable)
          */
-        public static modcod getBestMODCOD(double availableSNR_dB) {
-            // SNR = Eb/N0 + 10*log10(bits/symbol * code rate)
-            // Rearrange: Eb/N0 = SNR - 10*log10(spectral efficiency)
-            modcod best = null;
-            for (modcod modcod : modcods) {
-                double requiredSNR = modcod.getRequiredEbNo_dB() +
-                        10 * Math.log10(modcod.getSpectralEfficiency());
+        public static modcod getBestMODCOD(
+                double availableSNR_dB,
+                double rollOffFactor) {
 
-                if (availableSNR_dB >= requiredSNR) {
-                    // Can use this MODCOD
-                    if (best == null || modcod.getSpectralEfficiency() > best.getSpectralEfficiency()) {
-                        best = modcod;
+            modcod best = null;
+
+            for (modcod m : modcods) {
+
+                // Net spectral efficiency relative to occupied RF bandwidth
+                double netSpectralEfficiency =
+                        (m.getBitsPerSymbol() * m.getCodeRate())
+                                / (1.0 + rollOffFactor);
+
+                // Convert required Eb/N0 -> required C/N
+                double requiredSNR_dB =
+                        m.getRequiredEbNo_dB()
+                                + 10.0 * Math.log10(netSpectralEfficiency);
+
+                if (availableSNR_dB >= requiredSNR_dB) {
+
+                    if (best == null ||
+                            m.getSpectralEfficiency()
+                                    > best.getSpectralEfficiency()) {
+
+                        best = m;
                     }
                 }
             }
+
             return best;
         }
 
@@ -133,7 +147,7 @@ public class MODCOD {
             this.symbolRate_MHz = bandwidth_MHz / (1.0 + rollOffFactor);
 
             // Select best MODCOD for this SNR
-            this.selectedModcod = MODCODLibrary.getBestMODCOD(snr_dB);
+            this.selectedModcod = MODCODLibrary.getBestMODCOD(snr_dB,rollOffFactor);
 
             // Calculate data rate
             calculateDataRate();

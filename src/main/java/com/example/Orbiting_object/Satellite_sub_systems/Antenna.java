@@ -36,6 +36,7 @@ public class Antenna{
         this.frequency = frequency;
         this.bandwidth=bandwidth;
         this.efficiency=efficiency;
+        this.txPowerDbm=txPowerDbm;
         this.teta3dB=FastMath.toRadians(teta3dB);
     }
     public static final Map<String, Antenna> antenna_catalogue = new LinkedHashMap<>();
