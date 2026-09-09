@@ -59,7 +59,7 @@ import java.util.concurrent.TimeUnit;
         // ── Resource roots (match original paths) ────────────────────────
         private static final String HTML_RESOURCE_ROOT = "/final_visualization_2D";
         private static final String HTML_ENTRY_POINT   = "/satellite_tracker.html";
-        private static final String CSV_ROOT           = "src/main/resources/CSV_exports";
+        private static final String CSV_ROOT           = "src/main/resources/CSV_exports/real_sat";
 
         // ── WebSocket state ──────────────────────────────────────────────
         private WebSocket connectedClient = null;
@@ -211,6 +211,7 @@ import java.util.concurrent.TimeUnit;
             if (Ground_station.satcom_activated) {
                 sendSatcomLinks();
             }
+            send_sat_csv();
         }
 
         // ── Individual senders ───────────────────────────────────────────
@@ -283,7 +284,7 @@ import java.util.concurrent.TimeUnit;
             }
 
             // CSVs directly in root
-            File[] rootCsvs = root.listFiles(f -> f.isFile() && f.getName().endsWith(".csv"));
+            File[] rootCsvs = root.listFiles(f -> f.isFile() && f.getName().equals("real_sats.csv"));
             if (rootCsvs != null && rootCsvs.length > 0) {
                 String entry = buildFolderEntry("CSV_exports", root);
                 if (entry != null) entries.add(entry);
@@ -293,7 +294,13 @@ import java.util.concurrent.TimeUnit;
             send("EXPLORER:" + json);
             System.out.println("[2DUI] Folder tree sent (" + entries.size() + " folder(s)).");
         }
-
+        public void send_sat_csv(){
+            sendFile(
+                    "SAT_CSV",
+                    "src/main/resources/CSV_exports/real_sat/real_sats.csv",
+                    "Sat position"
+            );
+    }
         // ────────────────────────────────────────────────────────────────
         // Helpers
         // ────────────────────────────────────────────────────────────────

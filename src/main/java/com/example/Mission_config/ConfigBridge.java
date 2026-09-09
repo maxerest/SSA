@@ -185,7 +185,7 @@ public class ConfigBridge {
             double inc        = Math.toRadians(getDouble(s, "inclinationDeg"));
             double raan       = Math.toRadians(getDouble(s, "raanDeg"));
             double omega      = Math.toRadians(getDouble(s, "argPerigeeDeg"));
-            double nu         = Math.toRadians(getDouble(s, "trueAnomalyDeg"));
+            double nu         = Math.toRadians(getDouble(s, "meanAnomalyDeg"));
             String satEpoch = getString(s, "epochISO");
             AbsoluteDate date_propagation= parseEpoch(satEpoch);
             if(!epoch.isBefore(date_propagation)){

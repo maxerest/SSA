@@ -39,8 +39,6 @@ public class App
         }));
         //Recuperation des données Orekit à FAIRE EN PREMIER
         final File orekitData = new File("orekit-data");
-        final boolean visualisation_2D = true;
-        final boolean visualisation_3D = true;
 
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
@@ -84,8 +82,6 @@ public class App
         boolean propagate_real_orbit = true;
         boolean propagate_kalman_filter = false;
         boolean propagate_least_squares = false;
-        boolean TLE_visualisation = false;
-        boolean TLE_propagation=false;
         boolean py_3d_visualizations=false;
         boolean py_graphs_visualizations=false;
         boolean check_collision = false;
@@ -95,14 +91,7 @@ public class App
 
         // Delete past CSV files
         Visulations.deleteAllCsvFiles();
-        if (TLE_visualisation)
-            My_TLE.choixTLE();
-        if (TLE_propagation){
-            My_TLE.propagation();
-            if (check_collision){
-                My_TLE.collision_TLE();
-            }
-        }
+
         if (propagate_real_orbit){
 
             Propagator_1.propagator_real_orbit(liste_par_sats_real_orbit);
@@ -149,8 +138,8 @@ public class App
                     .inclinaison(satConfig.inclination)
                     .long_noeud_ascendant(satConfig.raan)
                     .arg_periastre(satConfig.argPerigee)
-                    .anomalie(satConfig.trueAnomaly)
-                    .type_anomalie(PositionAngleType.TRUE)
+                    .anomalie(satConfig.meanAnomaly)
+                    .type_anomalie(PositionAngleType.MEAN)
                     .motor(Motors.motor_catalogue.get(satConfig.subsystems.get("MOTORS")))
                     .eo_sensor(EO_sensors.sensor_catalogue.get(satConfig.subsystems.get("EO_SENSORS")))
                     .antenna(Antenna.antenna_catalogue.get(satConfig.subsystems.get("ANTENNAS")))

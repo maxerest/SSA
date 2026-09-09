@@ -4,16 +4,30 @@ import com.example.Parametres;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.bodies.CelestialBody;
 import org.orekit.bodies.CelestialBodyFactory;
+import org.orekit.frames.Frame;
+import org.orekit.frames.FramesFactory;
 import org.orekit.time.AbsoluteDate;
+import org.orekit.utils.IERSConventions;
 
 public class Sun_position {
 
     public static Vector3D getSun_position_initial() {
-        CelestialBody sun = CelestialBodyFactory.getSun();
-        Vector3D sunPos = sun.getPosition(Parametres.date_orekit, Parametres.frame); // position of the sun at eme2000 at start epoch
-        CelestialBody  earth = CelestialBodyFactory.getEarth();
-        Vector3D earthPos = earth.getPosition(Parametres.date_orekit, Parametres.frame); // position of the sun at eme2000 at start epoch
-        // Sun position relative to Earth (Earth-centered vector)
-        return sunPos.subtract(earthPos).normalize();
+        System.out.println(Parametres.date_orekit);
+        AbsoluteDate date = Parametres.date_orekit;
+
+        CelestialBody sun =
+                CelestialBodyFactory.getSun();
+
+        Frame itrf =
+                FramesFactory.getITRF(
+                        IERSConventions.IERS_2010,
+                        true
+                );
+
+        // Sun position expressed in Earth-fixed coordinates
+        Vector3D sunPosECEF =
+                sun.getPosition(date, itrf);
+
+        return sunPosECEF.normalize();
     }
 }

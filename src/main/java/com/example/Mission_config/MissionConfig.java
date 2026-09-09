@@ -32,7 +32,7 @@
             public final double inclination;    // rad
             public final double raan;           // rad
             public final double argPerigee;     // rad
-            public final double trueAnomaly;    // rad
+            public final double meanAnomaly;    // rad
             public final AbsoluteDate date_propagation;
             // Sub-systems — key = category label (e.g. "PROPULSION"), value = component name
             // Empty string means "none selected" for that category.
@@ -40,7 +40,7 @@
 
             public SatConfig(String name,
                              double mass, double semiAxis, double eccentricity,
-                             double inclination, double raan, double argPerigee, double trueAnomaly,
+                             double inclination, double raan, double argPerigee, double meanAnomaly,
                              Map<String, String> subsystems, AbsoluteDate date_propagation) {
                 this.name         = name;
                 this.mass         = mass;
@@ -49,7 +49,7 @@
                 this.inclination  = inclination;
                 this.raan         = raan;
                 this.argPerigee   = argPerigee;
-                this.trueAnomaly  = trueAnomaly;
+                this.meanAnomaly = meanAnomaly;
                 this.subsystems   = Map.copyOf(subsystems);
                 this.date_propagation=date_propagation;
             }

@@ -24,7 +24,7 @@ export function tick() {
         const c = closestPoint(State.sats[n].pts, t);
         return c.detected;
     });
-    const duration_from_start = State.times[State.idx]-State.obsEpoch;
+    const duration_from_start = State.times[State.idx];
     updateSunPosition(duration_from_start);
     document.getElementById('statsRow').innerHTML =
         `<div class="stat-pill"><span class="stat-label">Visible</span><span class="stat-val">${detected.length}/${satNames.length}</span></div>` +

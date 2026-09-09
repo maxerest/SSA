@@ -67,7 +67,7 @@ public class Orbiting_object {
         private double long_noeud_ascendant = Math.toRadians(30);
         private double arg_periastre = Math.toRadians(45);
         private double anomalie = Math.toRadians(60);
-        private PositionAngleType type_anomalie = PositionAngleType.MEAN;
+        private PositionAngleType type_anomalie = PositionAngleType.MEAN; // Default usage for
         public Double Detectionaltitude = Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 100000e3;
         private SpacecraftState s_initialState;
         private AbsoluteDate date_init;
@@ -92,6 +92,7 @@ public class Orbiting_object {
             this.eccentricity = e;
             return this;
         }
+
 
         public Builder inclinaison(double i) {
             this.inclinaison = i;
