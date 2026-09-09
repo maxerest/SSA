@@ -409,7 +409,7 @@
             inclinationDeg: 87.4,
             raanDeg:        0,
             argPerigeeDeg:  0,
-            trueAnomalyDeg: 0,
+            meanAnomalyDeg: 0,
             epochISO:       defaultEpoch,  // ← EACH SAT HAS ITS OWN EPOCH
             subsystems:     {}
         }, params || {}));
@@ -514,8 +514,8 @@
             <input id="f_omega" type="number" min="0" max="360" step="0.1" value="${sat.argPerigeeDeg}" oninput="liveUpdate('argPerigeeDeg',+this.value)"/>
           </div>
           <div class="form-field">
-            <label>True anomaly (°)</label>
-            <input id="f_nu" type="number" min="0" max="360" step="0.1" value="${sat.trueAnomalyDeg}" oninput="liveUpdate('trueAnomalyDeg',+this.value)"/>
+            <label>Mean anomaly (°)</label>
+            <input id="f_nu" type="number" min="0" max="360" step="0.1" value="${sat.meanAnomalyDeg}" oninput="liveUpdate('meanAnomalyDeg',+this.value)"/>
           </div>
         </div>
       </div>
@@ -729,7 +729,7 @@
                 inclinationDeg: t.inc,
                 raanDeg:        t.raan,
                 argPerigeeDeg:  t.omega,
-                trueAnomalyDeg: t.nu,
+                meanAnomalyDeg: t.nu,
                 epochISO:       t.epochISO,  // ← SET EPOCH FROM TLE
                 subsystems:     Object.assign({}, subsystems),
             });
@@ -856,7 +856,7 @@
                     inclinationDeg: inc,
                     raanDeg:        parseFloat(raan.toFixed(3)),
                     argPerigeeDeg:  0,
-                    trueAnomalyDeg: parseFloat(nu.toFixed(3)),
+                    meanAnomalyDeg: parseFloat(nu.toFixed(3)),
                 });
             }
         }
@@ -867,7 +867,7 @@
         <td>${s.inclinationDeg.toFixed(1)}</td>
         <td><span class="raan-badge">${s.raanDeg.toFixed(1)}</span></td>
         <td>${s.argPerigeeDeg.toFixed(1)}</td>
-        <td>${s.trueAnomalyDeg.toFixed(1)}</td>
+        <td>${s.meanAnomalyDeg.toFixed(1)}</td>
         <td>${s.altitudeKm}</td>
     </tr>`).join('');
         document.getElementById('constPreviewCount').textContent = constGenerated.length + ' sats';
@@ -954,7 +954,7 @@
             inclinationDeg: s.inclinationDeg || 0,
             raanDeg:        s.raanDeg || 0,
             argPerigeeDeg:  s.argPerigeeDeg || 0,
-            trueAnomalyDeg: s.trueAnomalyDeg || 0,
+            meanAnomalyDeg: s.meanAnomalyDeg || 0,
             epochISO:       s.epochISO || new Date().toISOString().slice(0, 16),  // ← LOAD EPOCH
             subsystems:     s.subsystems || {}
         }));
@@ -982,7 +982,7 @@
                 inclinationDeg: s.inclinationDeg,
                 raanDeg:        s.raanDeg,
                 argPerigeeDeg:  s.argPerigeeDeg,
-                trueAnomalyDeg: s.trueAnomalyDeg,
+                meanAnomalyDeg: s.meanAnomalyDeg,
                 epochISO:       s.epochISO,
                 subsystems:     s.subsystems
             }))
