@@ -152,7 +152,6 @@ body {
     overflow: hidden;
     padding: 1rem;
     position: relative;
-    min-height: 100vh;
 }
 
 ::-webkit-scrollbar {

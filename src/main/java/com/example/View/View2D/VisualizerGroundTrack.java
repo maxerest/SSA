@@ -201,8 +201,6 @@ import java.util.concurrent.TimeUnit;
         private void sendAllData() {
             sendEpoch();
             sendGroundStations();
-            sendFolderTree();
-
             if (EO_detection.EO_detection) {
                 sendEOCoordinates();
                 sendObservations();
@@ -264,36 +262,6 @@ import java.util.concurrent.TimeUnit;
          *   ...
          * ]
          */
-        public void sendFolderTree() {
-            File root = Paths.get(CSV_ROOT).toAbsolutePath().toFile();
-            List<String> entries = new ArrayList<>();
-
-            if (!root.exists() || !root.isDirectory()) {
-                System.err.println("[2DUI] CSV root not found: " + root.getAbsolutePath());
-                return;
-            }
-
-            // Sub-folders
-            File[] subDirs = root.listFiles(File::isDirectory);
-            if (subDirs != null) {
-                Arrays.sort(subDirs);
-                for (File dir : subDirs) {
-                    String entry = buildFolderEntry(dir.getName(), dir);
-                    if (entry != null) entries.add(entry);
-                }
-            }
-
-            // CSVs directly in root
-            File[] rootCsvs = root.listFiles(f -> f.isFile() && f.getName().equals("real_sats.csv"));
-            if (rootCsvs != null && rootCsvs.length > 0) {
-                String entry = buildFolderEntry("CSV_exports", root);
-                if (entry != null) entries.add(entry);
-            }
-
-            String json = "[" + String.join(",", entries) + "]";
-            send("EXPLORER:" + json);
-            System.out.println("[2DUI] Folder tree sent (" + entries.size() + " folder(s)).");
-        }
         public void send_sat_csv(){
             sendFile(
                     "SAT_CSV",

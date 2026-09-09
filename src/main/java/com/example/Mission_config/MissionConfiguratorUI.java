@@ -2,6 +2,7 @@ package com.example.Mission_config;
 
 import javafx.application.Application;
 import javafx.concurrent.Worker;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
@@ -10,6 +11,7 @@ import netscape.javascript.JSObject;
 
 import java.io.File;
 
+import javafx.stage.Screen;
 public class MissionConfiguratorUI extends Application {
 
     private static ConfigBridge bridge;
@@ -34,7 +36,12 @@ public class MissionConfiguratorUI extends Application {
         File html = new File("src/main/resources/Initial_config_setup/configurator.html");
         engine.load(html.toURI().toString());
         stage.setTitle("Mission Configurator");
-        stage.setScene(new Scene(webView, 1200, 800));
+        stage.setScene(new Scene(webView));
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        double width = screenBounds.getWidth() ;
+        double height = screenBounds.getHeight() ;
+        stage.setWidth(width);
+        stage.setHeight(height);
         stage.show();
     }
 }

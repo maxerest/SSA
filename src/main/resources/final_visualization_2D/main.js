@@ -23,7 +23,6 @@ ws.onmessage = ({ data }) => {
     else if (data.startsWith('EO_CSV:'))     loadEOFromText(data.slice(7));
     else if (data.startsWith('OBS_CSV:'))    loadObsFromText(data.slice(8));
     else if (data.startsWith('SATCOM_CSV:')) loadSATCOMFromText(data.slice(11));
-    else if (data.startsWith('EXPLORER:'))   populateExplorer(data.slice(9));
     else if (data.startsWith('SAT_CSV:'))    applyData(parseCSV(data.slice(8)));
 };
 

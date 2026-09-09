@@ -108,43 +108,6 @@ public class Satcom {
                 cn0
                         - bandwidthDb;
 
-        System.out.println("======= LINK BUDGET =======");
-        System.out.printf("Distance       : %.2f km%n",
-                distance / 1000.0);
-        System.out.printf("Elevation      : %.2f deg%n",
-                FastMath.toDegrees(elevationRad));
-
-        System.out.printf("TX power       : %.2f dBm%n",
-                antenna.getTxPowerDbm());
-        System.out.printf("TX gain        : %.2f dBi%n",
-                antenna.getGain());
-        System.out.printf("EIRP           : %.2f dBW%n",
-                eirpDbw);
-
-        System.out.printf("FSPL           : %.2f dB%n",
-                pathLossDb);
-        System.out.printf("Pointing loss  : %.2f dB%n",
-                pointingLossDb);
-        System.out.printf("Rain loss      : %.2f dB%n",
-                rainLossDb);
-        System.out.printf("Misc loss      : %.2f dB%n",
-                miscLossesDb);
-
-        System.out.printf("G/T            : %.2f dB/K%n",
-                gt);
-
-        System.out.printf("Bandwidth      : %.2f MHz%n",
-                antenna.getBandwidth());
-        System.out.printf("Bandwidth term : %.2f dB%n",
-                bandwidthDb);
-
-        System.out.printf("C/N0           : %.2f dB-Hz%n",
-                cn0);
-        System.out.printf("C/N            : %.2f dB%n",
-                snr);
-
-        System.out.println("===========================");
-
         return snr;
     }
 
