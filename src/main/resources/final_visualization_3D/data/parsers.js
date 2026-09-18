@@ -105,6 +105,7 @@ export function parseGSCSV(text) {
         lon:       parseFloat(r['long'] || r['lon'] || 0),
         alt:       parseFloat(r['alt'] || 0),
         activated: (r['activated'] || 'true').toLowerCase() !== 'false',
+        elevation_deg: parseFloat(r['masked_angle(°)'] || 0),
     })).filter(s => !isNaN(s.lat) && !isNaN(s.lon));
 
     return { stations };

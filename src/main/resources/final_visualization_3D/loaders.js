@@ -84,7 +84,7 @@ export function loadGSCSV(text) {
     clearGroundStations(_scene);
     const result = parseGSCSV(text);
     if (result.error) { console.error(result.error); return; }
-    result.stations.forEach(s => addGroundStation(_scene, s.name, s.lat, s.lon, s.alt, s.activated));
+    result.stations.forEach(s => addGroundStation(_scene, s.name, s.lat, s.lon, s.alt, s.activated,s.elevation_deg));
     const cur = document.getElementById('status').textContent;
     document.getElementById('status').textContent = cur + ` | ${result.stations.length} GS loaded.`;
 }

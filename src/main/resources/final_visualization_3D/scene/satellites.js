@@ -68,10 +68,10 @@ export function removeSatObjects(scene, satName) {
     delete satObjects[satName];
 }
 
-function buildConeMesh(ecefPos, activated) {
+function buildConeMesh(ecefPos, activated,masked_angle) {
     const outward   = new THREE.Vector3(...ecefPos).normalize();
     const top       = new THREE.Vector3(...ecefPos).addScaledVector(outward, 2_000_000);
-    const radius    = 2_000_000 * Math.tan(75 * Math.PI / 180);
+    const radius    = 2_000_000 * Math.tan((90-masked_angle) * Math.PI / 180);
     const N         = 48;
     const arbitrary = Math.abs(outward.z) < 0.9 ? new THREE.Vector3(0,0,1) : new THREE.Vector3(1,0,0);
     const u = new THREE.Vector3().crossVectors(outward, arbitrary).normalize();
@@ -101,8 +101,8 @@ function buildConeMesh(ecefPos, activated) {
 /**
  * @param {THREE.Scene} scene
  */
-export function addGroundStation(scene, name, lat, lon, alt, activated) {
-    const [x, y, z] = ecefToThreeJS(latLonToECEF(lat, lon, alt * 1000));
+export function addGroundStation(scene, name, lat, lon, alt, activated,masked_angle) {
+    const [x, y, z] = ecefToThreeJS(latLonToECEF(lat, lon, alt));
     const sphere = new THREE.Mesh(
         new THREE.SphereGeometry(80_000, 16, 16),
         new THREE.MeshPhongMaterial({
@@ -113,7 +113,7 @@ export function addGroundStation(scene, name, lat, lon, alt, activated) {
     sphere.position.set(x, y, z);
     scene.add(sphere);
 
-    const cone = buildConeMesh([x, y, z], activated);
+    const cone = buildConeMesh([x, y, z], activated,masked_angle);
     cone.visible = State.showCones;
     scene.add(cone);
 
