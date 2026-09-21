@@ -23,7 +23,7 @@ import {renderZones} from "./scene/earth.js";
 /** Set by main.js after scene is created */
 let _scene = null;
 export function setScene(scene) { _scene = scene; }
-
+let number_EO_detection;
 export function loadSatCSV(text) {
     const result = parseSatCSV(text);
     if (result.error) { console.error(result.error); return; }
@@ -107,6 +107,7 @@ export function loadSatcomCSV(text) {
 }
 export function loadEOCSV(text) {
     const result = parseEOCSV(text);
+
     if (result.error) { console.error(result.error); return; }
 
     const bySat = {};

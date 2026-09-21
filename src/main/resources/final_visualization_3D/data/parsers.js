@@ -3,7 +3,6 @@
 // ================================================================
 
 import { SAT_COLORS } from '../core/config.js';
-
 export function parseCSV(text) {
     try {
         const lines = text.trim().split('\n');

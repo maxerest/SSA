@@ -5,9 +5,8 @@
 import { EARTH_R, MAX_EVENTS_SHOWN } from '../core/config.js';
 import { State }                      from '../core/state.js';
 import { closestPoint, formatDeltaT } from '../core/utils.js';
-import { getOrbitalAtTime, getNextDetection, getVelocityKms } from '../data/propagation.js';
+import { getOrbitalAtTime,    getNextDetection,    getVelocityKms} from '../data/propagation.js';
 import {setSatSelection} from "../scene/satellites.js";
-
 export function selectSat(satName) {
     State.set('selectedSat', satName);
     const sat     = State.sats[satName];
@@ -43,7 +42,6 @@ export function deselectSat() {
 
 export function refreshRightPanel(satName) {
     if (!satName || !State.sats[satName]) return;
-
     const sat     = State.sats[satName];
     const t       = State.times[State.idx] || 0;
     const closest = closestPoint(sat.pts, t);
@@ -51,12 +49,11 @@ export function refreshRightPanel(satName) {
     const altKm   = ((r - EARTH_R) / 1000).toFixed(2);
     const orb     = getOrbitalAtTime(satName, t);
     const velKms  = getVelocityKms(satName, closest.t);
-
-    const eoEvents   = sat.pts.filter(p => p.firing > 0); // TO fix as it is not from firing but lenght of the csv
+    const eoEvents = State.EObySat?.[satName] || [];
     const nextEO     = getNextDetection(satName, 'eo');
     const nextSatcom = getNextDetection(satName, 'satcom');
     const links      = State.satcomLinks.filter(l => l.sat === satName);
-    const totalData  = links.reduce((s, l) => s + l.dataMB, 0);
+   const totalData  = links.reduce((s, l) => s + l.dataMB, 0);
     const orbitStr   = orb ? (orb.e < 0.01 ? 'Circular' : orb.e < 0.1 ? 'Near-circular' : 'Elliptical') : null;
 
     document.getElementById('rightPanelContent').innerHTML = `
@@ -94,21 +91,49 @@ export function refreshRightPanel(satName) {
         ${nextSatcom?.station ? `<div class="detail-row"><span class="detail-key">Via station</span><span class="detail-val">${nextSatcom.station}</span></div>` : ''}
     </div>
 
-    <div class="detail-section">
-        <div class="detail-section-title">EO Detection Events )</div>
-        ${eoEvents.length === 0
+ <div class="detail-section">
+    <div class="detail-section-title">
+        EO Detection Events (${eoEvents.length})
+    </div>
+
+    ${eoEvents.length === 0
         ? '<div class="no-events">No EO detections in simulation</div>'
         : `<div class="event-list">
-                ${eoEvents.slice(0, MAX_EVENTS_SHOWN).map(p => `
-                    <div class="event-item">
-                        <div class="event-item-header">
-                            <span class="event-name">T = ${p.t.toFixed(0)}s</span>
-                            <span class="event-badge badge-eo">EO</span>
+            ${eoEvents
+            .slice(0, MAX_EVENTS_SHOWN)
+            .map(event => {
+                const start = event.start instanceof Date
+                    ? event.start
+                    : new Date(event.start);
+
+                return `
+                        <div class="event-item">
+                            <div class="event-item-header">
+                                <span class="event-name">
+                                    ${event.zone || 'EO Observation'}
+                                </span>
+                                <span class="event-badge badge-eo">EO</span>
+                            </div>
+
+                            <div class="event-time">
+                                ${start.toISOString().substring(0, 19).replace('T', ' ')} UTC
+                            </div>
                         </div>
-                    </div>`).join('')}
-                ${eoEvents.length > MAX_EVENTS_SHOWN ? `<div style="font-size:10px;color:var(--text-dim);padding:4px 0;">+${eoEvents.length - MAX_EVENTS_SHOWN} more</div>` : ''}
-               </div>`}
-    </div>
+                    `;
+            })
+            .join('')}
+
+            ${eoEvents.length > MAX_EVENTS_SHOWN
+            ? `
+                    <div style="font-size:10px;color:var(--text-dim);padding:4px 0;">
+                        +${eoEvents.length - MAX_EVENTS_SHOWN} more
+                    </div>
+                `
+            : ''
+        }
+        </div>`
+    }
+</div>
 
     <div class="detail-section">
         <div class="detail-section-title">GS Downlink Events (${links.length})</div>

@@ -82,14 +82,11 @@ public class Propagator_1
            Visulations.init_observation_csv();
        }
     // Paramétrage du propagateur numérique
-
         for  (Satellite p : liste_par_sats_real_orbit){
             NumericalPropagator propagator = generic_propagator(name_file,p);
             p.setPropagator(propagator);
             EO_setup(p, propagator);
         }
-
-        
     }
 
 
@@ -105,7 +102,6 @@ public class Propagator_1
             propagator.setAttitudeProvider(sat.getAttitude_sat());
             EO_detection.EO_usage_detection(propagator,sat);
         }
-
         propagator.propagate(sat.getPropagation_date().shiftedBy(Parametres.duration));
     }
 
@@ -294,7 +290,7 @@ public class Propagator_1
 
 
     public static NumericalPropagator add_force_propagator(NumericalPropagator propagator, double area, double cd,double srpCrossSection, double srpCoeff) {
-        NormalizedSphericalHarmonicsProvider provider =GravityFieldFactory.getNormalizedProvider(10, 10);
+        NormalizedSphericalHarmonicsProvider provider =GravityFieldFactory.getNormalizedProvider(50, 50);
         ForceModel holmesFeatherstone =new HolmesFeatherstoneAttractionModel(FramesFactory.getITRF(IERSConventions.IERS_2010,true),provider);
         propagator.addForceModel(holmesFeatherstone);
         DragForce drag = new DragForce(atmosphere, new IsotropicDrag(area, cd));

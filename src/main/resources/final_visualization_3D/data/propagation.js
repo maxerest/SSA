@@ -14,29 +14,51 @@ export function getOrbitalAtTime(satName, t) {
 
 
 export function getNextDetection(satName, type) {
-    const sat   = State.sats[satName];
+    const sat = State.sats[satName];
     const times = State.times;
-    const idx   = State.idx;
-    if (!sat) return null;
+    const idx = State.idx;
 
+    if (!sat) return null;
+    if (!times || idx == null || idx >= times.length) return null;
+
+    const currentTime = Number(times[idx]);
+    console.log(currentTime);
     if (type === 'eo') {
         const windows = State.EObySat[satName] || [];
-        const nowMs = State.obsEpoch + times[idx] * 1000;
+
+        const nowMs =
+            Number(State.obsEpoch) +
+            currentTime * 1000;
         const upcoming = windows
             .filter(w => w.start.getTime() > nowMs)
-            .sort((a, b) => a.start - b.start);
+            .sort((a, b) => a.start.getTime() - b.start.getTime());
+
         if (!upcoming.length) return null;
-        const tSimSeconds = (upcoming[0].start.getTime() - State.obsEpoch) / 1000;
-        return { t: tSimSeconds, zone: upcoming[0].zone };
+
+        const next = upcoming[0];
+
+        return {
+            t: (next.start.getTime() - Number(State.obsEpoch)) / 1000,
+            zone: next.zone
+        };
     }
 
-    for (let i = idx + 1; i < times.length; i++) {
-        const t  = times[i];
-        const pt = sat.pts.find(p => p.t === t);
-        if (!pt) continue;
-        if (type === 'satcom' && pt.detected === 1) return { t, station: pt.station };
+    if (type === 'satcom') {
+        const upcoming = sat.pts
+            .filter(pt =>
+                Number(pt.t) > currentTime &&
+                Number(pt.detected) === 1
+            )
+            .sort((a, b) => Number(a.t) - Number(b.t));
 
+        if (!upcoming.length) return null;
+
+        return {
+            t: Number(upcoming[0].t),
+            station: upcoming[0].station
+        };
     }
+
     return null;
 }
 export function getVelocityKms(satName, closestT) {
