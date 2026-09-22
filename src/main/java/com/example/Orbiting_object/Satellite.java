@@ -7,6 +7,7 @@ import com.example.RevisitFrequency.EO_observations;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.attitudes.AttitudeProvider;
 import org.orekit.attitudes.NadirPointing;
+import org.orekit.orbits.Orbit;
 import org.orekit.orbits.PositionAngleType;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
@@ -118,8 +119,6 @@ public class Satellite extends Orbiting_object {
         public Builder anomalie(double a) { super.anomalie(a); return this; }
         @Override
         public Builder type_anomalie(PositionAngleType t) { super.type_anomalie(t); return this; }
-        @Override
-        public Builder Detectionaltitude(Double d) { super.Detectionaltitude(d); return this; }
         @Override
         public  Builder s_initialState(SpacecraftState s) {super.s_initialState(s);return this;}
         @Override

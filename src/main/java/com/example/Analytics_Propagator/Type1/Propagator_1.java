@@ -107,7 +107,7 @@ public class Propagator_1
 
     public static NumericalPropagator generic_propagator(String type_propa,Satellite satellite){
         NumericalPropagator propagator = new NumericalPropagator(Propagator_1.integrator(satellite));
-        propagator.setOrbitType(OrbitType.CARTESIAN);
+        propagator.setOrbitType(satellite.get_Cartesian_Orbit().getType());
         propagator.setInitialState(satellite.get_s_initialState());
         if (!EO_detection.EO_detection) propagator.setAttitudeProvider(new LofOffset(Parametres.frame, LOFType.VNC));
         //Ajout des forces au propagateur

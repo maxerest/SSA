@@ -24,7 +24,7 @@ public class Antenna{
         this.gain = 20.0;           // dBi (satellite TX antenna)
         this.noiseFigure = 2.0;     // dB
         this.frequency = 8.0;      // GHz (Ku-band uplink/downlink)
-        this.bandwidth = 100;      // MHz (typical satellite transponder)
+        this.bandwidth = 100;      // MHz
         this.efficiency = 0.60;     // 60%
         this.txPowerDbm = 40.0;     //dB for the power
         this.teta3dB= FastMath.toRadians(2.0);

@@ -45,18 +45,13 @@ public class Handlers {
             SpacecraftState updated_currentState= currentState.addAdditionalData("Boresight",p.getBoresight()).addAdditionalData("name",p.get_Name()).addAdditionalData("agility",p.getAgility());
             p.add_state(updated_currentState);
 
-
-            boolean trigger = false;//p.is_firing(updated_currentState);
+            boolean trigger = p.is_firing(updated_currentState);
             Frame itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
             Vector3D pos =updated_currentState.getPVCoordinates(itrf).getPosition();
-            //Vector3D pos =updated_currentState.getPVCoordinates().getPosition();
 
             //For each ground station visible during this propagation step, calculate the link budget between the GS and the sat
             if (Ground_station.satcom_activated){
                 List<Ground_station.GroundStation_physical> list_GS_visible=Ground_station.get_list_visible_GS(updated_currentState);
-                for (Ground_station.GroundStation_physical GS:list_GS_visible ){
-                    //System.out.println(GS.getName()+" - Budget link at time "+updated_currentState.getDate().toString() +" : "+ Satcom.calculate_budget_link(GS,p));
-                }
             };
             Visulations.update_CSV_xyz_realsat(type_propa,p.get_Name(),pos,updated_currentState.getDate(),trigger,Ground_station.hasVisibleStations(updated_currentState,updated_currentState.getDate()), Optional.ofNullable(Ground_station.which_station_visible(updated_currentState, updated_currentState.getDate()))
                     .map(Ground_station.GroundStation_physical::getName)
@@ -77,35 +72,32 @@ public class Handlers {
 
         final FieldOfViewDetector fd = new FieldOfViewDetector(tcf, fov);
         final ElevationDetector ed = new ElevationDetector(tcf)
-                .withConstantElevation(Parametres.elevation);
+                .withConstantElevation(Parametres.elevation); // Fixed elevation detection for EO based at 10°
 
         return BooleanDetector.andCombine(ed, BooleanDetector.notCombine(fd))
                 .withMaxCheck(maxCheckingInterval)
                 .withHandler(new Area_revisit_Handler(
                         name,
                         sat,
-                        inertialFrame,
                         pointIndex
                 ));
     }
+
     public static class Area_revisit_Handler implements EventHandler {
 
         private final String name;
         private final Satellite sat;
-        private final Frame inertialFrame;
         private final int pointIndex;
-        private final List<SpacecraftState> states;
 
         public Area_revisit_Handler(
                 String name,
                 Satellite sat,
-                Frame inertialFrame,int pointIndex
+                int pointIndex
 ) {
             this.name = name;
             this.sat = sat;
-            this.inertialFrame = inertialFrame;
             this.pointIndex = pointIndex;
-            states=sat.get_liste_state_propa();
+            List<SpacecraftState> states = sat.get_liste_state_propa();
 
             // Initialize visibility counter
             Map_sat_visi_per_zone

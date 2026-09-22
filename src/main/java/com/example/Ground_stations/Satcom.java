@@ -48,15 +48,13 @@ public class Satcom {
 
         double pathLossDb =
                 free_path_loss_calculation(distance, antenna);
-
         double miscLossesDb = 1.0;
 
         double pointingLossDb =
                 depointing_loss(
                         FastMath.toRadians(0.01),
-                        FastMath.toRadians(antenna.getteta3dB())
+                        antenna.getteta3dB() // TODO check if everythingis really in radians
                 );
-
         double rainLossDb = 0.0;
 
         double elevationRad =
@@ -66,7 +64,6 @@ public class Satcom {
                                 state.getFrame(),
                                 state.getDate())
                         .getElevation();
-
         if (GS.israining() && elevationRad > 0) {
 
             rainLossDb =
@@ -75,39 +72,22 @@ public class Satcom {
                             GS.getRain_rate(),
                             elevationRad
                     );
+
         }
 
-        double totalLossesDb =
-                pathLossDb
+        double totalLossesDb = pathLossDb
                         + miscLossesDb
                         + pointingLossDb
                         + rainLossDb;
+        double eirpDbm = calculateEIRP(antenna);
 
-        double eirpDbm =
-                calculateEIRP(antenna);
+        double eirpDbw = eirpDbm - 30.0;
+        double bandwidthHz = antenna.getBandwidth() * 1e6;
+        double bandwidthDb = 10.0 * Math.log10(bandwidthHz);
+        double gt = GS.get_system_GT();
 
-        double eirpDbw =
-                eirpDbm - 30.0;
-
-        double bandwidthHz =
-                antenna.getBandwidth() * 1e6;
-
-        double bandwidthDb =
-                10.0 * Math.log10(bandwidthHz);
-
-        double gt =
-                GS.get_system_GT();
-
-        double cn0 =
-                eirpDbw
-                        - totalLossesDb
-                        + gt
-                        + 228.6;
-
-        double snr =
-                cn0
-                        - bandwidthDb;
-
+        double cn0 = eirpDbw - totalLossesDb + gt + 228.6;
+        double snr = cn0 - bandwidthDb;
         return snr;
     }
 
@@ -234,7 +214,6 @@ public class Satcom {
 
             // Calculate SNR from link budget
             double snr_dB = Satcom.calculate_budget_link(GS, sat,antenna);
-            System.out.println(snr_dB);
 
             // Calculate data rate based on SNR and MODCOD
             double dataRate_Mbps = Satcom.calculateDataRate_Mbps(snr_dB, bandwidth_MHz);

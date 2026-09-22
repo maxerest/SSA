@@ -1,17 +1,9 @@
 package com.example.Orbiting_object;
-import com.example.Parametres;
 import org.orekit.frames.FramesFactory;
-import org.orekit.orbits.Orbit;
-import org.orekit.orbits.PositionAngleType;
+import org.orekit.orbits.*;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.time.AbsoluteDate;
-import org.orekit.time.TimeScalesFactory;
 import org.orekit.utils.Constants;
-import org.orekit.orbits.KeplerianOrbit;
-
-import org.orekit.orbits.CartesianOrbit;
-
-import java.util.Date;
 
 public class Orbiting_object {
     // Definiton parametres orbitaux
@@ -26,7 +18,6 @@ public class Orbiting_object {
     private PositionAngleType type_anomalie;
     private Orbit orbit_kepl;
     private Orbit orbit_cart;
-    private Double Detectionaltitude =Constants.WGS84_EARTH_EQUATORIAL_RADIUS;// +100e6;
     private AbsoluteDate date_start_propagation;
     //Inital state of the satellite
     private SpacecraftState s_initialState;
@@ -41,7 +32,6 @@ public class Orbiting_object {
         this.arg_periastre = builder.arg_periastre;
         this.anomalie = builder.anomalie;
         this.type_anomalie = builder.type_anomalie;
-        this.Detectionaltitude = builder.Detectionaltitude;
         this.date_start_propagation=builder.date_init;
         this.orbit_kepl=new KeplerianOrbit(
                 this.semi_axis,
@@ -68,7 +58,6 @@ public class Orbiting_object {
         private double arg_periastre = Math.toRadians(45);
         private double anomalie = Math.toRadians(60);
         private PositionAngleType type_anomalie = PositionAngleType.MEAN; // Default usage for
-        public Double Detectionaltitude = Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 100000e3;
         private SpacecraftState s_initialState;
         private AbsoluteDate date_init;
 
@@ -119,10 +108,6 @@ public class Orbiting_object {
             return this;
         }
 
-        public Builder Detectionaltitude(Double d) {
-            this.Detectionaltitude = d;
-            return this;
-        }
 
         public Builder s_initialState(SpacecraftState s) {
             this.s_initialState = s.addAdditionalData("name",this.nom_sat);
@@ -169,9 +154,6 @@ public class Orbiting_object {
     }
     public double get_Mass(){
         return mass;
-    }
-    public Double get_Detectionaltitude(){
-        return Detectionaltitude;
     }
     public SpacecraftState get_s_initialState(){return s_initialState;}
 
