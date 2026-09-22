@@ -22,6 +22,8 @@ import org.orekit.propagation.events.*;
 import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.propagation.sampling.OrekitFixedStepHandler;
+import org.orekit.propagation.sampling.OrekitStepHandler;
+import org.orekit.propagation.sampling.OrekitStepInterpolator;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.IERSConventions;
 
@@ -82,7 +84,108 @@ public class Handlers {
                         pointIndex
                 ));
     }
+    public static class IntersatelliteLinksHandler
+            implements EventHandler {
 
+        private final Satellite sat1;
+        private final Satellite sat2;
+
+        private boolean linkActive;
+        private AbsoluteDate linkStart;
+
+        public IntersatelliteLinksHandler(
+                Satellite sat1,
+                Satellite sat2) {
+
+            this.sat1 = sat1;
+            this.sat2 = sat2;
+        }
+
+        @Override
+        public void init(
+                SpacecraftState initialState,
+                AbsoluteDate target,
+                EventDetector detector) {
+
+            double g = detector.g(initialState);
+
+            if (g > 0) {
+
+                // Satellites are already visible
+                linkActive = true;
+                linkStart = initialState.getDate();
+
+                System.out.println(
+                        "ISL already active at simulation start: "
+                                + sat1.get_Name()
+                                + " <-> "
+                                + sat2.get_Name()
+                                + " at "
+                                + linkStart);
+
+            } else {
+
+                linkActive = false;
+                linkStart = null;
+            }
+        }
+
+        @Override
+        public Action eventOccurred(
+                SpacecraftState state,
+                EventDetector detector,
+                boolean increasing) {
+
+            AbsoluteDate date = state.getDate();
+
+            if (increasing) {
+
+                // g: negative -> positive
+                // LOS becomes available
+
+                linkActive = true;
+                linkStart = date;
+
+                System.out.println(
+                        "ISL START: "
+                                + sat1.get_Name()
+                                + " <-> "
+                                + sat2.get_Name()
+                                + " at "
+                                + date);
+
+            } else {
+
+                // g: positive -> negative
+                // LOS is lost
+
+                linkActive = false;
+
+                System.out.println(
+                        "ISL END: "
+                                + sat1.get_Name()
+                                + " <-> "
+                                + sat2.get_Name()
+                                + " at "
+                                + date);
+
+                if (linkStart != null) {
+
+                    double duration =
+                            date.durationFrom(linkStart);
+
+                    System.out.println(
+                            "Duration inside simulation = "
+                                    + duration
+                                    + " s");
+                }
+
+                linkStart = null;
+            }
+
+            return Action.CONTINUE;
+        }
+    }
     public static class Area_revisit_Handler implements EventHandler {
 
         private final String name;

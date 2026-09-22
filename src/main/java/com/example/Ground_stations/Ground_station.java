@@ -45,7 +45,7 @@ public class Ground_station {
         public Map <SpacecraftState,Boolean> map_visibility_from_sat=new HashMap<>();
         private GeodeticPoint geo_point;
         private final double rain_rate;
-        private boolean is_raining=true;
+        private boolean is_raining=true; // defines if it is raining or not during link budget
         private final double system_GT; // in db/K
         public GroundStation_physical(TopocentricFrame baseFrame,String name, GeodeticPoint point,double elevation_mask,double rain_rate,double system_noise_temperature) {
             super(baseFrame);

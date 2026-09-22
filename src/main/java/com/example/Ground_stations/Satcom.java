@@ -93,7 +93,7 @@ public class Satcom {
 
     private static double rain_loss(double antenna_frequency,double rain_rate,double angle) {
         RainCoeff coeff = getCoeff(antenna_frequency);
-        double distance =5; // KM where rain is applied
+        double distance =2; // KM where rain is applied
         double pathLengthKm =
                 distance /
                         Math.sin(angle);

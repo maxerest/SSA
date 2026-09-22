@@ -1,5 +1,6 @@
 package com.example.Analytics_Propagator.Type1;
 import com.example.Ground_stations.*;
+import com.example.ISL.Intersatellite_links;
 import com.example.Orbiting_object.*;
 
 import java.util.*;
@@ -87,6 +88,11 @@ public class Propagator_1
             p.setPropagator(propagator);
             EO_setup(p, propagator);
         }
+       Intersatellite_links.ISL_initilisation();
+        for (Satellite sat : liste_par_sats_real_orbit){
+            sat.getPropagator().propagate(sat.getPropagation_date().shiftedBy(Parametres.duration));
+        }
+
     }
 
 
@@ -102,7 +108,6 @@ public class Propagator_1
             propagator.setAttitudeProvider(sat.getAttitude_sat());
             EO_detection.EO_usage_detection(propagator,sat);
         }
-        propagator.propagate(sat.getPropagation_date().shiftedBy(Parametres.duration));
     }
 
     public static NumericalPropagator generic_propagator(String type_propa,Satellite satellite){
@@ -114,6 +119,7 @@ public class Propagator_1
         Propagator_1.add_force_propagator(propagator,satellite.getArea(),satellite.getCd(),satellite.getSrpCrossSection(), satellite.getSrpCoeff());
         // If satcom activated, we start the sequence to deal with everything linked
         if (Ground_station.satcom_activated) Satcom.satcom_station_link(propagator,satellite);
+
         SpacecraftState initialState = satellite.get_s_initialState().addAdditionalData("Boresight", satellite.getBoresight());
         satellite.add_state(initialState);
         Handlers.step_handler stepHandler = new Handlers.step_handler(type_propa, satellite);
