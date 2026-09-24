@@ -47,7 +47,7 @@ public class Satcom {
                         .getNorm();
 
         double pathLossDb =
-                free_path_loss_calculation(distance, antenna);
+                free_path_loss_calculation(distance, antenna.getFrequency());
         double miscLossesDb = 1.0;
 
         double pointingLossDb =
@@ -118,8 +118,8 @@ public class Satcom {
         return antenna.getTxPowerDbm() + antenna.getGain();
     }
 
-    private static double free_path_loss_calculation (double distance,Antenna antenna){
-            double frequencyHz = antenna.getFrequency() * 1e9;
+    public static double free_path_loss_calculation (double distance,double frequency){
+            double frequencyHz = frequency * 1e9;
             return 20.0 * Math.log10(4.0 * Math.PI * distance / (C / frequencyHz));
         }
 
@@ -213,6 +213,7 @@ public class Satcom {
             GS.setNoiseBandwidthMhz(bandwidth_MHz);
 
             // Calculate SNR from link budget
+
             double snr_dB = Satcom.calculate_budget_link(GS, sat,antenna);
 
             // Calculate data rate based on SNR and MODCOD

@@ -228,6 +228,10 @@
                         <span class="toggle-label">SATCOM Link</span>
                         <label class="toggle"><input type="checkbox" id="satcomToggle" checked><span class="slider"></span></label>
                     </div>
+                    <div class="toggle-row">
+                    <span class="toggle-label">Inter-sat Links</span>
+                    <label class="toggle"><input type="checkbox" id="ISLtoggle" checked><span class="slider"></span></label>
+                </div>
                 </div>
             </div>
             <div class="mission-divider"></div>
@@ -397,7 +401,7 @@
     function _pushSat(params) {
         const id  = Date.now() + Math.random();
         const idx = satellites.length;
-        const defaultEpoch = new Date().toISOString().slice(0, 16);
+        const defaultEpoch = document.getElementById('epochInput').value;
 
         satellites.push(Object.assign({
             id,
@@ -410,7 +414,7 @@
             raanDeg:        0,
             argPerigeeDeg:  0,
             meanAnomalyDeg: 0,
-            epochISO:       defaultEpoch,  // ← EACH SAT HAS ITS OWN EPOCH
+            epochISO:       defaultEpoch,
             subsystems:     {}
         }, params || {}));
         return id;
@@ -943,6 +947,7 @@
     function applyPayload(data) {
         document.getElementById('eoToggle').checked     = !!data.eoDetectionEnabled;
         document.getElementById('satcomToggle').checked = !!data.satcomEnabled;
+        document.getElementById('ISLtoggle').checked = !!data.ISLEnabled;
         if (data.epoch) document.getElementById('epochInput').value = data.epoch.replace('Z','').replace(/:00Z$/,'');
         satellites = (data.satellites || []).map((s, i) => ({
             id:             Date.now() + i + Math.random(),
@@ -955,7 +960,7 @@
             raanDeg:        s.raanDeg || 0,
             argPerigeeDeg:  s.argPerigeeDeg || 0,
             meanAnomalyDeg: s.meanAnomalyDeg || 0,
-            epochISO:       s.epochISO || new Date().toISOString().slice(0, 16),  // ← LOAD EPOCH
+            epochISO:       s.epochISO || document.getElementById('epochInput').value,  // ← LOAD EPOCH
             subsystems:     s.subsystems || {}
         }));
         activeSatId = satellites.length ? satellites[0].id : null;
@@ -972,6 +977,7 @@
         return {
             satcomEnabled:      document.getElementById('satcomToggle').checked,
             eoDetectionEnabled: document.getElementById('eoToggle').checked,
+            ISLEnabled:         document.getElementById('ISLtoggle').checked,
             duration_mission:   parseFloat(document.getElementById('durationInput').value),
             epoch:              defaultEpoch ? defaultEpoch : new Date().toISOString(),
             satellites: satellites.map(s => ({

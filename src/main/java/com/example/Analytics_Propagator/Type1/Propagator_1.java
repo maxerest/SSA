@@ -1,4 +1,5 @@
 package com.example.Analytics_Propagator.Type1;
+import com.example.App;
 import com.example.Ground_stations.*;
 import com.example.ISL.Intersatellite_links;
 import com.example.Orbiting_object.*;
@@ -8,12 +9,9 @@ import java.util.*;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.linear.MatrixUtils;
 import org.hipparchus.linear.RealMatrix;
-import org.hipparchus.ode.events.Action;
 import org.hipparchus.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import org.hipparchus.ode.nonstiff.DormandPrince853Integrator;
-import org.orekit.attitudes.Attitude;
 import org.orekit.attitudes.LofOffset;
-import org.orekit.attitudes.NadirPointing;
 import org.orekit.bodies.CelestialBodyFactory;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.estimation.measurements.ObservableSatellite;
@@ -34,14 +32,12 @@ import org.orekit.models.earth.atmosphere.Atmosphere;
 import org.orekit.models.earth.atmosphere.HarrisPriester;
 import org.orekit.orbits.Orbit;
 import org.orekit.orbits.OrbitType;
+import org.orekit.propagation.EphemerisGenerator;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.ToleranceProvider;
 import org.orekit.propagation.conversion.DormandPrince853IntegratorBuilder;
 import org.orekit.propagation.conversion.NumericalPropagatorBuilder;
-import org.orekit.propagation.events.EventDetector;
-import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.NumericalPropagator;
-import org.orekit.propagation.sampling.OrekitFixedStepHandler;
 import org.orekit.utils.Constants;
 import org.orekit.utils.ExtendedPositionProvider;
 import org.orekit.utils.IERSConventions;
@@ -61,7 +57,7 @@ public class Propagator_1
     public static OneAxisEllipsoid one_axis_earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,Constants.WGS84_EARTH_FLATTENING,FramesFactory.getITRF(IERSConventions.IERS_2010, true));
     public static ExtendedPositionProvider sun = CelestialBodyFactory.getSun();
     public static Atmosphere atmosphere = new HarrisPriester(CelestialBodyFactory.getSun(), one_axis_earth); 
-    
+    public static double satellite_propagation_done=0;
     //Definition parametres matrices Kalman 
     private static final RealMatrix processNoiseMatrix = MatrixUtils.createRealDiagonalMatrix(new double[]{
         100000, 100000, 100000,  // position [m²]   
@@ -88,10 +84,21 @@ public class Propagator_1
             p.setPropagator(propagator);
             EO_setup(p, propagator);
         }
-       Intersatellite_links.ISL_initilisation();
-        for (Satellite sat : liste_par_sats_real_orbit){
+       double progress;
+       double sent_progress=0;
+        for (Satellite sat : liste_par_sats_real_orbit) {
+            EphemerisGenerator generator = sat.getPropagator().getEphemerisGenerator();
             sat.getPropagator().propagate(sat.getPropagation_date().shiftedBy(Parametres.duration));
+            sat.setEphemeris(generator.getGeneratedEphemeris());
+            satellite_propagation_done++;
+            progress = 100.0 * satellite_propagation_done / liste_par_sats_real_orbit.size();
+            if (progress >= 10 + sent_progress || progress == 100.0) {
+                App.server.send("Console: Progress propagation at "
+                        + String.format("%.1f", progress) + "%");
+                sent_progress = progress;
+            }
         }
+        if (Intersatellite_links.ISL_activated) Intersatellite_links.ISL_initialization();
 
     }
 

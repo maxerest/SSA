@@ -2,6 +2,7 @@ package com.example.Analytics_Propagator.Type1;
 
 import com.example.Ground_stations.Ground_station;
 import com.example.Ground_stations.Satcom;
+import com.example.ISL.Intersatellite_links;
 import com.example.Orbiting_object.Satellite;
 import com.example.Parametres;
 import com.example.RevisitFrequency.EO_observations;
@@ -90,99 +91,67 @@ public class Handlers {
         private final Satellite sat1;
         private final Satellite sat2;
 
-        private boolean linkActive;
-        private AbsoluteDate linkStart;
+        private boolean linkActive = false;
+        private AbsoluteDate linkStart = null;
 
-        public IntersatelliteLinksHandler(
-                Satellite sat1,
-                Satellite sat2) {
+        private static int nextLinkId = 0;
+        private int currentLinkId = -1;
 
+        public IntersatelliteLinksHandler(Satellite sat1, Satellite sat2) {
             this.sat1 = sat1;
             this.sat2 = sat2;
         }
+        public boolean isLinkActive() {
+            return linkActive;
+        }
 
+        public int getCurrentLinkId() {
+            return currentLinkId;
+        }
         @Override
-        public void init(
-                SpacecraftState initialState,
-                AbsoluteDate target,
-                EventDetector detector) {
+        public void init(SpacecraftState initialState, AbsoluteDate target, EventDetector detector) {
 
-            double g = detector.g(initialState);
-
-            if (g > 0) {
-
-                // Satellites are already visible
-                linkActive = true;
+            linkActive = detector.g(initialState) > 0;
+            if (linkActive) {
                 linkStart = initialState.getDate();
-
-                System.out.println(
-                        "ISL already active at simulation start: "
-                                + sat1.get_Name()
-                                + " <-> "
-                                + sat2.get_Name()
-                                + " at "
-                                + linkStart);
-
-            } else {
-
-                linkActive = false;
-                linkStart = null;
+                currentLinkId = ++nextLinkId;
+                Intersatellite_links.ISL_DATA.put(
+                        currentLinkId,
+                        new Intersatellite_links.ISL_data(sat2.get_Name())
+                );
             }
         }
 
         @Override
-        public Action eventOccurred(
-                SpacecraftState state,
-                EventDetector detector,
-                boolean increasing) {
-
+        public Action eventOccurred(SpacecraftState state, EventDetector detector, boolean increasing) {
             AbsoluteDate date = state.getDate();
-
             if (increasing) {
 
-                // g: negative -> positive
-                // LOS becomes available
+                if (!linkActive) {
 
-                linkActive = true;
-                linkStart = date;
+                    linkActive = true;
+                    linkStart = date;
 
-                System.out.println(
-                        "ISL START: "
-                                + sat1.get_Name()
-                                + " <-> "
-                                + sat2.get_Name()
-                                + " at "
-                                + date);
+                    currentLinkId = ++nextLinkId;
 
+                    Intersatellite_links.ISL_DATA.put(currentLinkId, new Intersatellite_links.ISL_data(sat2.get_Name()));
+
+                }
             } else {
 
-                // g: positive -> negative
-                // LOS is lost
+                if (linkActive) {
 
-                linkActive = false;
+                    linkActive = false;
 
-                System.out.println(
-                        "ISL END: "
-                                + sat1.get_Name()
-                                + " <-> "
-                                + sat2.get_Name()
-                                + " at "
-                                + date);
+                    if (linkStart != null) {
 
-                if (linkStart != null) {
+                        double duration =date.durationFrom(linkStart);
+                    }
 
-                    double duration =
-                            date.durationFrom(linkStart);
-
-                    System.out.println(
-                            "Duration inside simulation = "
-                                    + duration
-                                    + " s");
+                    linkStart = null;
+                    currentLinkId = -1;
                 }
-
-                linkStart = null;
             }
-
             return Action.CONTINUE;
         }
     }
@@ -335,7 +304,73 @@ public class Handlers {
 
 
     }
+    public static class ISLState {
 
+        boolean hasLOS = false;
+        boolean inRange = false;
+        boolean linkActive = false;
+        AbsoluteDate linkStart = null;
 
+        public void update(Satellite sat1, Satellite sat2, AbsoluteDate date) {
+            boolean shouldBeActive =hasLOS && inRange;
+            // Link becomes active
+            if (shouldBeActive && !linkActive) {
+                linkActive = true;
+                linkStart = date;
+                System.out.println("ISL START "+ sat1.get_Name()+ " <-> "+ sat2.get_Name()+ " at "+ date);
+            }
+
+            // Link becomes inactive
+            else if (!shouldBeActive && linkActive) {
+                linkActive = false;
+                System.out.println("ISL END "+ sat1.get_Name()+ " <-> "+ sat2.get_Name() + " at "+ date);
+                if (linkStart != null) {
+                    double duration =date.durationFrom(linkStart);
+                    System.out.println("Duration = "+ duration+ " s");
+                }
+                linkStart = null;
+            }
+        }
+    }
+    public static class SimpleISLHandler implements EventHandler {
+
+        private final Satellite sat1;
+        private final Satellite sat2;
+
+        public SimpleISLHandler(Satellite sat1, Satellite sat2) {
+            this.sat1 = sat1;
+            this.sat2 = sat2;
+
+        }
+
+        @Override
+        public Action eventOccurred(
+                SpacecraftState state,
+                EventDetector detector,
+                boolean increasing) {
+
+            if (increasing) {
+                System.out.println(
+                        "[ISL LOS ACQUIRED] "
+                                + sat1.get_Name()
+                                + " <-> "
+                                + sat2.get_Name()
+                                + " at "
+                                + state.getDate()
+                );
+            } else {
+                System.out.println(
+                        "[ISL LOS LOST] "
+                                + sat1.get_Name()
+                                + " <-> "
+                                + sat2.get_Name()
+                                + " at "
+                                + state.getDate()
+                );
+            }
+
+            return Action.CONTINUE;
+        }
+    }
 }
 

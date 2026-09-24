@@ -371,6 +371,7 @@ public class Visulations {
     public static void deleteAllCsvFiles() throws IOException  {
         List<String> list_folder_to_clear=new ArrayList<>();
         list_folder_to_clear.add("src/main/resources/CSV_exports/real_sat/");
+
         for (String folderPath:list_folder_to_clear){
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folderPath), "*.csv")) {
                 stream.forEach(file -> {
@@ -383,6 +384,12 @@ public class Visulations {
             } catch (NoSuchFileException e) {
                 // Ignore if no CSV files found
             }
+        }
+        Path file = Path.of("src/main/resources/CSV_exports/ISL/ISL.csv");
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
     public static void export_observation_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration, String sat_name ) {
@@ -425,6 +432,16 @@ public class Visulations {
         try (FileWriter fw = new FileWriter(filename, false);
              BufferedWriter bw = new BufferedWriter(fw)) {
             bw.write("GS_name,start_time,end_time,duration_s,name_sat_doing_observation,total_data_downlinkable(MB)");
+            bw.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void init_ISL_csv() {
+        String filename = "src/main/resources/CSV_exports/ISL/ISL.csv";
+        try (FileWriter fw = new FileWriter(filename, false);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            bw.write("sat_reference,sat_linked,start_time,end_time,duration (s),transmitable data");
             bw.newLine();
         } catch (IOException e) {
             e.printStackTrace();

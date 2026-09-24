@@ -8,6 +8,7 @@ import com.example.Orbiting_object.*;
 import com.example.Ground_stations.Ground_station;
 import com.example.Orbiting_object.Satellite_sub_systems.Antenna;
 import com.example.Orbiting_object.Satellite_sub_systems.EO_sensors;
+import com.example.Orbiting_object.Satellite_sub_systems.ISL_antenna;
 import com.example.Orbiting_object.Satellite_sub_systems.Motors;
 import com.example.SSA.Patera_detection;
 import com.example.TLE.My_TLE;
@@ -32,6 +33,7 @@ import java.io.IOException;
 public class App
 {   public static List<MissionConfig> liste_config = new ArrayList<>();
     public static List<Satellite> liste_par_sats_real_orbit;
+    public static Visualizer3DServer server = new Visualizer3DServer();
     public static void main(String[] args) throws IOException {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down — closing CSV writers...");
@@ -43,9 +45,9 @@ public class App
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
         //Start the websocket where the program is handled of the globe as a starting point
-        new Thread(() -> new Visualizer3DServer().launch()).start();
-    }
+        new Thread(server::launch).start();
 
+    }
 
 
     /**
@@ -130,6 +132,8 @@ public class App
         Motors.loadMotorsFromCSV();
         Visulations.create_static_position_file();
         for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
+            System.out.println(satConfig.date_propagation);
+
               liste_par_sats.add(new Satellite.Builder()
                     .nom_sat(satConfig.name)
                     .mass(satConfig.mass)
@@ -142,6 +146,7 @@ public class App
                     .type_anomalie(PositionAngleType.MEAN)
                     .motor(Motors.motor_catalogue.get(satConfig.subsystems.get("MOTORS")))
                     .eo_sensor(EO_sensors.sensor_catalogue.get(satConfig.subsystems.get("EO_SENSORS")))
+                      .ISL_antenna(ISL_antenna.isl_antenna_catalogue.get(satConfig.subsystems.get("ISL_ANTENNAS")))
                     .antenna(Antenna.antenna_catalogue.get(satConfig.subsystems.get("ANTENNAS")))
                     .date_initialState(satConfig.date_propagation)
                     .build());

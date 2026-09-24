@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Antenna{
-    private static final String URL_motors =
+    private static final String URL_antennas =
             "src/main/resources/subsystems/antennas.csv";
     private String name;
     private double gain;           // dBi
@@ -45,7 +45,7 @@ public class Antenna{
 
     public static void loadAntennaFromCSV() throws IOException {
         antenna_catalogue.clear();
-        List<String> lines = Files.readAllLines(Paths.get(URL_motors));
+        List<String> lines = Files.readAllLines(Paths.get(URL_antennas));
 
         if (lines.isEmpty()) {
             System.out.println("[Antennas] CSV file is empty — motors catalogue is empty.");

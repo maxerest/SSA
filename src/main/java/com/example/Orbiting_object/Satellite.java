@@ -9,6 +9,7 @@ import org.orekit.attitudes.AttitudeProvider;
 import org.orekit.attitudes.NadirPointing;
 import org.orekit.orbits.Orbit;
 import org.orekit.orbits.PositionAngleType;
+import org.orekit.propagation.BoundedPropagator;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.numerical.NumericalPropagator;
 import org.orekit.time.AbsoluteDate;
@@ -41,8 +42,9 @@ public class Satellite extends Orbiting_object {
     private final double max_memory_on_board=2048000;
     // Parametres satcom
     private Map<String,Antenna> map_parametres_antennes=new LinkedHashMap<>();
+    private ISL_antenna ISL_antenna;
     private MODCOD.modcod MODCOD;
-
+    private BoundedPropagator ephemeris;
 
     private Satellite(Builder builder) {
         super(builder);  // Initialize parent with its Builder
@@ -52,6 +54,7 @@ public class Satellite extends Orbiting_object {
         this.srpCoeff = builder.srpCoeff;
         this.sensor = builder.sensor;
         this.motor=builder.motor;
+        this.ISL_antenna=builder.isl_antenna;
     this.map_parametres_antennes.put(builder.antenna.getName(),builder.antenna);
     }
 
@@ -99,6 +102,7 @@ public class Satellite extends Orbiting_object {
         private double srpCrossSection = 2;
         private double srpCoeff = 1.30;
         private EO_sensors.Sensor sensor;
+        private ISL_antenna isl_antenna;
         private Antenna antenna;
 
         @Override
@@ -129,8 +133,8 @@ public class Satellite extends Orbiting_object {
         public Builder cd(double c) { this.cd = c; return this; }
         public Builder srpCrossSection(double s) { this.srpCrossSection = s; return this; }
         public Builder srpCoeff(double s) { this.srpCoeff = s; return this; }
-        public Builder eo_sensor(EO_sensors.Sensor eo_s) { this.sensor = eo_s;return this;
-        }
+        public Builder eo_sensor(EO_sensors.Sensor eo_s) { this.sensor = eo_s;return this;}
+        public Builder ISL_antenna(ISL_antenna antenna){this.isl_antenna = antenna;return this;}
         public Builder antenna(Antenna a) {if(a==null){this.antenna=new Antenna();return this;} this.antenna = a;return this; }
         public Satellite build() {super.build();
 
@@ -171,6 +175,10 @@ public class Satellite extends Orbiting_object {
     public Map<String, Map<AbsoluteDate,Double>> getMap_pourcentage_collision() {return map_pourcentage_collision;}
     public double getAgility() {return agility;}
 
+    public ISL_antenna getISL_antenna() {
+        return ISL_antenna;
+    }
+
     public void add_state (SpacecraftState s){
         this.liste_state_propa.add(s);
 
@@ -195,5 +203,12 @@ public class Satellite extends Orbiting_object {
 
     public void setPropagator(NumericalPropagator propagator) {
         this.propagator = propagator;
+    }
+    public void setEphemeris(BoundedPropagator ephemeris) {
+        this.ephemeris = ephemeris;
+    }
+
+    public BoundedPropagator getEphemeris() {
+        return ephemeris;
     }
 }

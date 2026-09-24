@@ -2,12 +2,17 @@
 // comms/websocket.js — WebSocket connection & message routing
 // ================================================================
 
-import { State } from '../core/state.js';
-import { updateDatetimeBar } from '../ui/datetime.js';
-import {setSunPosition, initial_sun_position} from "../scene/earth.js";
+import {State} from '../core/state.js';
+import {updateDatetimeBar} from '../ui/datetime.js';
+import {setSunPosition} from "../scene/earth.js";
 import {
-    loadSatCSV, loadGSCSV, loadOrbitalCSV,
-    loadSatcomCSV, loadInitialPositionCSV, loadEOCSV, loadZonesCSV,
+    loadEOCSV,
+    loadGSCSV,
+    loadInitialPositionCSV,
+    loadOrbitalCSV,
+    loadSatcomCSV,
+    loadSatCSV,
+    loadZonesCSV,
 } from '../loaders.js';
 import {ecefToThreeJS} from "../core/utils.js";
 
@@ -30,6 +35,8 @@ export function initWebSocket() {
             const [x, y, z] = msg.slice(13).split(',').map(Number);
             const [tx, ty, tz] = ecefToThreeJS([x, y, z]);
             setSunPosition(tx,ty,tz);
+        } else if (msg.startsWith('Console:')) {
+            document.getElementById('status').textContent = msg.slice(8).split(',');
         }
 
     };
