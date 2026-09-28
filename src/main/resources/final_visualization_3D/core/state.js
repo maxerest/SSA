@@ -18,6 +18,7 @@ const _state = {
     selectedSat: null,
     satcomLinks: [],
     EObySat: {},
+    ISLSat:{},
 };
 
 export const State = {

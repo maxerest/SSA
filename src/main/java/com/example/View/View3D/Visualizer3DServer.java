@@ -3,6 +3,7 @@ package com.example.View.View3D;
 import com.example.App;
 import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Ground_station;
+import com.example.ISL.Intersatellite_links;
 import com.example.Manoeuvre.Manoeuvre;
 import com.example.Mission_config.ConfigBridge;
 import com.example.Mission_config.MissionConfig;
@@ -220,6 +221,12 @@ public class Visualizer3DServer extends WebSocketServer {
                         Paths.get("src/main/resources/EO detection/Coordinates_area_to_observe.csv").toAbsolutePath());
                 send("EO_Zones:" + escapeForJs(ZonesContent));
                 System.out.println("[3DUI] EO zones sent.");
+            }
+            if(Intersatellite_links.ISL_activated){
+                String EOContent = Files.readString(
+                        Paths.get("src/main/resources/CSV_exports/ISL/ISL.csv").toAbsolutePath());
+                send("ISL:" + escapeForJs(EOContent));
+                System.out.println("[3DUI] ISL sent.");
             }
 
 

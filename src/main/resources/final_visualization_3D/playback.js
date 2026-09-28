@@ -9,7 +9,7 @@ import { updateDatetimeBar }   from './ui/datetime.js';
 import { refreshSatList }      from './ui/leftPanel.js';
 import { refreshRightPanel }   from './ui/rightPanel.js';
 import {updateSunPosition} from "./scene/earth.js";
-
+import { updateISLLinks } from './scene/islLinks.js';
 let timer = null;
 
 export function tick() {
@@ -17,7 +17,8 @@ export function tick() {
 
     updateSatPositions();
     updateDatetimeBar();
-
+    updateISLLinks();
+    
     const t        = State.times[State.idx];
     const satNames = Object.keys(State.sats);
     const detected = satNames.filter(n => {

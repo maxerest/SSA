@@ -9,7 +9,7 @@ import { tick, restartTimer, stopTimer } from '../playback.js';
 import { deselectSat }                from './rightPanel.js';
 import {
     loadSatCSV, loadGSCSV, loadOrbitalCSV,
-    loadSatcomCSV, loadInitialPositionCSV,
+    loadSatcomCSV, loadInitialPositionCSV, loadEOCSV,
 } from '../loaders.js';
 
 function readFile(input, cb) {
@@ -40,13 +40,16 @@ export function initControls(ws) {
     document.getElementById('mi-gs')     .addEventListener('click', () => document.getElementById('gsFile').click());
     document.getElementById('mi-orbital').addEventListener('click', () => document.getElementById('orbitalFile').click());
     document.getElementById('mi-satcom') .addEventListener('click', () => document.getElementById('satcomFile').click());
-    document.getElementById('mi-eo') .addEventListener('click', () => document.getElementById('satcomFile').click());
+    document.getElementById('mi-eo') .addEventListener('click', () => document.getElementById('eoFile').click());
+    document.getElementById('mi-ISL') .addEventListener('click', () => document.getElementById('ISLFile').click());
 
     // ── File inputs ────────────────────────────────────────────
     document.getElementById('csvFile')    .addEventListener('change', e => readFile(e.target, loadSatCSV));
     document.getElementById('gsFile')     .addEventListener('change', e => readFile(e.target, loadGSCSV));
     document.getElementById('orbitalFile').addEventListener('change', e => readFile(e.target, loadOrbitalCSV));
     document.getElementById('satcomFile') .addEventListener('change', e => readFile(e.target, loadSatcomCSV));
+    document.getElementById('eoFile') .addEventListener('change', e => readFile(e.target, loadEOCSV));
+    document.getElementById('eoFile') .addEventListener('change', e => readFile(e.target, loadISLCSV));
 
     // ── Playback ───────────────────────────────────────────────
     document.getElementById('playBtn').addEventListener('click', () => {

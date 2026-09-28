@@ -44,6 +44,8 @@ public class App
 
         final DataProvider dirCrawler = new DirectoryCrawler(orekitData);
         DataContext.getDefault().getDataProvidersManager().addProvider(dirCrawler);
+        // Delete past CSV files
+        Visulations.deleteAllCsvFiles();
         //Start the websocket where the program is handled of the globe as a starting point
         new Thread(server::launch).start();
 
@@ -91,8 +93,7 @@ public class App
         Ground_station.loadStationsFromCSV();
 
 
-        // Delete past CSV files
-        Visulations.deleteAllCsvFiles();
+
 
         if (propagate_real_orbit){
 

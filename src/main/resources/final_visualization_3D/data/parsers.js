@@ -166,6 +166,21 @@ export function parseEOCSV(text) {
     }));
     return { links };
 }
+export function parseISLCSV(text) {
+    const result = parseCSV(text);
+    if (result.error) return result;
+    const { rows } = result;
+
+    const links = rows.map(r => ({
+        sat_ref:     r['sat_reference'] || '',
+        sat_linked:     r['sat_linked'] || '',
+        start:    new Date(r['start_time']),
+        end:      new Date(r['end_time']),
+        duration: parseFloat(r['duration (s)'] || 0),
+        total_data:      parseFloat['transmitable data'] || '',
+    }));
+    return { links };
+}
 export function parseZonesCSV(text) {
     const result = parseCSV(text);
     if (result.error) return result;

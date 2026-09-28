@@ -13,10 +13,12 @@ import { buildSatList, setSelectCallback } from './ui/leftPanel.js';
 import { selectSat }        from './ui/rightPanel.js';
 import { initControls }     from './ui/controls.js';
 import { setScene }         from './loaders.js';
-import { loadSatCSV, loadGSCSV, loadOrbitalCSV, loadSatcomCSV, loadInitialPositionCSV } from './loaders.js';
+import { loadSatCSV, loadGSCSV, loadOrbitalCSV, loadSatcomCSV, loadInitialPositionCSV,loadISLCSV } from './loaders.js';
 import { initWebSocket }    from './comms/websocket.js';
 import { tick }             from './playback.js';
 import { setupManeuverModal } from './ui/maneuverModal.js';
+import { setISLScene } from './scene/islLinks.js';
+
 // ── Renderer ──────────────────────────────────────────────────────
 const canvas   = document.getElementById('glCanvas');
 const wrap     = document.getElementById('canvasWrap');
@@ -27,7 +29,7 @@ renderer.setClearColor(0x07090f, 1);
 // ── Scene ─────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
 setScene(scene);
-
+setISLScene(scene);
 buildLights(scene);
 buildStars(scene);
 buildEarth(scene);
@@ -83,6 +85,7 @@ window.receiveCSVContent   = text => loadSatCSV(text);
 window.receiveGSCSVContent = text => loadGSCSV(text);
 window.receiveOrbitalCSV   = text => loadOrbitalCSV(text);
 window.receiveSatcomCSV    = text => loadSatcomCSV(text);
+window.receiveISLCSV       = text => loadISLCSV(text);
 window.setSimulationEpoch  = iso  => {
     State.set('obsEpoch', new Date(iso).getTime());
     updateDatetimeBar();

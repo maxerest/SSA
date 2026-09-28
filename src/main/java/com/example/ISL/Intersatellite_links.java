@@ -95,7 +95,6 @@ public class Intersatellite_links {
             }
         }
 
-        calculateAllLinks(sat1);
 
         System.out.println("[Java] Intersatellite links done");
     }
@@ -114,12 +113,6 @@ public class Intersatellite_links {
                 AbsoluteDate date,
                 double distance) {
 
-            if (distances.isEmpty()) {
-                startdate = date;
-            }
-
-            enddate = date;
-
             distances.put(date, distance);
         }
 
@@ -137,6 +130,13 @@ public class Intersatellite_links {
 
         public AbsoluteDate getEnddate() {
             return enddate;
+        }
+        public void setStartdate(AbsoluteDate startdate) {
+            this.startdate = startdate;
+        }
+
+        public void setEnddate(AbsoluteDate enddate) {
+            this.enddate = enddate;
         }
     }
     private static double calculateDataRate(Satellite sat, ISL_data data){
@@ -160,43 +160,23 @@ public class Intersatellite_links {
     private static double average_distance(ISL_data data1) {
         return  data1.getDistances().values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     }
-    private static void calculateAllLinks(Satellite sourceSat) {
+    public static double calculateLink(Satellite sourceSat, int linkId) {
 
-        for (Map.Entry<Integer, ISL_data> entry
-                : ISL_DATA.entrySet()) {
+        ISL_data data = ISL_DATA.get(linkId);
 
-            int linkId = entry.getKey();
-            ISL_data data = entry.getValue();
-
-            if (data.getDistances().isEmpty()) {
-                continue;
-            }
-
-            double averageDistance =
-                    average_distance(data);
-
-            double dataRate =
-                    calculateDataRate(sourceSat, data);
-
-            System.out.println(
-                    "Link ID: " + linkId
-                            + " | target: " + data.getName_target()
-                            + " | average distance: "
-                            + averageDistance / 1000.0
-                            + " km"
-                            + " | data rate: "
-                            + dataRate / 1e6
-                            + " Mbps"
-                            + " | transferred: "
-                            +  (
-                            dataRate
-                                    * data.enddate.durationFrom(data.startdate)
-                                    / 8.0
-                                    / 1e9
-                    )
-                            + " GB"
-            );
+        if (data == null || data.getDistances().isEmpty()) {
+            return 0.0;
         }
+
+        double averageDistance = average_distance(data);
+
+        double dataRate = calculateDataRate(sourceSat, data);
+
+        double duration = data.enddate.durationFrom(data.startdate);
+
+        // dataRate assumed to be bits/s
+        // result returned in GB
+        return dataRate * duration / 8.0 / 1e9;
     }
 
 

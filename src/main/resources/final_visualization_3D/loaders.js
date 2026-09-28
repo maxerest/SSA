@@ -10,7 +10,7 @@ import {
     parseOrbitalCSV,
     parseSatcomCSV,
     parseEOCSV,
-    parseZonesCSV
+    parseZonesCSV, parseISLCSV
 } from './data/parsers.js';
 import { ecefToThreeJS } from './core/utils.js';
 import { createSatObjects, removeSatObjects, satObjects, addGroundStation, clearGroundStations } from './scene/satellites.js';
@@ -136,4 +136,16 @@ export function loadZonesCSV(text) {
     console.log('[2] parsed zones:', result.zones);
     renderZones(_scene, result.zones);
     console.log('[3D] EO zones loaded:', result.zones.length);
+}
+
+export function loadISLCSV(text){
+       const result= parseISLCSV(text);
+       if (result.error) { console.error(result.error); return; }
+    const bySat = {};
+    result.links.forEach(link => {
+        if (!bySat[link.sat_ref]) bySat[link.sat_ref] = [];
+        bySat[link.sat_ref].push(link);
+    });
+    State.set('ISLSat', bySat);
+
 }

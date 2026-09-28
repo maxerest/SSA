@@ -177,7 +177,7 @@ public class ConfigBridge {
         }
         if(Intersatellite_links.ISL_activated){
             ISL_antenna.loadAntennaFromCSV();
-            Visulations.init_satcom_csv();
+            Visulations.init_ISL_csv();
         }
         List<Map<String, Object>> satList = (List<Map<String, Object>>) root.getOrDefault("satellites", List.of());
         List<MissionConfig.SatConfig> configs = new ArrayList<>();

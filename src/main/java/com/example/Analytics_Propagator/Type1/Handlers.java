@@ -85,46 +85,78 @@ public class Handlers {
                         pointIndex
                 ));
     }
-    public static class IntersatelliteLinksHandler
-            implements EventHandler {
+    public static class IntersatelliteLinksHandler implements EventHandler {
 
         private final Satellite sat1;
         private final Satellite sat2;
 
         private boolean linkActive = false;
+
         private AbsoluteDate linkStart = null;
+        private AbsoluteDate linkEnd = null;
 
         private static int nextLinkId = 0;
         private int currentLinkId = -1;
 
-        public IntersatelliteLinksHandler(Satellite sat1, Satellite sat2) {
+
+        public IntersatelliteLinksHandler(
+                Satellite sat1,
+                Satellite sat2) {
+
             this.sat1 = sat1;
             this.sat2 = sat2;
         }
+
+
         public boolean isLinkActive() {
             return linkActive;
         }
 
+
         public int getCurrentLinkId() {
             return currentLinkId;
         }
+
+
         @Override
-        public void init(SpacecraftState initialState, AbsoluteDate target, EventDetector detector) {
+        public void init(
+                SpacecraftState initialState,
+                AbsoluteDate target,
+                EventDetector detector) {
 
             linkActive = detector.g(initialState) > 0;
+
             if (linkActive) {
+
                 linkStart = initialState.getDate();
                 currentLinkId = ++nextLinkId;
+
+                Intersatellite_links.ISL_data data =
+                        new Intersatellite_links.ISL_data(
+                                sat2.get_Name()
+                        );
+
+                data.setStartdate(linkStart);
+
                 Intersatellite_links.ISL_DATA.put(
                         currentLinkId,
-                        new Intersatellite_links.ISL_data(sat2.get_Name())
+                        data
                 );
             }
         }
 
+
         @Override
-        public Action eventOccurred(SpacecraftState state, EventDetector detector, boolean increasing) {
+        public Action eventOccurred(
+                SpacecraftState state,
+                EventDetector detector,
+                boolean increasing) {
+
             AbsoluteDate date = state.getDate();
+
+            /*
+             * Link starts
+             */
             if (increasing) {
 
                 if (!linkActive) {
@@ -134,25 +166,114 @@ public class Handlers {
 
                     currentLinkId = ++nextLinkId;
 
-                    Intersatellite_links.ISL_DATA.put(currentLinkId, new Intersatellite_links.ISL_data(sat2.get_Name()));
+                    Intersatellite_links.ISL_data data =
+                            new Intersatellite_links.ISL_data(
+                                    sat2.get_Name()
+                            );
 
+                    data.setStartdate(linkStart);
+
+                    Intersatellite_links.ISL_DATA.put(
+                            currentLinkId,
+                            data
+                    );
                 }
+
+                /*
+                 * Link normally ends
+                 */
             } else {
 
                 if (linkActive) {
-
-                    linkActive = false;
-
-                    if (linkStart != null) {
-
-                        double duration =date.durationFrom(linkStart);
-                    }
-
-                    linkStart = null;
-                    currentLinkId = -1;
+                    closeCurrentLink(date);
                 }
             }
+
             return Action.CONTINUE;
+        }
+
+
+        /**
+         * Called automatically when propagation reaches its final date.
+         *
+         * If a link is still active, close it using the last
+         * propagation date.
+         */
+        @Override
+        public void finish(
+                SpacecraftState finalState,
+                EventDetector detector) {
+
+            if (linkActive) {
+
+                AbsoluteDate finalDate =
+                        finalState.getDate();
+
+                closeCurrentLink(finalDate);
+            }
+        }
+
+
+        /**
+         * Close the currently active ISL.
+         */
+        private void closeCurrentLink(
+                AbsoluteDate endDate) {
+
+            if (!linkActive) {
+                return;
+            }
+
+            if (linkStart == null) {
+                return;
+            }
+
+            if (currentLinkId < 0) {
+                return;
+            }
+
+            linkEnd = endDate;
+
+            Intersatellite_links.ISL_data data =
+                    Intersatellite_links.ISL_DATA.get(
+                            currentLinkId
+                    );
+
+            if (data != null) {
+
+                /*
+                 * Important:
+                 * force the link end date to be the actual
+                 * event / simulation end date.
+                 */
+                data.setEnddate(linkEnd);
+
+                double duration =
+                        linkEnd.durationFrom(linkStart);
+
+                double transmittedData =
+                        Intersatellite_links.calculateLink(
+                                sat1,
+                                currentLinkId
+                        );
+
+                Visulations.export_ISL_to_csv(
+                        sat1.get_Name(),
+                        sat2.get_Name(),
+                        linkStart,
+                        linkEnd,
+                        duration,
+                        transmittedData
+                );
+            }
+
+            /*
+             * Reset the handler.
+             */
+            linkActive = false;
+            linkStart = null;
+            linkEnd = null;
+            currentLinkId = -1;
         }
     }
     public static class Area_revisit_Handler implements EventHandler {

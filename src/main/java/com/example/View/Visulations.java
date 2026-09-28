@@ -447,6 +447,19 @@ public class Visulations {
             e.printStackTrace();
         }
     }
+    public static void export_ISL_to_csv(String name_reference, String sat_target ,AbsoluteDate start, AbsoluteDate end, double duration,double data_downlinkabable ) {
+
+        String filename = "src/main/resources/CSV_exports/ISL/ISL.csv";
+        try (FileWriter fw = new FileWriter(filename, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+
+            bw.write(name_reference + "," +sat_target+ ',' + start.toString() + "," + end.toString() + "," + duration+ "," +String.format("%.2f", data_downlinkabable).replaceAll(",","."));
+            bw.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     public static void export_satcom_to_csv(String name, AbsoluteDate start, AbsoluteDate end, double duration, String sat_name,double data_downlinkabable ) {
 
         String filename = "src/main/resources/Satcom/satcom_link.csv";

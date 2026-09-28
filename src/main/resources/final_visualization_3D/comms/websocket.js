@@ -13,6 +13,7 @@ import {
     loadSatcomCSV,
     loadSatCSV,
     loadZonesCSV,
+    loadISLCSV
 } from '../loaders.js';
 import {ecefToThreeJS} from "../core/utils.js";
 
@@ -31,6 +32,7 @@ export function initWebSocket() {
         else if (msg.startsWith('EO_CSV:'))      loadEOCSV(msg.slice(7));
         else if (msg.startsWith('EO_Zones:'))    loadZonesCSV(msg.slice(9));
         else if (msg.startsWith('configurator')) loadInitialPositionCSV(msg.slice(12));
+        else if (msg.startsWith('ISL:')) loadISLCSV(msg.slice(4));
         else if (msg.startsWith('Sun position:')) {
             const [x, y, z] = msg.slice(13).split(',').map(Number);
             const [tx, ty, tz] = ecefToThreeJS([x, y, z]);
