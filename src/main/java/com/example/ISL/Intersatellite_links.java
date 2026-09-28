@@ -10,11 +10,13 @@ import com.example.View.Visulations;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.frames.Frame;
+import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.events.BooleanDetector;
 import org.orekit.propagation.events.InterSatDirectViewDetector;
 import org.orekit.propagation.events.RelativeDistanceDetector;
 import org.orekit.time.AbsoluteDate;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,11 +24,18 @@ import java.util.Map;
 public class Intersatellite_links {
     public static boolean ISL_activated=false;
     public static final Map<Integer, ISL_data> ISL_DATA = new LinkedHashMap<>();
+    private static int nextLinkId = 0;
+    private static final int MAX_ISL = 4;
+    private static final Map<String, Integer> activeLinks = new LinkedHashMap<>();
+    private static List<Handlers.IntersatelliteLinksHandler> handlers = new ArrayList<>();
 
+    private static void Detector_2_sats(Satellite satellite1, Satellite satellite2, List<Handlers.IntersatelliteLinksHandler> handlers) {
 
-    public static void Detector_2_sats(Satellite satellite1, Satellite satellite2) {
-        double maxDistanceM = 2_000_000.0; // example
-        Handlers.IntersatelliteLinksHandler linkHandler =new Handlers.IntersatelliteLinksHandler(satellite1,satellite2);
+        double maxDistanceM = 2_000_000.0;
+        Handlers.IntersatelliteLinksHandler linkHandler = new Handlers.IntersatelliteLinksHandler(satellite1, satellite2);
+
+        handlers.add(linkHandler);
+
         InterSatDirectViewDetector losDetector =
                 new InterSatDirectViewDetector(
                         (OneAxisEllipsoid) Parametres.earth,
@@ -35,67 +44,96 @@ public class Intersatellite_links {
                         .withMaxCheck(30.0)
                         .withThreshold(0.1);
 
+
         RelativeDistanceDetector distanceDetector =
-                new RelativeDistanceDetector(satellite2.getEphemeris(),maxDistanceM)
+                new RelativeDistanceDetector(
+                        satellite2.getEphemeris(),
+                        maxDistanceM
+                )
                         .withMaxCheck(30.0)
                         .withThreshold(0.1);
-        BooleanDetector linkDetector = BooleanDetector.andCombine(losDetector, BooleanDetector.notCombine(distanceDetector))
+
+
+        BooleanDetector linkDetector =
+                BooleanDetector.andCombine(
+                                losDetector,
+                                BooleanDetector.notCombine(
+                                        distanceDetector
+                                )
+                        )
                         .withHandler(linkHandler);
 
         satellite1.getEphemeris().addEventDetector(linkDetector);
-        // Distance calculation every 1 second
-        double step = 1.0;
-
-        satellite1.getEphemeris()
-                .getMultiplexer()
-                .add(step, state1 -> {
-
-                    if (!linkHandler.isLinkActive()) {
-                        return;
-                    }
-
-                    Frame frame = state1.getFrame();
-
-                    Vector3D p1 = state1.getPosition(frame);
-
-                    Vector3D p2 = satellite2.getEphemeris().getPosition(state1.getDate(), frame);
-
-                    double distanceM = Vector3D.distance(p1, p2);
-                    int linkId = linkHandler.getCurrentLinkId();
-                    ISL_data data = ISL_DATA.computeIfAbsent(linkId, id -> new ISL_data(satellite2.get_Name()));
-
-                    data.addDistance(state1.getDate(),distanceM);
-
-                });
     }
 
 
 
-    public static void ISL_initialization(){
-        Satellite sat1 = App.liste_par_sats_real_orbit.getFirst();
+    public static void ISL_initialization() {
+
         if (App.liste_par_sats_real_orbit.size() < 2) {
             return;
         }
-        for (int i = 1; i < App.liste_par_sats_real_orbit.size(); i++) {
-                Satellite sat2 = App.liste_par_sats_real_orbit.get(i);
-                Detector_2_sats(sat1, sat2);
+
+        Satellite sat1 = App.liste_par_sats_real_orbit.getFirst();
+
+
+        /*
+         * Build possible ISL detectors.
+         */
+        for (int i = 1;
+             i < App.liste_par_sats_real_orbit.size();
+             i++) {
+
+            Satellite sat2 =
+                    App.liste_par_sats_real_orbit.get(i);
+
+            Detector_2_sats(
+                    sat1,
+                    sat2,
+                    handlers
+            );
         }
 
-        for (Satellite sat : App.liste_par_sats_real_orbit) {
-            boolean hasISLDetector = sat.getEphemeris().getEventDetectors().stream()
-                    .anyMatch(detector ->
-                            detector.getHandler() instanceof Handlers.IntersatelliteLinksHandler
-                    );
 
-            if (hasISLDetector) {
-                sat.getEphemeris().propagate(
-                        sat.getEphemeris().getMinDate(),
-                        sat.getEphemeris().getMaxDate()
+        /*
+         * ONLY ONE callback every second.
+         *
+         * This callback decides which four links
+         * are actually active.
+         */
+        sat1.getEphemeris()
+                .getMultiplexer()
+                .add(
+                        1.0,
+                        state -> updateClosestLinks(
+                                sat1,
+                                state,
+                                handlers
+                        )
                 );
-            }
+
+
+        sat1.getEphemeris().propagate(
+                sat1.getEphemeris().getMinDate(),
+                sat1.getEphemeris().getMaxDate()
+        );
+
+
+        /*
+         * Close anything still active at simulation end.
+         */
+        AbsoluteDate finalDate =
+                sat1.getEphemeris().getMaxDate();
+
+        for (String target :
+                new ArrayList<>(activeLinks.keySet())) {
+
+            closeLink(
+                    sat1,
+                    target,
+                    finalDate
+            );
         }
-
-
         System.out.println("[Java] Intersatellite links done");
     }
 
@@ -179,5 +217,199 @@ public class Intersatellite_links {
         return dataRate * duration / 8.0 / 1e9;
     }
 
+    private static class ISLCandidate {
 
+        Satellite satellite;
+        Handlers.IntersatelliteLinksHandler handler;
+        double distance;
+
+        ISLCandidate(
+                Satellite satellite,
+                Handlers.IntersatelliteLinksHandler handler,
+                double distance) {
+
+            this.satellite = satellite;
+            this.handler = handler;
+            this.distance = distance;
+        }
+    }
+    private static void updateClosestLinks(
+            Satellite sourceSat,
+            SpacecraftState sourceState,
+            List<Handlers.IntersatelliteLinksHandler> handlers) {
+
+        AbsoluteDate date = sourceState.getDate();
+        Frame frame = sourceState.getFrame();
+
+        Vector3D sourcePosition =
+                sourceState.getPosition(frame);
+
+        List<ISLCandidate> candidates =
+                new java.util.ArrayList<>();
+
+
+        /*
+         * Find every satellite which currently satisfies
+         * LOS + maximum distance conditions.
+         */
+        for (Handlers.IntersatelliteLinksHandler handler : handlers) {
+
+            if (!handler.isAvailable()) {
+                continue;
+            }
+
+            Satellite target =
+                    handler.getTargetSatellite();
+
+            Vector3D targetPosition =
+                    target.getEphemeris()
+                            .getPosition(date, frame);
+
+            double distance =
+                    Vector3D.distance(
+                            sourcePosition,
+                            targetPosition
+                    );
+
+            candidates.add(
+                    new ISLCandidate(
+                            target,
+                            handler,
+                            distance
+                    )
+            );
+        }
+
+
+        /*
+         * Closest first.
+         */
+        candidates.sort(java.util.Comparator.comparingDouble(candidate -> candidate.distance));
+
+        /*
+         * Keep maximum 4.
+         */
+        List<ISLCandidate> selected = candidates.stream().limit(MAX_ISL).toList();
+        java.util.Set<String> selectedNames = selected.stream().map(c -> c.satellite.get_Name()).collect(java.util.stream.Collectors.toSet());
+
+
+        /*
+         * Close links which are no longer among the 4 closest.
+         */
+        for (String targetName :
+                new java.util.ArrayList<>(activeLinks.keySet())) {
+
+            if (!selectedNames.contains(targetName)) {
+                closeLink(sourceSat, targetName, date);
+            }
+        }
+
+
+        /*
+         * Open new links / record distances.
+         */
+        for (ISLCandidate candidate : selected) {
+
+            String targetName = candidate.satellite.get_Name();
+
+            Integer linkId = activeLinks.get(targetName);
+
+
+            /*
+             * New ISL
+             */
+            if (linkId == null) {
+                linkId = openLink(sourceSat, candidate.satellite, date);
+            }
+
+
+            /*
+             * Add current distance sample.
+             */
+            ISL_data data = ISL_DATA.get(linkId);
+
+            if (data != null) {data.addDistance(date, candidate.distance);}
+        }
+    }
+    private static int openLink(
+            Satellite sourceSat,
+            Satellite targetSat,
+            AbsoluteDate date) {
+
+        int linkId = ++nextLinkId;
+
+        ISL_data data =
+                new ISL_data(
+                        targetSat.get_Name()
+                );
+
+        data.setStartdate(date);
+
+        ISL_DATA.put(
+                linkId,
+                data
+        );
+
+        activeLinks.put(
+                targetSat.get_Name(),
+                linkId
+        );
+
+        System.out.println(
+                "[ISL] OPEN "
+                        + sourceSat.get_Name()
+                        + " -> "
+                        + targetSat.get_Name()
+        );
+
+        return linkId;
+    }
+    private static void closeLink(
+            Satellite sourceSat,
+            String targetName,
+            AbsoluteDate date) {
+
+        Integer linkId =
+                activeLinks.remove(targetName);
+
+        if (linkId == null) {
+            return;
+        }
+
+        ISL_data data =
+                ISL_DATA.get(linkId);
+
+        if (data == null) {
+            return;
+        }
+
+        data.setEnddate(date);
+
+        double duration =
+                date.durationFrom(
+                        data.getStartdate()
+                );
+
+        double transmittedData =
+                calculateLink(
+                        sourceSat,
+                        linkId
+                );
+
+        Visulations.export_ISL_to_csv(
+                sourceSat.get_Name(),
+                targetName,
+                data.getStartdate(),
+                date,
+                duration,
+                transmittedData
+        );
+
+        System.out.println(
+                "[ISL] CLOSE "
+                        + sourceSat.get_Name()
+                        + " -> "
+                        + targetName
+        );
+    }
 }
