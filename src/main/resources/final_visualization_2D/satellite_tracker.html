@@ -36,6 +36,13 @@
         <input type="range" id="speedSlider" min="-10" max="10" value="0" step="1" style="width:100px;flex:none;" />
         <span id="speedLabel">1x</span>
     </div>
+    <div class="map-controls">
+        <button id="toggleAllSatsBtn">Hide/Show satellites</button>
+        <button id="toggleTracksBtn">Hide/Show ground tracks</button>
+        <button id="toggleLabelsBtn">Hide/Show labels</button>
+        <button id="toggleLinksBtn">Hide/Show Links</button>
+        <button id="toggleGSBtn">Hide/Show GS</button>
+    </div>
     <div class="ctrl-sep"></div>
     <button id="uploadBtn">Load CSV</button>
     <button id="uploadGSBtn">Load GS CSV</button>
@@ -52,7 +59,6 @@
 <div id="status">Waiting for data…</div>
 <div id="statsRow"></div>
 <div id="mapDiv"></div>
-<div id="legend"></div>
 
 <!-- ── Third-party libraries ───────────────────────────────────── -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -66,7 +72,6 @@
 <script src="map.js"></script>      <!-- initMap, drawTracks, updateDots …        -->
 <script src="popup.js"></script>    <!-- openSatInfoPopup, refreshSatInfoPopup … -->
 <script src="stats.js"></script>    <!-- updateStats, buildLegend                 -->
-<script src="explorer.js"></script> <!-- populateExplorer, renderExplorerTree …  -->
 <script src="main.js"></script>     <!-- event listeners, Java bridge, initMap()  -->
 
 </body>

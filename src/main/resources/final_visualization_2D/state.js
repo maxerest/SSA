@@ -10,7 +10,10 @@ let sats       = {};   // { satName: [{x,y,z,t,firing}, …] }
 let times      = [];   // sorted array of t values
 let idx        = 0;    // current time-step index
 let hiddenSats = new Set();
-
+let showGroundTracks = false;
+let showSatelliteLabels = false;
+let showLinks = true;
+let showGS = true;
 // ── Ancillary data ───────────────────────────────────────────────
 let groundStations = [];   // [{name, lat, lon, activated}, …]
 let EOzones        = [];   // [{name, points, centroid}, …]
@@ -36,7 +39,7 @@ let speedMultiplier = 1.0;
 
 // ── D3 / map handles ─────────────────────────────────────────────
 let svg, projection, pathGen, W, H;
-let dotLayer, trackLayer, gsLayer, eoLayer, obsLayer;
+let dotLayer, trackLayer, gsLayer, eoLayer, obsLayer,footprintLayer ;
 
 // ── Info-popup state ─────────────────────────────────────────────
 let popupSatName = null;

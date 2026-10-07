@@ -15,10 +15,14 @@ function updateStats(t, currentMs) {
     row.innerHTML = '';
 
     Object.keys(sats).forEach((name, si) => {
-        const col    = COLORS[si % COLORS.length];
+        let col    = COLORS[si % COLORS.length]; // if you want different colors
+        col = '#4fc3f7';
         const best   = getBest(sats[name], t);
         const ll     = xyz2ll(best.x, best.y, best.z);
         const alt    = (Math.sqrt(best.x ** 2 + best.y ** 2 + best.z ** 2) - EARTH_R) / 1000;
+        const altitudeM = Math.sqrt(best.x ** 2 + best.y ** 2 + best.z ** 2) - EARTH_R;
+        const footprint = groundFootprintRadius(altitudeM, ELEVATION);
+
         const hidden = hiddenSats.has(name);
 
         const hasActiveEO   = !isNaN(currentMs) && observations.some(o =>
@@ -65,36 +69,25 @@ function updateStats(t, currentMs) {
             else hiddenSats.add(name);
             drawTracks();
             updateDots();
-            buildLegend(EOzones.length > 0);
         });
 
         row.appendChild(card);
     });
 }
 
-/**
- * Rebuild the map legend below the map.
- * @param {boolean} hasEO - whether EO zones are loaded
- */
-function buildLegend(hasEO) {
-    const leg = document.getElementById('legend');
-    leg.innerHTML = '';
 
-    Object.keys(sats).forEach((name, si) => {
-        const col    = COLORS[si % COLORS.length];
-        const hidden = hiddenSats.has(name);
-        leg.innerHTML += `<span class="legend-item" style="opacity:${hidden ? 0.35 : 1}">` +
-            `<span class="legend-dot" style="background:${col};"></span>${name}</span>`;
-    });
+function groundFootprintRadius(altitudeM, elevationDeg) {
+    const R = EARTH_R;
+    const r = R + altitudeM;
 
-    if (groundStations.length > 0) {
-        leg.innerHTML += `<span class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#4caf50;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"></span>GS active</span>`;
-        leg.innerHTML += `<span class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#f44336;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"></span>GS inactive</span>`;
-    }
-    if (hasEO) {
-        leg.innerHTML += `<span class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#1a2a3a;opacity:0.5;border:1px solid #15b1f9;"></span>EO observation zone</span>`;
-    }
-    if (observations.length > 0) {
-        leg.innerHTML += `<span class="legend-item"><span style="display:inline-block;width:18px;height:2px;background:#ffffaa;opacity:0.8;border-top:2px dashed #ffffaa;margin-bottom:3px;"></span>Active observation</span>`;
-    }
+    const elevation = elevationDeg * Math.PI / 180;
+
+    const psi =
+        Math.acos((R / r) * Math.cos(elevation))
+        - elevation;
+
+    return {
+        centralAngleRad: psi,
+        groundRadiusM: R * psi
+    };
 }

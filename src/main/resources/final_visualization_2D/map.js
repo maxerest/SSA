@@ -30,12 +30,13 @@ function initMap() {
     const landLayer = svg.append('g');
     eoLayer    = svg.append('g');
     trackLayer = svg.append('g');
+    footprintLayer = svg.append('g');
     gsLayer    = svg.append('g');
     obsLayer   = svg.append('g');
     dotLayer   = svg.append('g');
 
     // Load world topology
-    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    d3.json('countries-110m.json')
         .then(world => {
             landLayer.selectAll('path')
                 .data(topojson.feature(world, world.objects.countries).features)
@@ -58,7 +59,7 @@ function resetmap() {
 // ── Ground stations ──────────────────────────────────────────────
 
 function drawGroundStations() {
-    gsLayer.selectAll('*').remove();
+    if (!showGS) return;
     groundStations.forEach(gs => {
         const pos = projection([gs.lon, gs.lat]);
         if (!pos) return;
@@ -109,6 +110,7 @@ function drawEOAreas() {
 
 function drawTracks() {
     trackLayer.selectAll('*').remove();
+    if (!showGroundTracks) return;
     Object.keys(sats).forEach((name, si) => {
         if (hiddenSats.has(name)) return;
         const col  = COLORS[si % COLORS.length];
@@ -144,7 +146,7 @@ function drawTracks() {
 // ── Active observation / SATCOM link lines ───────────────────────
 
 function drawLinksLines(currentMs) {
-    obsLayer.selectAll('*').remove();
+
     if (!satcom_links.length) return;
     satcom_links.forEach(obs => {
         if (currentMs < obs.startMs || currentMs > obs.endMs) return;
@@ -178,27 +180,20 @@ function updateDots() {
     const currentMs = currentUnixMs();
 
     document.getElementById('tSlider').value = idx;
-
     dotLayer.selectAll('*').remove();
-
+    footprintLayer.selectAll('*').remove();
+    obsLayer.selectAll('*').remove();
     Object.keys(sats).forEach((name, si) => {
         if (hiddenSats.has(name)) return;
-        const col  = COLORS[si % COLORS.length];
+        const col  = '#4fc3f7';
         const best = getBest(sats[name], t);
         const ll   = xyz2ll(best.x, best.y, best.z);
         const pos  = projection(ll);
         if (!pos) return;
-
+        drawSatelliteFootprint(name, best, col);
         const isObserving = !isNaN(currentMs) && observations.some(o =>
             o.satName === name && currentMs >= o.startMs && currentMs <= o.endMs);
-        const dotColor = isObserving ? '#00e676' : col;
 
-        // Firing ring
-        if (best.firing) {
-            dotLayer.append('circle')
-                .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 11)
-                .attr('fill', 'none').attr('stroke', '#ffb74d').attr('stroke-width', 2);
-        }
         // Observation ring
         if (isObserving) {
             dotLayer.append('circle')
@@ -209,7 +204,8 @@ function updateDots() {
         // Main dot
         dotLayer.append('circle')
             .attr('cx', pos[0]).attr('cy', pos[1]).attr('r', 6)
-            .attr('fill', dotColor).attr('stroke', '#fff').attr('stroke-width', 0.5);
+            .attr('fill', col).attr('stroke', '#fff').attr('stroke-width', 0.5);
+        if (showSatelliteLabels) {
         // Name label
         dotLayer.append('text')
             .attr('x', pos[0] + 9).attr('y', pos[1] + 4)
@@ -221,9 +217,9 @@ function updateDots() {
             .attr('x', pos[0] + 9).attr('y', pos[1] + 15)
             .attr('fill', 'rgba(255,255,255,0.5)').attr('font-size', '10px').attr('font-family', 'monospace')
             .text(Math.round(alt) + ' km');
+        }
     });
-
-    drawLinksLines(currentMs);
+    if(showLinks){drawLinksLines(currentMs);}
     updateDatetimeBar();
     updateStats(t, currentMs);
     if (popupSatName) refreshSatInfoPopup();
@@ -237,4 +233,56 @@ function getZoneCentroid(zoneName) {
     if (gs) return [gs.lon, gs.lat];
     const eo = EOzones.find(z => z.name === zoneName);
     return eo ? eo.centroid : null;
+}
+/**
+ * Calculate the Earth central angle covered by a satellite
+ * for a given minimum ground elevation angle.
+ *
+ * altitudeM: satellite altitude above Earth surface, metres
+ * elevationDeg: minimum elevation angle seen from ground
+ *
+ * Returns angular radius in degrees.
+ */
+function getFootprintAngularRadius(altitudeM, elevationDeg) {
+    const R = EARTH_R;
+    const r = R + altitudeM;
+
+    const elevationRad = elevationDeg * Math.PI / 180;
+
+    const psi =
+        Math.acos((R / r) * Math.cos(elevationRad))
+        - elevationRad;
+
+    return psi * 180 / Math.PI;
+}
+function drawSatelliteFootprint(name, best, col) {
+    const ll = xyz2ll(best.x, best.y, best.z);
+
+    const distanceFromEarthCenter = Math.sqrt(
+        best.x ** 2 +
+        best.y ** 2 +
+        best.z ** 2
+    );
+
+    const altitudeM = distanceFromEarthCenter - EARTH_R;
+
+    const angularRadiusDeg = getFootprintAngularRadius(
+        altitudeM,
+        ELEVATION
+    );
+
+    const circle = d3.geoCircle()
+        .center([ll[0], ll[1]])
+        .radius(angularRadiusDeg)
+        .precision(2)();
+
+    footprintLayer.append('path')
+        .datum(circle)
+        .attr('d', pathGen)
+        .attr('fill',FOOTPRINT_COLOR )
+        .attr('fill-opacity', 0.1)
+        .attr('stroke', FOOTPRINT_COLOR)
+        .attr('stroke-width', 1)
+        .attr('stroke-opacity', 0.45)
+        .attr('stroke-dasharray', '4,3');
 }

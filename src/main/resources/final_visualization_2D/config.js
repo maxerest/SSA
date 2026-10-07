@@ -11,5 +11,6 @@ const COLORS = [
     '#00897b','#558b2f','#f57f17','#6a1b9a','#0277bd','#2e7d32','#e65100','#37474f',
     '#ad1457','#00695c'
 ];
-
+const FOOTPRINT_COLOR = '#29b6f6';
+const ELEVATION=30;
 const EARTH_R = 6371000; // metres

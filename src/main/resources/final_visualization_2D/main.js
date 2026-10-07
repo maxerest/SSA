@@ -76,7 +76,6 @@ function applyData(parsed) {
         `${Object.keys(sats).length} satellite(s), ${times.length} time steps loaded.` +
         (observations.length ? ` | ${observations.length} observation window(s) loaded.` : '');
 
-    buildLegend(EOzones.length > 0);
     drawTracks();
     updateDots();
 }
@@ -84,7 +83,6 @@ function applyData(parsed) {
 function applyGSData(stations) {
     groundStations = stations;
     drawGroundStations();
-    buildLegend(EOzones.length > 0);
 }
 
 function applyEOData(zones) {
@@ -99,7 +97,6 @@ function applyObsData(parsed) {
         ` | ${observations.length} observation window(s) loaded.`;
     updateDatetimeBar();
     updateDots();
-    buildLegend(EOzones.length > 0);
 }
 
 function applySATCOMData(parsed) {
@@ -204,8 +201,71 @@ window.setSimulationEpoch = function(isoDateString) {
     obsEpoch = new Date(isoDateString).getTime();
     updateDatetimeBar();
 };
+document.getElementById('toggleAllSatsBtn').addEventListener('click', () => {
+    const names = Object.keys(sats);
 
+    const allHidden = names.every(name => hiddenSats.has(name));
+
+    if (allHidden) {
+        // Show all
+        hiddenSats.clear();
+    } else {
+        // Hide all
+        names.forEach(name => hiddenSats.add(name));
+    }
+
+    // Redraw everything affected
+    drawTracks();
+    updateDots();
+
+    // Update button text
+    document.getElementById('toggleAllSatsBtn').textContent =
+        allHidden ? 'Hide all satellites' : 'Show all satellites';
+});
 // ── Bootstrap ────────────────────────────────────────────────────
+document.getElementById('toggleTracksBtn').addEventListener('click', () => {
+    showGroundTracks = !showGroundTracks;
 
+    document.getElementById('toggleTracksBtn').textContent =
+        showGroundTracks
+            ? 'Hide ground tracks'
+            : 'Show ground tracks';
+
+    drawTracks();
+});
+document.getElementById('toggleLabelsBtn').addEventListener('click', () => {
+    showSatelliteLabels = !showSatelliteLabels;
+
+    document.getElementById('toggleLabelsBtn').textContent =
+        showSatelliteLabels
+            ? 'Hide labels'
+            : 'Show labels';
+
+    updateDots();
+});
+document.getElementById('toggleLinksBtn').addEventListener('click', () => {
+    showLinks = !showLinks;
+
+    document.getElementById('toggleLinksBtn').textContent =
+        showLinks
+            ? 'Hide links'
+            : 'Show links';
+
+    updateDots();
+});
+document.getElementById('toggleGSBtn')?.addEventListener('click', () => {
+    showGS = !showGS;
+
+    gsLayer.selectAll('*').remove();
+
+    if (showGS) {
+        drawGroundStations();
+    }
+
+    document.getElementById('toggleGSBtn').textContent =
+        showGS
+            ? 'Hide GS'
+            : 'Show GS';
+});
 window.mapInitialized = false;
 initMap();

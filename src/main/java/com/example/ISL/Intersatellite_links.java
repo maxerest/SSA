@@ -31,7 +31,7 @@ public class Intersatellite_links {
 
     private static void Detector_2_sats(Satellite satellite1, Satellite satellite2, List<Handlers.IntersatelliteLinksHandler> handlers) {
 
-        double maxDistanceM = 2_000_000.0;
+        double maxDistanceM = 200_000_000.0;
         Handlers.IntersatelliteLinksHandler linkHandler = new Handlers.IntersatelliteLinksHandler(satellite1, satellite2);
 
         handlers.add(linkHandler);
@@ -196,6 +196,7 @@ public class Intersatellite_links {
 
     }
     private static double average_distance(ISL_data data1) {
+        System.out.println(data1.getDistances().values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0));
         return  data1.getDistances().values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     }
     public static double calculateLink(Satellite sourceSat, int linkId) {
