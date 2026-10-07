@@ -5,3 +5,5 @@ src/main/resources/TLE/last-30-days.TLE
 src/main/resources/TLE/planet.TLE
 src/main/resources/TLE/stations.TLE
 src/main/resources/CSV_exports/Static_position/initial_position.csv
+src/main/resources/CSV_exports/real_sat/real_sats.csv
+src/main/resources/CSV_exports/real_sat/real_sats_Orbital_param.csv
