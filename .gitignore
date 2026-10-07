@@ -8,3 +8,8 @@ src/main/resources/CSV_exports/Static_position/initial_position.csv
 src/main/resources/CSV_exports/real_sat/real_sats.csv
 src/main/resources/CSV_exports/real_sat/real_sats_Orbital_param.csv
 src/main/resources/EO detection/Coordinates_area_to_observe.csv
+src/main/resources/subsystems/antennas.csv
+src/main/resources/subsystems/eo_sensors.csv
+src/main/resources/subsystems/ISL_antennas.csv
+src/main/resources/subsystems/motors.csv
+src/main/resources/Satcom/GS_coordinates.csv
