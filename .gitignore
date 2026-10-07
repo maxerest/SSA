@@ -1,0 +1,7 @@
+src/main/resources/mission_config.json
+src/main/resources/EO detection/observations.csv
+src/main/resources/Satcom/satcom_link.csv
+src/main/resources/TLE/last-30-days.TLE
+src/main/resources/TLE/planet.TLE
+src/main/resources/TLE/stations.TLE
+src/main/resources/CSV_exports/Static_position/initial_position.csv
