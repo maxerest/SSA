@@ -120,6 +120,8 @@
             </div>
             <button id="rightPanelClose" title="Deselect">✕</button>
             <button id="maneuverBtn" class="btn-accent" style="display:none;">🚀 Maneuver</button>
+            <button id="approachBtn" class="btn-accent" style="display:none;">Approach</button>
+
         </div>
         <div id="rightPanelEmpty">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -178,6 +180,94 @@
                 </div>
             </div>
         </div>
+
+        <div id="approachModal" class="approach-modal">
+
+            <div class="approach-modal-content">
+
+                <div class="approach-modal-header">
+                    <h2>Satellite Approach</h2>
+                    <button id="approachModalClose" type="button">×</button>
+                </div>
+
+                <div class="approach-body">
+
+                    <!-- LEFT: 3D orbit preview -->
+                    <div class="approach-preview">
+
+                        <canvas id="approachCanvas"></canvas>
+
+                        <div class="approach-legend">
+                    <span>
+                        <i class="approach-dot chaser-dot"></i>
+                        Chaser
+                    </span>
+
+                            <span>
+                        <i class="approach-dot target-dot"></i>
+                        Target
+                    </span>
+                        </div>
+
+                        <div class="approach-orbit-buttons">
+                            <button id="approachJumpApogee">Apogee</button>
+                            <button id="approachJumpPerigee">Perigee</button>
+                            <button id="approachJumpAscNode">Asc. Node</button>
+                            <button id="approachJumpDescNode">Desc. Node</button>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT: Approach configuration -->
+                    <div class="approach-controls">
+
+                        <div class="approach-field">
+                            <label>Chaser Satellite</label>
+                            <div id="approachChaserName"></div>
+                        </div>
+
+                        <div class="approach-field">
+                            <label for="approachTargetSelect">
+                                Target Satellite
+                            </label>
+
+                            <select id="approachTargetSelect">
+                                <option value="">Select target</option>
+                            </select>
+                        </div>
+
+                        <div class="approach-field">
+                            <label>Approach Start Time</label>
+
+                            <input
+                                    type="range"
+                                    id="approachTimeSlider"
+                                    min="0"
+                                    max="0"
+                                    value="0"
+                                    step="1"
+                            >
+
+                            <span id="approachTimeLabel">T = 0 s</span>
+                        </div>
+
+                        <p id="approachError"></p>
+
+                    </div>
+
+                </div>
+                <div class="approach-modal-footer">
+                    <button id="approachCancelBtn" type="button">
+                        Cancel
+                    </button>
+
+                    <button id="approachConfirmBtn" type="button">
+                        Create Approach
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div id="rightPanelContent"></div>
     </div>
 

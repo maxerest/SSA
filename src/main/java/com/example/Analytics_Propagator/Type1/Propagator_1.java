@@ -47,6 +47,8 @@ import org.orekit.estimation.measurements.PV;
 import com.example.Parametres;
 import com.example.View.Visulations;
 
+import static com.example.App.printMemory;
+
 public class Propagator_1
 {   
     // Parametres de propagation
@@ -87,6 +89,13 @@ public class Propagator_1
        double progress;
        double sent_progress=0;
         for (Satellite sat : liste_par_sats_real_orbit) {
+            System.out.println(
+                    "Starting "  + sat.get_Name()
+            );
+
+            printMemory("Before");
+
+
             EphemerisGenerator generator = sat.getPropagator().getEphemerisGenerator();
             sat.getPropagator().propagate(sat.getPropagation_date().shiftedBy(Parametres.duration));
             sat.setEphemeris(generator.getGeneratedEphemeris());
@@ -97,6 +106,13 @@ public class Propagator_1
                         + String.format("%.1f", progress) + "%");
                 sent_progress = progress;
             }
+
+            printMemory("After");
+
+            System.out.println(
+                    "Finished " + sat.get_Name()
+            );
+
         }
         if (Intersatellite_links.ISL_activated) Intersatellite_links.ISL_initialization();
 
@@ -303,7 +319,7 @@ public class Propagator_1
 
 
     public static NumericalPropagator add_force_propagator(NumericalPropagator propagator, double area, double cd,double srpCrossSection, double srpCoeff) {
-        NormalizedSphericalHarmonicsProvider provider =GravityFieldFactory.getNormalizedProvider(50, 50);
+        NormalizedSphericalHarmonicsProvider provider =GravityFieldFactory.getNormalizedProvider(20, 20);
         ForceModel holmesFeatherstone =new HolmesFeatherstoneAttractionModel(FramesFactory.getITRF(IERSConventions.IERS_2010,true),provider);
         propagator.addForceModel(holmesFeatherstone);
         DragForce drag = new DragForce(atmosphere, new IsotropicDrag(area, cd));

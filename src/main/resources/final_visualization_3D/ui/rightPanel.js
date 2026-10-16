@@ -23,6 +23,7 @@ export function selectSat(satName) {
     document.getElementById('rightPanelEmpty').style.display = 'none';
     document.getElementById('rightPanelContent').classList.add('visible');
     document.getElementById('maneuverBtn').style.display = 'inline-block';
+    document.getElementById('approachBtn').style.display = 'inline-block';
     refreshRightPanel(satName);
 }
 
@@ -38,6 +39,8 @@ export function deselectSat() {
     document.getElementById('rightPanelEmpty').style.display = '';
     document.getElementById('rightPanelContent').classList.remove('visible');
     document.getElementById('maneuverBtn').style.display = 'none';
+    document.getElementById('approachBtn').style.display = 'none';
+
 }
 
 export function refreshRightPanel(satName) {

@@ -44,6 +44,7 @@ public class Satellite extends Orbiting_object {
     private Map<String,Antenna> map_parametres_antennes=new LinkedHashMap<>();
     private ISL_antenna ISL_antenna;
     private MODCOD.modcod MODCOD;
+
     private BoundedPropagator ephemeris;
 
     private Satellite(Builder builder) {

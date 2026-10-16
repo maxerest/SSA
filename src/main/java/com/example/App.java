@@ -133,8 +133,6 @@ public class App
         Motors.loadMotorsFromCSV();
         Visulations.create_static_position_file();
         for (MissionConfig.SatConfig satConfig : missionConfig.satellites) {
-            System.out.println(satConfig.date_propagation);
-
               liste_par_sats.add(new Satellite.Builder()
                     .nom_sat(satConfig.name)
                     .mass(satConfig.mass)
@@ -158,6 +156,22 @@ public class App
         }
         return liste_par_sats;
     }
+    public static void printMemory(String label) {
+
+        Runtime rt = Runtime.getRuntime();
+
+        long used =
+                rt.totalMemory() - rt.freeMemory();
+
+        System.out.printf(
+                "%s | used = %.1f MB | allocated = %.1f MB | max = %.1f MB%n",
+                label,
+                used / 1024.0 / 1024.0,
+                rt.totalMemory() / 1024.0 / 1024.0,
+                rt.maxMemory() / 1024.0 / 1024.0
+        );
+    }
+
 }
 
    

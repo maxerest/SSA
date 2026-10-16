@@ -50,7 +50,7 @@ public class Orbiting_object {
     // Builder class
     public static class Builder {
         protected String nom_sat = "Placeholder";
-        private double mass = 2500;
+        private double mass = 200;
         private double semi_axis = Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 70000e3;
         private double eccentricity = 0.001;
         private double inclinaison = Math.toRadians(45);

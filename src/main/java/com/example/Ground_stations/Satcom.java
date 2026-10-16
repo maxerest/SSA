@@ -160,8 +160,8 @@ public class Satcom {
 
 
     public static void satcom_station_link(NumericalPropagator propagator, Satellite sat){
-        final double maxcheck  = 60.0;
-        final double threshold =  0.001;
+        final double maxcheck  = 100;
+        final double threshold = 0.1 ;
         for (Ground_station.GroundStation_physical GS : Ground_station.liste_GS  ){
             final EventDetector station_visibility =
                     new ElevationDetector(maxcheck, threshold, GS.getBaseFrame())

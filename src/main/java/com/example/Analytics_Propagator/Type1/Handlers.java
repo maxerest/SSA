@@ -217,65 +217,165 @@ public class Handlers {
         }
     }
     public static class satcom_handler implements EventHandler {
+
         private AbsoluteDate start_date = null;
-        private Satellite sat;
-        private String GS_name;
+
+        private final Satellite sat;
+        private final String GS_name;
+
 
         public satcom_handler(Satellite sat, String GS_name) {
             this.sat = sat;
             this.GS_name = GS_name;
         }
 
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+
         @Override
-        public Action eventOccurred(SpacecraftState s, EventDetector detector, boolean increasing) {
-            if (increasing) {
-                // Satellite entering visibility window
-                if (start_date == null) {
-                    start_date = s.getDate();
-                }
-                return Action.CONTINUE;
+        public void init(SpacecraftState initialState,
+                         AbsoluteDate target,
+                         EventDetector detector) {
 
-            } else {
-                // Satellite leaving visibility window
-                if (start_date != null) {
-                    double duration_sec = s.getDate().durationFrom(start_date);
+            // Reset in case the handler object is reused
+            start_date = null;
 
-                    // Calculate downlink data
-                    double transmittableData_MB = Satcom.calculateTransmittableData_MB(sat, duration_sec,GS_name);
-                    // Export to CSV with data information
-                    Visulations.export_satcom_to_csv(GS_name, start_date, s.getDate(),
-                            duration_sec, sat.get_Name(),transmittableData_MB);
+            /*
+             * g > 0 means the ElevationDetector condition is satisfied:
+             * the satellite is already above the elevation mask.
+             */
+            if (detector.g(initialState) >= 0.0) {
 
-                    while (transmittableData_MB > 0 &&!sat.getList_observations_on_board().isEmpty()) {
-                        double firstData = sat.getList_observations_on_board()
-                                .getFirst()
-                                .getTotal_data();
-
-                        if (transmittableData_MB >= firstData) {
-                            transmittableData_MB -= firstData;
-                            sat.getList_observations_on_board().remove(0);
-                        } else {
-                            // partial consumption (important edge case)
-                            sat.getList_observations_on_board()
-                                    .getFirst()
-                                    .reduce_total_data(transmittableData_MB);
-                            transmittableData_MB = 0;
-                        }
-
-                        sat.setMemory_on_board(transmittableData_MB);
-                    }
-
-                    start_date = null;
-                }
-                return Action.CONTINUE;
+                // Visibility starts directly at simulation start
+                start_date = initialState.getDate();
             }
         }
 
-        /**
-         * Calculate transmittable data for this visibility pass
-         */
+
+        // ============================================================
+        // EVENT
+        // ============================================================
+
+        @Override
+        public Action eventOccurred(SpacecraftState s,
+                                    EventDetector detector,
+                                    boolean increasing) {
+
+            if (increasing) {
+
+                // Satellite entering visibility
+                if (start_date == null) {
+                    start_date = s.getDate();
+                }
+
+            } else {
+
+                // Satellite leaving visibility
+                if (start_date != null) {
+
+                    closeVisibilityWindow(
+                            start_date,
+                            s.getDate()
+                    );
+
+                    start_date = null;
+                }
+            }
+
+            return Action.CONTINUE;
+        }
 
 
+        // ============================================================
+        // END OF PROPAGATION
+        // ============================================================
+
+        @Override
+        public void finish(SpacecraftState finalState,
+                           EventDetector detector) {
+
+            /*
+             * If start_date != null, propagation stopped while
+             * the satellite was still visible.
+             */
+            if (start_date != null) {
+
+                closeVisibilityWindow(
+                        start_date,
+                        finalState.getDate()
+                );
+
+                start_date = null;
+            }
+        }
+
+
+        // ============================================================
+        // PROCESS ONE COMPLETE VISIBILITY WINDOW
+        // ============================================================
+
+        private void closeVisibilityWindow(AbsoluteDate start,
+                                           AbsoluteDate end) {
+
+            double duration_sec = end.durationFrom(start);
+
+            if (duration_sec <= 0.0) {
+                return;
+            }
+
+            // Calculate maximum amount of data that can be downlinked
+            double transmittableData_MB =
+                    Satcom.calculateTransmittableData_MB(
+                            sat,
+                            duration_sec,
+                            GS_name
+                    );
+
+
+            // Export visibility window
+            Visulations.export_satcom_to_csv(
+                    GS_name,
+                    start,
+                    end,
+                    duration_sec,
+                    sat.get_Name(),
+                    transmittableData_MB
+            );
+
+
+            // Downlink observations
+            while (transmittableData_MB > 0.0 &&
+                    !sat.getList_observations_on_board().isEmpty()) {
+
+                double firstData =
+                        sat.getList_observations_on_board()
+                                .getFirst()
+                                .getTotal_data();
+
+
+                if (transmittableData_MB >= firstData) {
+
+                    // Entire observation can be downloaded
+                    transmittableData_MB -= firstData;
+
+                    sat.getList_observations_on_board()
+                            .remove(0);
+
+                } else {
+
+                    // Only part of the observation can be downloaded
+                    sat.getList_observations_on_board()
+                            .getFirst()
+                            .reduce_total_data(
+                                    transmittableData_MB
+                            );
+
+                    transmittableData_MB = 0.0;
+                }
+            }
+        }
     }
     public static class ISLState {
 

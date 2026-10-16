@@ -5,6 +5,7 @@ import com.example.Ground_stations.EO_detection;
 import com.example.Ground_stations.Ground_station;
 import com.example.ISL.Intersatellite_links;
 import com.example.Manoeuvre.Manoeuvre;
+import com.example.Manoeuvre.Rendez_vous;
 import com.example.Mission_config.ConfigBridge;
 import com.example.Mission_config.MissionConfig;
 import com.example.Mission_config.MissionConfiguratorUI;
@@ -38,6 +39,7 @@ public class Visualizer3DServer extends WebSocketServer {
     private final CountDownLatch serverReady = new CountDownLatch(1);
     public Visualizer3DServer() {
         super(new InetSocketAddress("localhost", PORT));
+        setConnectionLostTimeout(0);
     }
     private void startHttpServer() throws IOException {
         HttpServer http = HttpServer.create(new InetSocketAddress(8766), 0);
@@ -98,14 +100,28 @@ public class Visualizer3DServer extends WebSocketServer {
     }
 
     @Override
-    public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        System.out.println("[3DUI] Browser disconnected — shutting down.");
-        System.exit(0);
+    public void onClose(
+            WebSocket conn,
+            int code,
+            String reason,
+            boolean remote) {
+
+        System.out.println("[3DUI] Browser disconnected");
+
+        System.out.println("code   = " + code);
+
+        System.out.println(
+                "reason = " + reason);
+
+        System.out.println("remote = " + remote);
+
+        connectedClient = null;
+
     }
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        System.out.println("[3DUI→Java] " + message);
+        System.out.println("[3DUI] " + message);
         if(message.startsWith("propagate")) {
             System.out.println("Starting propagation");
             launch_propagation();
@@ -131,7 +147,21 @@ public class Visualizer3DServer extends WebSocketServer {
                 throw new RuntimeException(e);
             }
             send("SAT_CSV:" + escapeForJs(satContent));
-            System.out.println("[3DUI] Post maneuver coordinates sent.");
+            System.out.println("[Java] Post maneuver coordinates sent.");
+        }
+
+        if(message.startsWith("APPROACH_CREATE:")) {
+            System.out.println("Launching approach");
+            new Rendez_vous(message);
+            String satContent = null;
+            try {
+                satContent = Files.readString(
+                        Paths.get("src/main/resources/CSV_exports/real_sat/real_sats.csv").toAbsolutePath());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            send("SAT_CSV:" + escapeForJs(satContent));
+            System.out.println("[Java] Approach done, new CSV sent");
         }
 
     }

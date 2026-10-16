@@ -17,6 +17,7 @@ import { loadSatCSV, loadGSCSV, loadOrbitalCSV, loadSatcomCSV, loadInitialPositi
 import { initWebSocket }    from './comms/websocket.js';
 import { tick }             from './playback.js';
 import { setupManeuverModal } from './ui/maneuverModal.js';
+import { setupApproachModal } from './ui/approachModal.js';
 import { setISLScene } from './scene/islLinks.js';
 
 // ── Renderer ──────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ window.setSimulationEpoch  = iso  => {
 setSelectCallback(selectSat);
 initControls(ws);
 setupManeuverModal(ws);
+setupApproachModal(ws);
 // ── Init ──────────────────────────────────────────────────────────
 updateDatetimeBar();
 buildSatList();

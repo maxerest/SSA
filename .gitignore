@@ -13,3 +13,4 @@ src/main/resources/subsystems/eo_sensors.csv
 src/main/resources/subsystems/ISL_antennas.csv
 src/main/resources/subsystems/motors.csv
 src/main/resources/Satcom/GS_coordinates.csv
+/src/main/resources/Simulation results/Northstar/

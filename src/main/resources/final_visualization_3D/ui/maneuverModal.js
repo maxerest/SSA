@@ -24,6 +24,7 @@ export function setupManeuverModal(wsInstance) {
     document.getElementById('maneuverBtn').addEventListener('click', () => {
         if (State.selectedSat) openManeuverModal(State.selectedSat);
     });
+
     document.getElementById('maneuverModalClose').addEventListener('click', closeManeuverModal);
     document.getElementById('maneuverCancelBtn').addEventListener('click', closeManeuverModal);
     document.getElementById('maneuverConfirmBtn').addEventListener('click', confirmManeuver);
